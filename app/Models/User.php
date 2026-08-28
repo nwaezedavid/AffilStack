@@ -154,6 +154,16 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return $this->hasMany(CrmContact::class);
     }
 
+    public function apiTokens(): HasMany
+    {
+        return $this->hasMany(ApiToken::class);
+    }
+
+    public function researchClips(): HasMany
+    {
+        return $this->hasMany(ResearchClip::class);
+    }
+
     public function creditLedger(): HasMany
     {
         return $this->hasMany(CreditLedger::class);

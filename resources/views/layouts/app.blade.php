@@ -41,6 +41,7 @@
                             ['name' => 'earnings.index', 'match' => 'earnings.*', 'label' => 'Earnings', 'icon' => '💰'],
                             ['name' => 'referrals.index', 'match' => 'referrals.index', 'label' => 'Referrals', 'icon' => '🤝'],
                             ['name' => 'team.index', 'match' => 'team.*', 'label' => 'Team', 'icon' => '👥'],
+                            ['name' => 'extension.index', 'match' => 'extension.*', 'label' => 'Browser Extension', 'icon' => '🧩'],
                             ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => '💬'],
                             ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => '💳'],
                         ];
@@ -99,7 +100,7 @@
 
             <main class="p-6 max-w-5xl">
                 @if (session('success'))
-                    <div class="mb-5 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-4 py-2.5">
+                    <div class="mb-5 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-4 py-2.5 whitespace-pre-line">
                         {{ session('success') }}
                     </div>
                 @endif

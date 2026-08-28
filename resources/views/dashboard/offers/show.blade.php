@@ -508,4 +508,28 @@
             @endforeach
         </div>
     @endif
+
+    {{-- Captured research (item 11) — read-only: attach/remove happens from
+         the Browser Extension page, not here. --}}
+    @if ($offer->researchClips->isNotEmpty())
+        <div class="mt-8">
+            <h3 class="font-display font-semibold text-sm text-navy-900 mb-3">Captured research</h3>
+            <div class="bg-surface border border-line rounded-lg divide-y divide-line-soft">
+                @foreach ($offer->researchClips as $clip)
+                    <div class="p-4">
+                        <div class="flex items-center gap-2 flex-wrap text-xs text-ink-400 font-mono uppercase tracking-wide">
+                            <span>{{ config('extension.page_types')[$clip->page_type] ?? $clip->page_type }}</span>
+                            <span>&middot;</span>
+                            <span>{{ $clip->created_at->format('M j, Y') }}</span>
+                        </div>
+                        <div class="text-sm font-medium text-ink-900 mt-1">{{ $clip->title ?: $clip->source_url }}</div>
+                        <a href="{{ $clip->source_url }}" target="_blank" rel="noopener" class="text-xs text-brand-600 hover:text-brand-700 break-all">{{ $clip->source_url }}</a>
+                        @if ($clip->selected_text)
+                            <p class="text-sm text-ink-600 mt-2 line-clamp-3">{{ $clip->selected_text }}</p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 @endsection

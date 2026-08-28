@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AffiliStack Capture — Settings</title>
+  <style>
+    body {
+      max-width: 420px;
+      margin: 40px auto;
+      padding: 0 20px;
+      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #1a2233;
+      background: #f7f8fa;
+    }
+    h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    p.lead { color: #667085; font-size: 13px; margin-top: 0; margin-bottom: 20px; }
+    .field { margin-bottom: 14px; }
+    label { display: block; font-size: 12px; color: #667085; margin-bottom: 4px; }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border: 1px solid #d7dce3;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #0f1f3d;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    #status { margin-top: 12px; font-size: 13px; }
+    #status.error { color: #b42318; }
+    #status.success { color: #027a48; }
+    .hint { font-size: 12px; color: #667085; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>AffiliStack Research Capture</h1>
+  <p class="lead">Paste in a token generated from your AffiliStack dashboard's Browser Extension page.</p>
+
+  <div class="field">
+    <label for="apiBaseUrl">AffiliStack API URL</label>
+    <input type="text" id="apiBaseUrl" placeholder="https://your-affilistack-domain.com/api">
+  </div>
+
+  <div class="field">
+    <label for="apiToken">API token</label>
+    <input type="password" id="apiToken" placeholder="aff_...">
+  </div>
+
+  <button id="save">Save &amp; verify</button>
+  <div id="status"></div>
+
+  <p class="hint">Generate a token from AffiliStack under Browser Extension. Each token is tied to one device — revoke it there any time.</p>
+
+  <script src="options.js"></script>
+</body>
+</html>

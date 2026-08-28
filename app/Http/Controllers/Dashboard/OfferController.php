@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Offer;
+use App\Models\ResearchClip;
 use App\Services\Compliance\DisclosureService;
 use App\Services\Credits\InsufficientCreditsException;
 use App\Services\Modules\OfferResearchService;
@@ -31,6 +32,7 @@ class OfferController extends Controller
             'product_name' => 'required|string|max:255',
             'product_url' => 'required|url|max:2048',
             'affiliate_network' => 'required|string|max:255',
+            'clip_id' => 'nullable|integer',
         ]);
 
         try {
@@ -44,6 +46,14 @@ class OfferController extends Controller
             return back()->withInput()->with('error', 'Not enough credits for offer research. Upgrade your plan or buy a credit top-up.');
         }
 
+        // "Create offer from clip" (item 11's browser extension): attach the
+        // clip that prompted this offer, but only if it's still this user's.
+        if (! empty($validated['clip_id'])) {
+            ResearchClip::where('id', $validated['clip_id'])
+                ->where('user_id', auth()->id())
+                ->update(['offer_id' => $offer->id]);
+        }
+
         return redirect()->route('offers.show', $offer)->with('success', "Research queued — we'll notify you the moment it's ready.");
     }
 
@@ -51,7 +61,7 @@ class OfferController extends Controller
     {
         abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
-        $offer->load('generations');
+        $offer->load('generations', 'researchClips');
         $contacts = auth()->user()->crmContacts()->orderBy('name')->get();
 
         return view('dashboard.offers.show', compact('offer', 'contacts'));

@@ -8,6 +8,7 @@ use App\Http\Controllers\Dashboard\CrmController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\EarningsController;
 use App\Http\Controllers\Dashboard\EmailNurtureController;
+use App\Http\Controllers\Dashboard\ExtensionController;
 use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\LocalizationController;
@@ -114,6 +115,15 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
     Route::post('/team', [TeamController::class, 'store'])->name('team.store');
     Route::delete('/team/{seat}', [TeamController::class, 'destroy'])->name('team.destroy');
+
+    // Browser capture extension (item 11) — owner-only, deliberately absent
+    // from config('agency.seat_allowed_routes'): see ExtensionController.
+    Route::get('/extension', [ExtensionController::class, 'index'])->name('extension.index');
+    Route::post('/extension/tokens', [ExtensionController::class, 'createToken'])->name('extension.tokens.store');
+    Route::delete('/extension/tokens/{token}', [ExtensionController::class, 'revokeToken'])->name('extension.tokens.destroy');
+    Route::patch('/extension/clips/{clip}', [ExtensionController::class, 'attachClip'])->name('extension.clips.attach');
+    Route::delete('/extension/clips/{clip}', [ExtensionController::class, 'destroyClip'])->name('extension.clips.destroy');
+    Route::get('/extension/download', [ExtensionController::class, 'download'])->name('extension.download');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
 
