@@ -14,6 +14,7 @@ use App\Http\Controllers\Dashboard\OfferController;
 use App\Http\Controllers\Dashboard\ReferralController as DashboardReferralController;
 use App\Http\Controllers\Dashboard\SupportChatController;
 use App\Http\Controllers\Dashboard\SupportTicketController;
+use App\Http\Controllers\Dashboard\SwipeFileController;
 use App\Http\Controllers\Dashboard\TikTokController;
 use App\Http\Controllers\Dashboard\UgcController;
 use App\Http\Controllers\Dashboard\XController;
@@ -104,6 +105,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/calendar', [ContentCalendarController::class, 'index'])->name('calendar.index');
     Route::patch('/calendar/{generation}', [ContentCalendarController::class, 'update'])->name('calendar.update');
+
+    Route::get('/swipe-files', [SwipeFileController::class, 'index'])->name('swipe-files.index');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
 

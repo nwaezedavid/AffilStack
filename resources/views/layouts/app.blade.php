@@ -25,6 +25,7 @@
                         ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'Offer Research', 'icon' => '🔎'],
                         ['name' => 'crm.index', 'match' => 'crm.*', 'label' => 'CRM Contacts', 'icon' => '📇'],
                         ['name' => 'calendar.index', 'match' => 'calendar.*', 'label' => 'Content Calendar', 'icon' => '📅'],
+                        ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => '🗂️'],
                         ['name' => 'links.index', 'match' => 'links.*', 'label' => 'Links & Clicks', 'icon' => '🔗'],
                         ['name' => 'earnings.index', 'match' => 'earnings.*', 'label' => 'Earnings', 'icon' => '💰'],
                         ['name' => 'referrals.index', 'match' => 'referrals.index', 'label' => 'Referrals', 'icon' => '🤝'],

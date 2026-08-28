@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             PlansSeeder::class,
             AdminUserSeeder::class,
             FaqItemsSeeder::class,
+            SwipeFileEntriesSeeder::class,
         ]);
     }
 }
