@@ -48,7 +48,12 @@
                     @foreach ($entries as $entry)
                         <tr>
                             <td class="px-4 py-3 text-ink-900">{{ $entry->offer->product_name ?? '—' }}</td>
-                            <td class="px-4 py-3 text-ink-600 capitalize">{{ str_replace('_', ' ', $entry->module) }}</td>
+                            <td class="px-4 py-3 text-ink-600 capitalize">
+                                {{ str_replace('_', ' ', $entry->module) }}
+                                @if ($entry->target_market)
+                                    <span class="ml-1" title="Localized for {{ config('localization.markets.'.$entry->target_market.'.label') }}">{{ config('localization.markets.'.$entry->target_market.'.flag') }}</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-ink-900">{{ $entry->calendarTitle() }}</td>
                             <td class="px-4 py-3" colspan="4">
                                 <form method="POST" action="{{ route('calendar.update', $entry) }}" class="flex flex-wrap items-center gap-2">

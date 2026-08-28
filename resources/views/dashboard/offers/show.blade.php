@@ -234,6 +234,13 @@
                         <span class="text-xs text-ink-400">{{ $gen->created_at->diffForHumans() }}</span>
                     </div>
 
+                    @if ($gen->target_market)
+                        @php $marketMeta = config('localization.markets.'.$gen->target_market); @endphp
+                        <div class="mb-3 -mt-1">
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-surface-muted text-ink-600 font-mono">{{ $marketMeta['flag'] ?? '' }} Localized for {{ $marketMeta['label'] ?? $gen->target_market }}</span>
+                        </div>
+                    @endif
+
                     @if ($gen->status === 'queued')
                         <p class="text-sm text-ink-600">Running in the background — this page refreshes automatically.</p>
                     @elseif ($gen->status === 'failed')
@@ -470,6 +477,21 @@
                                     <div class="text-sm text-ink-900 whitespace-pre-line">{{ $offer->cloak($email['body'] ?? '', $gen->module) }}</div>
                                 </div>
                             @endforeach
+                        </div>
+                    @endif
+
+                    @if ($gen->status === 'completed' && ! $gen->target_market && in_array($gen->module, config('localization.localizable_modules'), true))
+                        <div class="mt-4 pt-3 border-t border-line-soft flex items-center gap-2 flex-wrap">
+                            <form method="POST" action="{{ route('generations.localize', $gen) }}" class="flex items-center gap-2">
+                                @csrf
+                                <select name="target_market" required class="rounded-md border border-line px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                    <option value="">Localize for&hellip;</option>
+                                    @foreach (config('localization.markets') as $code => $marketOption)
+                                        <option value="{{ $code }}">{{ $marketOption['flag'] }} {{ $marketOption['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                <button class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition whitespace-nowrap">Localize ({{ config('credits.costs.localization') }})</button>
+                            </form>
                         </div>
                     @endif
                 </div>

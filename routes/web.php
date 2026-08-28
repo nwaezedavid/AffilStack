@@ -10,6 +10,7 @@ use App\Http\Controllers\Dashboard\EarningsController;
 use App\Http\Controllers\Dashboard\EmailNurtureController;
 use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
+use App\Http\Controllers\Dashboard\LocalizationController;
 use App\Http\Controllers\Dashboard\OfferController;
 use App\Http\Controllers\Dashboard\ReferralController as DashboardReferralController;
 use App\Http\Controllers\Dashboard\SupportChatController;
@@ -73,6 +74,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/offers/{offer}/linkedin/post', [LinkedInController::class, 'post'])->name('offers.linkedin.post');
     Route::post('/offers/{offer}/linkedin/article', [LinkedInController::class, 'article'])->name('offers.linkedin.article');
     Route::post('/generations/{generation}/nurture-started', [ContentCalendarController::class, 'markSequenceStarted'])->name('generations.nurture-started');
+    Route::post('/generations/{generation}/localize', [LocalizationController::class, 'store'])->name('generations.localize');
 
     Route::post('/offers/{offer}/youtube/script', [YouTubeController::class, 'script'])->name('offers.youtube.script');
     Route::post('/offers/{offer}/youtube/metadata', [YouTubeController::class, 'metadata'])->name('offers.youtube.metadata');

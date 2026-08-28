@@ -19,5 +19,6 @@ return [
         'tiktok_video' => 12,
         'email_nurture' => 10,
         'competitor_angles' => 6,
+        'localization' => 8,
     ],
 ];

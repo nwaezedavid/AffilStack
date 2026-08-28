@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'user_id', 'offer_id', 'module', 'input', 'output', 'output_meta',
     'credits_spent', 'status', 'error_message',
     'calendar_status', 'scheduled_for', 'published_at',
+    'target_market', 'localized_from_id',
 ])]
 class Generation extends Model
 {
@@ -47,5 +49,21 @@ class Generation extends Model
     public function offer(): BelongsTo
     {
         return $this->belongsTo(Offer::class);
+    }
+
+    /**
+     * The original generation this one was localized from (item 8), if any.
+     */
+    public function localizedFrom(): BelongsTo
+    {
+        return $this->belongsTo(Generation::class, 'localized_from_id');
+    }
+
+    /**
+     * Market-localized copies of this generation, if any were made.
+     */
+    public function localizations(): HasMany
+    {
+        return $this->hasMany(Generation::class, 'localized_from_id');
     }
 }
