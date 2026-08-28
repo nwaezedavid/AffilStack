@@ -4,6 +4,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\Dashboard\BlogController;
 use App\Http\Controllers\Dashboard\CrmController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Dashboard\EarningsController;
 use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\OfferController;
@@ -77,6 +78,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/links', [DashboardLinkController::class, 'index'])->name('links.index');
     Route::get('/links/{trackedLink}', [DashboardLinkController::class, 'show'])->name('links.show');
+
+    Route::get('/earnings', [EarningsController::class, 'index'])->name('earnings.index');
+    Route::post('/earnings', [EarningsController::class, 'storeManual'])->name('earnings.store');
+    Route::post('/earnings/import', [EarningsController::class, 'storeImport'])->name('earnings.import');
+    Route::patch('/earnings/{earning}/assign-offer', [EarningsController::class, 'assignOffer'])->name('earnings.assign-offer');
+    Route::delete('/earnings/{earning}', [EarningsController::class, 'destroy'])->name('earnings.destroy');
 
     Route::get('/referrals', [DashboardReferralController::class, 'index'])->name('referrals.index');
 

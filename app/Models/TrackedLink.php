@@ -34,6 +34,11 @@ class TrackedLink extends Model
         return $this->hasMany(LinkClick::class);
     }
 
+    public function earnings(): HasMany
+    {
+        return $this->hasMany(Earning::class);
+    }
+
     protected function shortUrl(): Attribute
     {
         return Attribute::get(fn () => url('/go/'.$this->code));

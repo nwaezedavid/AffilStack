@@ -112,6 +112,11 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return $this->hasMany(TrackedLink::class);
     }
 
+    public function earnings(): HasMany
+    {
+        return $this->hasMany(Earning::class);
+    }
+
     /**
      * As the referrer: every user this account has referred.
      */

@@ -37,6 +37,11 @@ class Offer extends Model
         return $this->hasMany(TrackedLink::class);
     }
 
+    public function earnings(): HasMany
+    {
+        return $this->hasMany(Earning::class);
+    }
+
     /**
      * Replace the "{{AFFILIATE_LINK}}" placeholder AI-generated content uses
      * with this offer's cloaked /go/ link for the given content channel —

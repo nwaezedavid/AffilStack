@@ -25,6 +25,7 @@
                         ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'Offer Research', 'icon' => '🔎'],
                         ['name' => 'crm.index', 'match' => 'crm.*', 'label' => 'CRM Contacts', 'icon' => '📇'],
                         ['name' => 'links.index', 'match' => 'links.*', 'label' => 'Links & Clicks', 'icon' => '🔗'],
+                        ['name' => 'earnings.index', 'match' => 'earnings.*', 'label' => 'Earnings', 'icon' => '💰'],
                         ['name' => 'referrals.index', 'match' => 'referrals.index', 'label' => 'Referrals', 'icon' => '🤝'],
                         ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => '💬'],
                         ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => '💳'],
