@@ -183,6 +183,26 @@
                     <a href="{{ route('billing.index') }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Upgrade to unlock the TikTok module &rarr;</a>
                 @endif
             </div>
+
+            <div class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">Email nurture</h3>
+                @if ($contacts->isEmpty())
+                    <p class="text-xs text-ink-600 mb-3">A 5-email sequence personalized to a real contact — introduces this offer without a hard pitch.</p>
+                    <a href="{{ route('crm.index') }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Add a CRM contact first &rarr;</a>
+                @else
+                    <p class="text-xs text-ink-600 mb-3">Pick who to nurture — the sequence is written for them specifically, not a generic template.</p>
+                    <form method="POST" action="{{ route('offers.nurture.generate', $offer) }}" class="flex gap-2">
+                        @csrf
+                        <select name="contact_id" required class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                            <option value="">Choose a contact&hellip;</option>
+                            @foreach ($contacts as $contact)
+                                <option value="{{ $contact->id }}">{{ $contact->name ?: $contact->email ?: 'Contact #'.$contact->id }}{{ $contact->company ? ' · '.$contact->company : '' }}</option>
+                            @endforeach
+                        </select>
+                        <button class="rounded-md bg-navy-900 text-white text-sm px-3 py-1.5 hover:bg-navy-800 transition whitespace-nowrap">Generate ({{ config('credits.costs.email_nurture') }})</button>
+                    </form>
+                @endif
+            </div>
         </div>
     @elseif ($offer->status === 'queued')
         <div class="bg-surface border border-dashed border-line rounded-lg p-8 text-center text-sm text-ink-600 mb-8">
@@ -379,6 +399,24 @@
                                     <div class="text-sm text-ink-900 whitespace-pre-line">{{ $offer->cloak($platform['caption'] ?? '', $gen->module) }}</div>
                                     <div class="text-xs text-ink-600">{{ implode(', ', $platform['tags'] ?? []) }}</div>
                                     <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Tip: </span>{{ $platform['posting_tip'] ?? '' }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @elseif ($gen->module === 'email_nurture')
+                        @php
+                            $nurtureContact = \App\Models\CrmContact::find($gen->input['contact_id'] ?? null);
+                        @endphp
+                        <p class="text-xs text-ink-600 mb-3">
+                            <span class="font-mono uppercase text-ink-400">To: </span>
+                            {{ $nurtureContact ? $nurtureContact->name.($nurtureContact->company ? ' · '.$nurtureContact->company : '') : 'Contact no longer exists' }}
+                        </p>
+                        <div class="space-y-3">
+                            @foreach ($gen->output_meta['emails'] ?? [] as $email)
+                                <div class="border-l-2 border-gold-500 pl-3">
+                                    <div class="text-xs text-ink-400 font-mono">Email {{ $email['step'] ?? '' }} &middot; {{ $email['send_timing'] ?? '' }}</div>
+                                    <div class="text-sm font-medium text-ink-900">{{ $email['subject'] ?? '' }}</div>
+                                    <div class="mb-1">@include('dashboard.offers._disclosure_badge', ['text' => $email['body'] ?? ''])</div>
+                                    <div class="text-sm text-ink-900 whitespace-pre-line">{{ $offer->cloak($email['body'] ?? '', $gen->module) }}</div>
                                 </div>
                             @endforeach
                         </div>

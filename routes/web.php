@@ -5,6 +5,7 @@ use App\Http\Controllers\Dashboard\BlogController;
 use App\Http\Controllers\Dashboard\CrmController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\EarningsController;
+use App\Http\Controllers\Dashboard\EmailNurtureController;
 use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\OfferController;
@@ -76,6 +77,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/offers/{offer}/x/thread', [XController::class, 'thread'])->name('offers.x.thread');
 
     Route::post('/offers/{offer}/tiktok/video', [TikTokController::class, 'video'])->name('offers.tiktok.video');
+
+    Route::post('/offers/{offer}/nurture/generate', [EmailNurtureController::class, 'generate'])->name('offers.nurture.generate');
 
     Route::get('/crm', [CrmController::class, 'index'])->name('crm.index');
     Route::post('/crm', [CrmController::class, 'store'])->name('crm.store');

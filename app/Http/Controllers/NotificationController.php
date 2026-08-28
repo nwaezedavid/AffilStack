@@ -56,6 +56,7 @@ class NotificationController extends Controller
             'ugc_content' => 'UGC script & platform pack',
             'x_thread' => 'X thread',
             'tiktok_video' => 'TikTok video package',
+            'email_nurture' => 'email nurture sequence',
             default => 'generation',
         };
 

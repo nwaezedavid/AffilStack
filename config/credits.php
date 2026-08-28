@@ -17,5 +17,6 @@ return [
         'ugc_content' => 12,
         'x_thread' => 8,
         'tiktok_video' => 12,
+        'email_nurture' => 10,
     ],
 ];

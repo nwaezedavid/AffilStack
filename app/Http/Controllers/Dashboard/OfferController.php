@@ -52,8 +52,9 @@ class OfferController extends Controller
         $this->authorizeOwner($offer);
 
         $offer->load('generations');
+        $contacts = auth()->user()->crmContacts()->orderBy('name')->get();
 
-        return view('dashboard.offers.show', compact('offer'));
+        return view('dashboard.offers.show', compact('offer', 'contacts'));
     }
 
     public function updateDisclosure(Request $request, Offer $offer, DisclosureService $disclosure): RedirectResponse
