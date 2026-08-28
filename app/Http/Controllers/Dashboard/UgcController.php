@@ -17,7 +17,7 @@ class UgcController extends Controller
      */
     protected function run(Offer $offer, string $method, UgcService $service, ?array $context = null): RedirectResponse
     {
-        abort_unless($offer->user_id === auth()->id(), 403);
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
         if (! auth()->user()->canUseChannel('ugc')) {
             return back()->with('error', 'The UGC module isn\'t included in your current plan — upgrade to unlock it.');

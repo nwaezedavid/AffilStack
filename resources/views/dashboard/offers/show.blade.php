@@ -27,16 +27,22 @@
          is auto-inserted into this offer's generated content below. --}}
     <div class="bg-surface border border-line rounded-lg p-4 mb-6 flex items-center gap-3 flex-wrap">
         <span class="text-xs font-mono uppercase tracking-wide text-ink-400">Disclosure jurisdiction</span>
-        <form method="POST" action="{{ route('offers.disclosure.update', $offer) }}" class="flex items-center gap-2">
-            @csrf
-            @method('PATCH')
-            <select name="disclosure_country" onchange="this.form.submit()" class="rounded-md border border-line px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                @foreach (app(\App\Services\Compliance\DisclosureService::class)->countries() as $code => $label)
-                    <option value="{{ $code }}" @selected($offer->disclosure_country === $code)>{{ $label }}</option>
-                @endforeach
-            </select>
-            <noscript><button class="rounded-md border border-line text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Save</button></noscript>
-        </form>
+        @if (auth()->user()->isSeat())
+            {{-- Compliance jurisdiction is an owner-only decision — a team
+                 seat sees the current setting but can't change it. --}}
+            <span class="text-sm text-ink-900">{{ app(\App\Services\Compliance\DisclosureService::class)->countries()[$offer->disclosure_country] ?? $offer->disclosure_country }}</span>
+        @else
+            <form method="POST" action="{{ route('offers.disclosure.update', $offer) }}" class="flex items-center gap-2">
+                @csrf
+                @method('PATCH')
+                <select name="disclosure_country" onchange="this.form.submit()" class="rounded-md border border-line px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    @foreach (app(\App\Services\Compliance\DisclosureService::class)->countries() as $code => $label)
+                        <option value="{{ $code }}" @selected($offer->disclosure_country === $code)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <noscript><button class="rounded-md border border-line text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Save</button></noscript>
+            </form>
+        @endif
         <span class="text-xs text-ink-400">Content below auto-includes the right disclosure wording for this audience. Not legal advice — review before publishing.</span>
     </div>
 
@@ -195,7 +201,9 @@
 
             <div class="bg-surface border border-line rounded-lg p-5">
                 <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">Email nurture</h3>
-                @if ($contacts->isEmpty())
+                @if (auth()->user()->isSeat())
+                    <p class="text-xs text-ink-600">Not available on a team seat — CRM contacts are account-wide. Ask the account owner to generate this.</p>
+                @elseif ($contacts->isEmpty())
                     <p class="text-xs text-ink-600 mb-3">A 5-email sequence personalized to a real contact — introduces this offer without a hard pitch.</p>
                     <a href="{{ route('crm.index') }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Add a CRM contact first &rarr;</a>
                 @else
@@ -306,6 +314,8 @@
                         <div class="mb-3">
                             @if ($gen->published_at)
                                 <span class="text-xs text-ink-400 font-mono">Started {{ $gen->published_at->diffForHumans() }} — follow-up reminders are on your <a href="{{ route('calendar.index') }}" class="text-brand-600 hover:text-brand-700 underline">content calendar</a>.</span>
+                            @elseif (auth()->user()->isSeat())
+                                <span class="text-xs text-ink-600">Not started yet — ask the account owner to mark this as started.</span>
                             @else
                                 <form method="POST" action="{{ route('generations.nurture-started', $gen) }}">
                                     @csrf

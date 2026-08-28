@@ -61,7 +61,11 @@
                                     @method('PATCH')
                                     <select name="calendar_status" class="text-xs rounded border border-line px-2 py-1">
                                         @foreach (['draft', 'scheduled', 'published', 'skipped'] as $status)
-                                            <option value="{{ $status }}" @selected($entry->calendar_status === $status)>{{ ucfirst($status) }}</option>
+                                            {{-- Team seats are "draft only, no publish" (item 10) — the
+                                                 status transition is also blocked server-side. --}}
+                                            @if ($status !== 'published' || ! auth()->user()->isSeat())
+                                                <option value="{{ $status }}" @selected($entry->calendar_status === $status)>{{ ucfirst($status) }}</option>
+                                            @endif
                                         @endforeach
                                     </select>
                                     <input type="date" name="scheduled_for" value="{{ $entry->scheduled_for?->format('Y-m-d') }}" class="text-xs rounded border border-line px-2 py-1">

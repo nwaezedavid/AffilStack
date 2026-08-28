@@ -12,7 +12,7 @@ class TikTokController extends Controller
 {
     public function video(Offer $offer, TikTokService $service): RedirectResponse
     {
-        abort_unless($offer->user_id === auth()->id(), 403);
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
         if (! auth()->user()->canUseChannel('tiktok')) {
             return back()->with('error', 'The TikTok module isn\'t included in your current plan — upgrade to unlock it.');

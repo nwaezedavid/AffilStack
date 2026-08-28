@@ -13,7 +13,7 @@ class BlogController extends Controller
 {
     public function store(Request $request, Offer $offer, BlogArticleService $service): RedirectResponse
     {
-        abort_unless($offer->user_id === auth()->id(), 403);
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
         $validated = $request->validate([
             'target_keyword' => 'nullable|string|max:255',

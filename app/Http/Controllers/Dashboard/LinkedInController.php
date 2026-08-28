@@ -12,7 +12,7 @@ class LinkedInController extends Controller
 {
     protected function run(Offer $offer, string $method, LinkedInService $service): RedirectResponse
     {
-        abort_unless($offer->user_id === auth()->id(), 403);
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
         try {
             $service->queue(auth()->user(), $offer, $method);

@@ -12,12 +12,18 @@ use Illuminate\Support\Facades\DB;
  * generation module must spend through here (never touch
  * User::credits_balance directly) so the ledger is always the source of
  * truth an admin can audit against the running balance.
+ *
+ * Every method resolves $user to its billableUser() first — itself
+ * normally, or its agency owner for a team seat (item 10) — so a seat's
+ * generations are billed to (and its balance checks run against) whoever
+ * actually pays for the account, without any generation service needing to
+ * know seats exist.
  */
 class CreditManager
 {
     public function balance(User $user): int
     {
-        return $user->fresh()->credits_balance;
+        return $user->billableUser()->fresh()->credits_balance;
     }
 
     public function hasEnough(User $user, int $amount): bool
@@ -27,6 +33,8 @@ class CreditManager
 
     public function spend(User $user, int $amount, string $reason, ?Model $reference = null): CreditLedger
     {
+        $user = $user->billableUser();
+
         return DB::transaction(function () use ($user, $amount, $reason, $reference) {
             $locked = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
 
@@ -51,6 +59,8 @@ class CreditManager
 
     public function grant(User $user, int $amount, string $reason, ?Model $reference = null): CreditLedger
     {
+        $user = $user->billableUser();
+
         return DB::transaction(function () use ($user, $amount, $reason, $reference) {
             $locked = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
 

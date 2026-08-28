@@ -38,6 +38,22 @@ class Offer extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Whether $user may view/generate content for this offer — its owner,
+     * or a team seat (item 10) specifically scoped to this one offer. Every
+     * controller that used to check `$offer->user_id === auth()->id()`
+     * routes through this instead, so seats work without each of those
+     * checks needing to know seats exist.
+     */
+    public function isAccessibleBy(User $user): bool
+    {
+        if ($this->user_id === $user->id) {
+            return true;
+        }
+
+        return $user->isSeat() && $user->seat_offer_id === $this->id;
+    }
+
     public function generations(): HasMany
     {
         return $this->hasMany(Generation::class);

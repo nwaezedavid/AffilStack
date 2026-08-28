@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -23,7 +24,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code'])]
+#[Fillable(['name', 'email', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'agency_owner_id', 'seat_offer_id'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
@@ -70,11 +71,72 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
      * "youtube", "ugc", "pinterest", "google_maps"). Plans without an active
      * subscription have no channels at all — this is the enforcement point
      * for Plan::$channels, which until now was only ever displayed, never
-     * checked.
+     * checked. Resolved against billableUser() so a team seat (item 10),
+     * which has no subscription of its own, sees exactly what its owner's
+     * plan unlocks.
      */
     public function canUseChannel(string $channel): bool
     {
-        return in_array($channel, $this->activeSubscription?->plan?->channels ?? [], true);
+        return in_array($channel, $this->billableUser()->activeSubscription?->plan?->channels ?? [], true);
+    }
+
+    /**
+     * The account that owns this team seat (item 10), if this user is one —
+     * see agencyOwner()/seats() below.
+     */
+    public function agencyOwner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'agency_owner_id');
+    }
+
+    /**
+     * Every team seat created under this account.
+     */
+    public function seats(): HasMany
+    {
+        return $this->hasMany(User::class, 'agency_owner_id');
+    }
+
+    /**
+     * The single offer a team seat is scoped to — null for a normal
+     * (non-seat) account.
+     */
+    public function seatOffer(): BelongsTo
+    {
+        return $this->belongsTo(Offer::class, 'seat_offer_id');
+    }
+
+    public function isSeat(): bool
+    {
+        return $this->agency_owner_id !== null;
+    }
+
+    /**
+     * The account that actually pays for this user's actions — itself
+     * normally, or its agency owner for a team seat. Single choke point:
+     * CreditManager, canUseChannel(), and the credits balance shown in the
+     * dashboard sidebar all resolve through this, so a seat never needs its
+     * own subscription or credit balance to work correctly, and none of the
+     * existing generation services needed to change to support seats at all.
+     */
+    public function billableUser(): User
+    {
+        return $this->agencyOwner ?? $this;
+    }
+
+    /**
+     * How many total seats (including the owner's own) the account's
+     * current plan includes — Plan::team_seats, unused until this feature.
+     * No active subscription means solo (1): just the owner, no seats.
+     */
+    public function maxAgencySeats(): int
+    {
+        return $this->activeSubscription?->plan?->team_seats ?? 1;
+    }
+
+    public function agencySeatsRemaining(): int
+    {
+        return max(0, $this->maxAgencySeats() - 1 - $this->seats()->count());
     }
 
     public function offers(): HasMany

@@ -15,7 +15,7 @@ class LocalizationController extends Controller
 {
     public function store(Request $request, Generation $generation, LocalizationService $service): RedirectResponse
     {
-        abort_unless($generation->user_id === auth()->id(), 403);
+        abort_unless($generation->isAccessibleBy(auth()->user()), 403);
 
         $validated = $request->validate([
             'target_market' => ['required', Rule::in(array_keys(config('localization.markets')))],

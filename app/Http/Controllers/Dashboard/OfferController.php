@@ -49,7 +49,7 @@ class OfferController extends Controller
 
     public function show(Offer $offer): View
     {
-        $this->authorizeOwner($offer);
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
         $offer->load('generations');
         $contacts = auth()->user()->crmContacts()->orderBy('name')->get();

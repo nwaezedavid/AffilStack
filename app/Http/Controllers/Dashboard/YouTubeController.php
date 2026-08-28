@@ -13,7 +13,7 @@ class YouTubeController extends Controller
 {
     protected function run(Offer $offer, string $method, YouTubeService $service): RedirectResponse
     {
-        abort_unless($offer->user_id === auth()->id(), 403);
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
         if (! auth()->user()->canUseChannel('youtube')) {
             return back()->with('error', 'The YouTube module isn\'t included in your current plan — upgrade to unlock it.');

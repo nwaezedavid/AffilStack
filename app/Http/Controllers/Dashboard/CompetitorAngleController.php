@@ -12,7 +12,7 @@ class CompetitorAngleController extends Controller
 {
     public function scan(Offer $offer, CompetitorAngleService $service): RedirectResponse
     {
-        abort_unless($offer->user_id === auth()->id(), 403);
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
         try {
             $service->queue(auth()->user(), $offer);

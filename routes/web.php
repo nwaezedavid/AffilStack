@@ -16,6 +16,7 @@ use App\Http\Controllers\Dashboard\ReferralController as DashboardReferralContro
 use App\Http\Controllers\Dashboard\SupportChatController;
 use App\Http\Controllers\Dashboard\SupportTicketController;
 use App\Http\Controllers\Dashboard\SwipeFileController;
+use App\Http\Controllers\Dashboard\TeamController;
 use App\Http\Controllers\Dashboard\TikTokController;
 use App\Http\Controllers\Dashboard\UgcController;
 use App\Http\Controllers\Dashboard\XController;
@@ -52,7 +53,7 @@ Route::get('/get-started/{plan}', [RegistrationController::class, 'showForm'])->
 Route::post('/get-started/{plan}', [RegistrationController::class, 'store'])->name('registration.store');
 Route::get('/get-started/callback', [RegistrationController::class, 'callback'])->name('registration.callback');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
@@ -109,6 +110,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/calendar/{generation}', [ContentCalendarController::class, 'update'])->name('calendar.update');
 
     Route::get('/swipe-files', [SwipeFileController::class, 'index'])->name('swipe-files.index');
+
+    Route::get('/team', [TeamController::class, 'index'])->name('team.index');
+    Route::post('/team', [TeamController::class, 'store'])->name('team.store');
+    Route::delete('/team/{seat}', [TeamController::class, 'destroy'])->name('team.destroy');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
 

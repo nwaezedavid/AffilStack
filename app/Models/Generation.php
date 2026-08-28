@@ -66,4 +66,20 @@ class Generation extends Model
     {
         return $this->hasMany(Generation::class, 'localized_from_id');
     }
+
+    /**
+     * Whether $user may view/act on this generation — its creator, or
+     * anyone with access to its offer (a team seat scoped to that one
+     * offer, or the offer's owner touching a seat's work). Routes through
+     * Offer::isAccessibleBy() rather than a raw user_id check so a seat and
+     * its owner can both work with content on their shared offer.
+     */
+    public function isAccessibleBy(User $user): bool
+    {
+        if ($this->user_id === $user->id) {
+            return true;
+        }
+
+        return $this->offer !== null && $this->offer->isAccessibleBy($user);
+    }
 }

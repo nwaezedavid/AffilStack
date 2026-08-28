@@ -12,7 +12,7 @@ class XController extends Controller
 {
     public function thread(Offer $offer, XService $service): RedirectResponse
     {
-        abort_unless($offer->user_id === auth()->id(), 403);
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
         if (! auth()->user()->canUseChannel('x')) {
             return back()->with('error', 'The X module isn\'t included in your current plan — upgrade to unlock it.');

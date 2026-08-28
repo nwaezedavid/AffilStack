@@ -20,21 +20,33 @@
 
             <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
                 @php
-                    $items = [
-                        ['name' => 'dashboard', 'match' => 'dashboard', 'label' => 'Overview', 'icon' => '🏠'],
-                        ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'Offer Research', 'icon' => '🔎'],
-                        ['name' => 'crm.index', 'match' => 'crm.*', 'label' => 'CRM Contacts', 'icon' => '📇'],
-                        ['name' => 'calendar.index', 'match' => 'calendar.*', 'label' => 'Content Calendar', 'icon' => '📅'],
-                        ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => '🗂️'],
-                        ['name' => 'links.index', 'match' => 'links.*', 'label' => 'Links & Clicks', 'icon' => '🔗'],
-                        ['name' => 'earnings.index', 'match' => 'earnings.*', 'label' => 'Earnings', 'icon' => '💰'],
-                        ['name' => 'referrals.index', 'match' => 'referrals.index', 'label' => 'Referrals', 'icon' => '🤝'],
-                        ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => '💬'],
-                        ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => '💳'],
-                    ];
+                    // A team seat (item 10) is scoped to one offer and has
+                    // no billing/CRM/earnings/referrals/support of its own —
+                    // see config('agency.seat_allowed_routes'), enforced by
+                    // RestrictAgencySeats. The nav mirrors that scope so a
+                    // seat never sees a link that would just 403.
+                    $items = auth()->user()->isSeat()
+                        ? [
+                            ['name' => 'offers.show', 'params' => [auth()->user()->seat_offer_id], 'match' => 'offers.*', 'label' => 'My Product', 'icon' => '🔎'],
+                            ['name' => 'calendar.index', 'match' => 'calendar.*', 'label' => 'Content Calendar', 'icon' => '📅'],
+                            ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => '🗂️'],
+                        ]
+                        : [
+                            ['name' => 'dashboard', 'match' => 'dashboard', 'label' => 'Overview', 'icon' => '🏠'],
+                            ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'Offer Research', 'icon' => '🔎'],
+                            ['name' => 'crm.index', 'match' => 'crm.*', 'label' => 'CRM Contacts', 'icon' => '📇'],
+                            ['name' => 'calendar.index', 'match' => 'calendar.*', 'label' => 'Content Calendar', 'icon' => '📅'],
+                            ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => '🗂️'],
+                            ['name' => 'links.index', 'match' => 'links.*', 'label' => 'Links & Clicks', 'icon' => '🔗'],
+                            ['name' => 'earnings.index', 'match' => 'earnings.*', 'label' => 'Earnings', 'icon' => '💰'],
+                            ['name' => 'referrals.index', 'match' => 'referrals.index', 'label' => 'Referrals', 'icon' => '🤝'],
+                            ['name' => 'team.index', 'match' => 'team.*', 'label' => 'Team', 'icon' => '👥'],
+                            ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => '💬'],
+                            ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => '💳'],
+                        ];
                 @endphp
                 @foreach ($items as $item)
-                    <a href="{{ route($item['name']) }}"
+                    <a href="{{ route($item['name'], $item['params'] ?? []) }}"
                        class="flex items-center gap-3 rounded-md px-3 py-2 transition {{ request()->routeIs($item['match']) ? 'bg-white/10 text-white' : 'text-navy-100/80 hover:bg-white/5 hover:text-white' }}">
                         <span aria-hidden="true">{{ $item['icon'] }}</span>
                         <span>{{ $item['label'] }}</span>
@@ -45,8 +57,8 @@
             <div class="px-3 py-4 border-t border-white/10 space-y-3">
                 <div class="rounded-md bg-white/5 px-3 py-2.5 text-xs">
                     <div class="flex items-center justify-between text-navy-100/70">
-                        <span>Credits</span>
-                        <span class="font-mono text-gold-400 font-semibold">{{ number_format(auth()->user()->credits_balance) }}</span>
+                        <span>Credits{{ auth()->user()->isSeat() ? ' (team)' : '' }}</span>
+                        <span class="font-mono text-gold-400 font-semibold">{{ number_format(auth()->user()->billableUser()->credits_balance) }}</span>
                     </div>
                 </div>
                 <a href="{{ route('profile') }}" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-navy-100/80 hover:bg-white/5 hover:text-white">
