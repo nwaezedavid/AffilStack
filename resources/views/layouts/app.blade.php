@@ -35,6 +35,7 @@
                             ['name' => 'dashboard', 'match' => 'dashboard', 'label' => 'Overview', 'icon' => '🏠'],
                             ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'Offer Research', 'icon' => '🔎'],
                             ['name' => 'crm.index', 'match' => 'crm.*', 'label' => 'CRM Contacts', 'icon' => '📇'],
+                            ['name' => 'leads.index', 'match' => 'leads.*', 'label' => 'Local Leads', 'icon' => '📍'],
                             ['name' => 'calendar.index', 'match' => 'calendar.*', 'label' => 'Content Calendar', 'icon' => '📅'],
                             ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => '🗂️'],
                             ['name' => 'links.index', 'match' => 'links.*', 'label' => 'Links & Clicks', 'icon' => '🔗'],

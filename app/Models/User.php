@@ -154,6 +154,22 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return $this->hasMany(CrmContact::class);
     }
 
+    /**
+     * Plan::contact_limit is 0 for "unlimited" (Pro/Agency) — the same
+     * convention the pricing and billing pages already display, just never
+     * enforced until the Google Maps lead finder made bulk imports possible.
+     */
+    public function crmContactLimitReached(): bool
+    {
+        $limit = $this->activeSubscription?->plan?->contact_limit ?? 0;
+
+        if ($limit === 0) {
+            return false;
+        }
+
+        return $this->crmContacts()->count() >= $limit;
+    }
+
     public function apiTokens(): HasMany
     {
         return $this->hasMany(ApiToken::class);

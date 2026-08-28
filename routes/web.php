@@ -9,6 +9,7 @@ use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\EarningsController;
 use App\Http\Controllers\Dashboard\EmailNurtureController;
 use App\Http\Controllers\Dashboard\ExtensionController;
+use App\Http\Controllers\Dashboard\LeadFinderController;
 use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\LocalizationController;
@@ -98,6 +99,10 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
     Route::patch('/crm/{contact}', [CrmController::class, 'update'])->name('crm.update');
     Route::delete('/crm/{contact}', [CrmController::class, 'destroy'])->name('crm.destroy');
     Route::get('/crm-export', [CrmController::class, 'export'])->name('crm.export');
+
+    Route::get('/leads', [LeadFinderController::class, 'index'])->name('leads.index');
+    Route::post('/leads/search', [LeadFinderController::class, 'search'])->name('leads.search');
+    Route::post('/leads/import', [LeadFinderController::class, 'import'])->name('leads.import');
 
     Route::get('/links', [DashboardLinkController::class, 'index'])->name('links.index');
     Route::get('/links/{trackedLink}', [DashboardLinkController::class, 'show'])->name('links.show');

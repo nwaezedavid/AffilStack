@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="flex items-center justify-between mb-5">
-        <p class="text-sm text-ink-600 max-w-lg">Every lead you save here — manually today, from Google Maps in a future update — lives in one exportable list.</p>
+        <p class="text-sm text-ink-600 max-w-lg">Every lead you save here — manually, or via <a href="{{ route('leads.index') }}" class="text-brand-600 hover:text-brand-700 underline">Local Leads</a> from Google Maps — lives in one exportable list.</p>
         <a href="{{ route('crm.export') }}" class="text-sm rounded-md border border-line px-3 py-1.5 hover:bg-surface-muted transition whitespace-nowrap">Export CSV</a>
     </div>
 
