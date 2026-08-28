@@ -20,6 +20,10 @@ class CrmController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if (auth()->user()->crmContactLimitReached()) {
+            return back()->with('error', 'You\'ve reached your plan\'s CRM contact limit. Upgrade to add more.');
+        }
+
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
             'company' => 'nullable|string|max:255',
