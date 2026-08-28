@@ -58,6 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/offers/create', [OfferController::class, 'create'])->name('offers.create');
     Route::post('/offers', [OfferController::class, 'store'])->name('offers.store');
     Route::get('/offers/{offer}', [OfferController::class, 'show'])->name('offers.show');
+    Route::patch('/offers/{offer}/disclosure', [OfferController::class, 'updateDisclosure'])->name('offers.disclosure.update');
 
     Route::post('/offers/{offer}/blog-article', [BlogController::class, 'store'])->name('offers.blog.store');
 

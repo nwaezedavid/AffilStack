@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Offer;
+use App\Services\Compliance\DisclosureService;
 use App\Services\Credits\InsufficientCreditsException;
 use App\Services\Modules\OfferResearchService;
 use Illuminate\Http\RedirectResponse;
@@ -53,6 +54,19 @@ class OfferController extends Controller
         $offer->load('generations');
 
         return view('dashboard.offers.show', compact('offer'));
+    }
+
+    public function updateDisclosure(Request $request, Offer $offer, DisclosureService $disclosure): RedirectResponse
+    {
+        $this->authorizeOwner($offer);
+
+        $validated = $request->validate([
+            'disclosure_country' => 'required|string|in:'.implode(',', array_keys($disclosure->countries())),
+        ]);
+
+        $offer->update($validated);
+
+        return back()->with('success', 'Disclosure jurisdiction updated — it applies to this offer\'s content from now on.');
     }
 
     protected function authorizeOwner(Offer $offer): void

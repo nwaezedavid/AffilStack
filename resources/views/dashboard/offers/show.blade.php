@@ -23,6 +23,23 @@
         </div>
     </div>
 
+    {{-- Disclosure jurisdiction — governs which affiliate-disclosure wording
+         is auto-inserted into this offer's generated content below. --}}
+    <div class="bg-surface border border-line rounded-lg p-4 mb-6 flex items-center gap-3 flex-wrap">
+        <span class="text-xs font-mono uppercase tracking-wide text-ink-400">Disclosure jurisdiction</span>
+        <form method="POST" action="{{ route('offers.disclosure.update', $offer) }}" class="flex items-center gap-2">
+            @csrf
+            @method('PATCH')
+            <select name="disclosure_country" onchange="this.form.submit()" class="rounded-md border border-line px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                @foreach (app(\App\Services\Compliance\DisclosureService::class)->countries() as $code => $label)
+                    <option value="{{ $code }}" @selected($offer->disclosure_country === $code)>{{ $label }}</option>
+                @endforeach
+            </select>
+            <noscript><button class="rounded-md border border-line text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Save</button></noscript>
+        </form>
+        <span class="text-xs text-ink-400">Content below auto-includes the right disclosure wording for this audience. Not legal advice — review before publishing.</span>
+    </div>
+
     @if ($offer->status === 'ready')
         {{-- Research summary --}}
         <div class="bg-surface border border-line rounded-lg p-6 mb-8">
@@ -195,6 +212,7 @@
                     @elseif ($gen->module === 'blog_article')
                         <p class="font-medium text-ink-900 mb-1">{{ $gen->output_meta['title'] ?? '' }}</p>
                         <p class="text-xs text-ink-600 mb-3">{{ $gen->output_meta['meta_description'] ?? '' }}</p>
+                        <div class="mb-2">@include('dashboard.offers._disclosure_badge', ['text' => $gen->output])</div>
                         <details>
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full article</summary>
                             <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output, $gen->module) }}</pre>
@@ -226,11 +244,13 @@
                             @endforeach
                         </div>
                     @elseif ($gen->module === 'linkedin_post')
+                        <div class="mb-2">@include('dashboard.offers._disclosure_badge', ['text' => $gen->output_meta['post_text'] ?? ''])</div>
                         <p class="text-sm text-ink-900 whitespace-pre-line mb-3">{{ $offer->cloak($gen->output_meta['post_text'] ?? '', $gen->module) }}</p>
                         <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Image prompt: </span>{{ $gen->output_meta['image_prompt'] ?? '' }}</div>
                         <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Best time: </span>{{ $gen->output_meta['best_posting_time'] ?? '' }}</div>
                     @elseif ($gen->module === 'linkedin_article')
                         <p class="font-medium text-ink-900 mb-2">{{ $gen->output_meta['headline'] ?? '' }}</p>
+                        <div class="mb-2">@include('dashboard.offers._disclosure_badge', ['text' => $gen->output_meta['article_markdown'] ?? ''])</div>
                         <details>
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full article</summary>
                             <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['article_markdown'] ?? '', $gen->module) }}</pre>
@@ -240,7 +260,7 @@
                         <p class="text-xs text-ink-600 mb-3">~{{ $gen->output_meta['estimated_length_minutes'] ?? '?' }} min · {{ $gen->output_meta['hook'] ?? '' }}</p>
                         <details>
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full script</summary>
-                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['script_markdown'] ?? '', $gen->module) }}</pre>
+                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['script_markdown'] ?? '', $gen->module, withDisclosure: false) }}</pre>
                             @if (!empty($gen->output_meta['b_roll_suggestions']))
                                 <div class="text-xs uppercase text-ink-400 font-mono mt-3 mb-1">B-roll ideas</div>
                                 <ul class="list-disc list-inside text-sm text-ink-900 space-y-0.5">
@@ -257,6 +277,7 @@
                                 <li>{{ $title }}</li>
                             @endforeach
                         </ul>
+                        <div class="mb-2">@include('dashboard.offers._disclosure_badge', ['text' => $gen->output_meta['description'] ?? ''])</div>
                         <details class="mb-3">
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View description</summary>
                             <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['description'] ?? '', $gen->module) }}</pre>
@@ -308,11 +329,14 @@
                                 @endforeach
                             </ul>
                         </details>
+                        <div class="mb-2">@include('dashboard.offers._disclosure_badge', ['text' => $gen->output_meta['thread'][0]['text'] ?? ''])</div>
                         <div class="space-y-2 mb-3">
                             @foreach ($gen->output_meta['thread'] ?? [] as $tweet)
                                 <div class="border-l-2 border-gold-500 pl-3">
                                     <div class="text-xs text-ink-400 font-mono">Tweet {{ $tweet['position'] ?? '' }}</div>
-                                    <div class="text-sm text-ink-900 whitespace-pre-line">{{ $offer->cloak($tweet['text'] ?? '', $gen->module) }}</div>
+                                    {{-- Disclosure goes on the first tweet only — FTC-style guidance
+                                         wants it "above the fold", not repeated (or missed) down a thread. --}}
+                                    <div class="text-sm text-ink-900 whitespace-pre-line">{{ $offer->cloak($tweet['text'] ?? '', $gen->module, withDisclosure: $loop->first) }}</div>
                                 </div>
                             @endforeach
                         </div>
@@ -320,7 +344,7 @@
                     @elseif ($gen->module === 'tiktok_video')
                         <details class="mb-3">
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full script</summary>
-                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['script'] ?? '', $gen->module) }}</pre>
+                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['script'] ?? '', $gen->module, withDisclosure: false) }}</pre>
                         </details>
                         @if (!empty($gen->output_meta['on_screen_text']))
                             <div class="text-xs uppercase text-ink-400 font-mono mb-1">On-screen text</div>
@@ -330,12 +354,13 @@
                                 @endforeach
                             </ul>
                         @endif
+                        <div class="mb-2">@include('dashboard.offers._disclosure_badge', ['text' => $gen->output_meta['caption'] ?? ''])</div>
                         <p class="text-sm text-ink-900 whitespace-pre-line mb-2">{{ $offer->cloak($gen->output_meta['caption'] ?? '', $gen->module) }}</p>
                         <div class="text-xs text-ink-600">{{ implode(', ', $gen->output_meta['hashtags'] ?? []) }}</div>
                     @elseif ($gen->module === 'ugc_content')
                         <details class="mb-3">
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full script</summary>
-                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['script'] ?? '', $gen->module) }}</pre>
+                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['script'] ?? '', $gen->module, withDisclosure: false) }}</pre>
                         </details>
                         @if (!empty($gen->output_meta['on_screen_text_ideas']))
                             <div class="text-xs uppercase text-ink-400 font-mono mb-1">On-screen text ideas</div>
@@ -350,6 +375,7 @@
                                 <div class="border-l-2 border-gold-500 pl-3">
                                     <div class="text-sm font-medium text-ink-900">{{ $platform['platform'] ?? '' }}</div>
                                     <div class="text-sm text-ink-900">{{ $platform['title'] ?? '' }}</div>
+                                    <div class="mb-1">@include('dashboard.offers._disclosure_badge', ['text' => $platform['caption'] ?? ''])</div>
                                     <div class="text-sm text-ink-900 whitespace-pre-line">{{ $offer->cloak($platform['caption'] ?? '', $gen->module) }}</div>
                                     <div class="text-xs text-ink-600">{{ implode(', ', $platform['tags'] ?? []) }}</div>
                                     <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Tip: </span>{{ $platform['posting_tip'] ?? '' }}</div>
