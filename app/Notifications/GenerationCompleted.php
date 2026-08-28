@@ -83,6 +83,8 @@ class GenerationCompleted extends Notification
             'linkedin_article' => 'LinkedIn article',
             'youtube_script' => 'YouTube video script',
             'youtube_metadata' => 'YouTube video metadata',
+            'ugc_angles' => 'UGC angle ideas',
+            'ugc_content' => 'UGC script & platform pack',
             default => 'generation',
         };
     }

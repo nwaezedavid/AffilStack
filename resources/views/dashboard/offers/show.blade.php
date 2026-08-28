@@ -124,6 +124,20 @@
                     <a href="{{ route('billing.index') }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Upgrade to unlock the YouTube module &rarr;</a>
                 @endif
             </div>
+
+            <div class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">UGC</h3>
+                @if (auth()->user()->canUseChannel('ugc'))
+                    <p class="text-xs text-ink-600 mb-3">Get angle ideas, pick one below, then get a script plus a per-platform posting pack.</p>
+                    <form method="POST" action="{{ route('offers.ugc.angles', $offer) }}">
+                        @csrf
+                        <button class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Suggest UGC angles ({{ config('credits.costs.ugc_angles') }})</button>
+                    </form>
+                @else
+                    <p class="text-xs text-ink-600 mb-3">Not included in your current plan.</p>
+                    <a href="{{ route('billing.index') }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Upgrade to unlock the UGC module &rarr;</a>
+                @endif
+            </div>
         </div>
     @elseif ($offer->status === 'queued')
         <div class="bg-surface border border-dashed border-line rounded-lg p-8 text-center text-sm text-ink-600 mb-8">
@@ -231,6 +245,56 @@
                         </div>
                         <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Category: </span>{{ $gen->output_meta['category'] ?? '' }}</div>
                         <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Thumbnail prompt: </span>{{ $gen->output_meta['thumbnail_prompt'] ?? '' }}</div>
+                    @elseif ($gen->module === 'ugc_angles')
+                        <div class="space-y-3">
+                            @foreach ($gen->output_meta['angles'] ?? [] as $index => $angle)
+                                @php
+                                    $alreadyGenerated = $offer->generations->contains(fn ($g) => $g->module === 'ugc_content'
+                                        && ($g->input['angles_generation_id'] ?? null) === $gen->id
+                                        && ($g->input['angle_index'] ?? null) === $index);
+                                @endphp
+                                <div class="border-l-2 border-gold-500 pl-3 flex items-start justify-between gap-3">
+                                    <div>
+                                        <div class="text-sm font-medium text-ink-900">{{ $angle['name'] ?? '' }} <span class="text-xs font-mono text-ink-400">&middot; {{ $angle['format'] ?? '' }}</span></div>
+                                        <div class="text-sm text-ink-900">{{ $angle['hook_idea'] ?? '' }}</div>
+                                        <div class="text-xs text-ink-600">{{ $angle['why_it_works'] ?? '' }}</div>
+                                    </div>
+                                    <form method="POST" action="{{ route('offers.ugc.content', $offer) }}" class="shrink-0">
+                                        @csrf
+                                        <input type="hidden" name="angles_generation_id" value="{{ $gen->id }}">
+                                        <input type="hidden" name="angle_index" value="{{ $index }}">
+                                        <button
+                                            @if ($alreadyGenerated) disabled title="Already generated for this angle" @endif
+                                            class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 whitespace-nowrap hover:bg-surface-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >{{ $alreadyGenerated ? 'Generated' : 'Generate this angle ('.config('credits.costs.ugc_content').')' }}</button>
+                                    </form>
+                                </div>
+                            @endforeach
+                        </div>
+                    @elseif ($gen->module === 'ugc_content')
+                        <details class="mb-3">
+                            <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full script</summary>
+                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $gen->output_meta['script'] ?? '' }}</pre>
+                        </details>
+                        @if (!empty($gen->output_meta['on_screen_text_ideas']))
+                            <div class="text-xs uppercase text-ink-400 font-mono mb-1">On-screen text ideas</div>
+                            <ul class="list-disc list-inside text-sm text-ink-900 mb-3 space-y-0.5">
+                                @foreach ($gen->output_meta['on_screen_text_ideas'] as $idea)
+                                    <li>{{ $idea }}</li>
+                                @endforeach
+                            </ul>
+                        @endif
+                        <div class="space-y-3">
+                            @foreach ($gen->output_meta['platforms'] ?? [] as $platform)
+                                <div class="border-l-2 border-gold-500 pl-3">
+                                    <div class="text-sm font-medium text-ink-900">{{ $platform['platform'] ?? '' }}</div>
+                                    <div class="text-sm text-ink-900">{{ $platform['title'] ?? '' }}</div>
+                                    <div class="text-sm text-ink-900 whitespace-pre-line">{{ $platform['caption'] ?? '' }}</div>
+                                    <div class="text-xs text-ink-600">{{ implode(', ', $platform['tags'] ?? []) }}</div>
+                                    <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Tip: </span>{{ $platform['posting_tip'] ?? '' }}</div>
+                                </div>
+                            @endforeach
+                        </div>
                     @endif
                 </div>
             @endforeach

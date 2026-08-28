@@ -13,5 +13,7 @@ return [
         'linkedin_article' => 12,
         'youtube_script' => 15,
         'youtube_metadata' => 10,
+        'ugc_angles' => 6,
+        'ugc_content' => 12,
     ],
 ];

@@ -8,6 +8,7 @@ use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\OfferController;
 use App\Http\Controllers\Dashboard\SupportChatController;
 use App\Http\Controllers\Dashboard\SupportTicketController;
+use App\Http\Controllers\Dashboard\UgcController;
 use App\Http\Controllers\Dashboard\YouTubeController;
 use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\HelpController;
@@ -52,6 +53,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/offers/{offer}/youtube/script', [YouTubeController::class, 'script'])->name('offers.youtube.script');
     Route::post('/offers/{offer}/youtube/metadata', [YouTubeController::class, 'metadata'])->name('offers.youtube.metadata');
+
+    Route::post('/offers/{offer}/ugc/angles', [UgcController::class, 'angles'])->name('offers.ugc.angles');
+    Route::post('/offers/{offer}/ugc/content', [UgcController::class, 'content'])->name('offers.ugc.content');
 
     Route::get('/crm', [CrmController::class, 'index'])->name('crm.index');
     Route::post('/crm', [CrmController::class, 'store'])->name('crm.store');
