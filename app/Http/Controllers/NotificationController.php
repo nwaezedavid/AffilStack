@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class NotificationController extends Controller
+{
+    /**
+     * Polled by the bell dropdown in layouts.app every ~20s. Keeps things
+     * simple (no websockets/broadcasting infra to run on a Hostinger VPS)
+     * while still surfacing a finished background task without a full
+     * page reload.
+     */
+    public function poll(Request $request): JsonResponse
+    {
+        $notifications = $request->user()->notifications()->latest()->limit(15)->get();
+
+        return response()->json([
+            'unread_count' => $request->user()->unreadNotifications()->count(),
+            'items' => $notifications->map(fn ($n) => [
+                'id' => $n->id,
+                'read_at' => $n->read_at,
+                'success' => (bool) ($n->data['success'] ?? true),
+                'message' => $this->messageFor($n->data),
+                'url' => $n->data['url'] ?? '#',
+                'created_at' => $n->created_at->diffForHumans(),
+            ]),
+        ]);
+    }
+
+    public function readAll(Request $request): JsonResponse
+    {
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function messageFor(array $data): string
+    {
+        $title = $data['title'] ?? 'Your generation';
+        $moduleLabel = match ($data['module'] ?? null) {
+            'research' => 'offer research',
+            'blog_article' => 'blog article',
+            'linkedin_keywords' => 'LinkedIn keyword research',
+            'linkedin_dm_sequence' => 'LinkedIn DM sequence',
+            'linkedin_post' => 'LinkedIn post',
+            'linkedin_article' => 'LinkedIn article',
+            'youtube_script' => 'YouTube video script',
+            'youtube_metadata' => 'YouTube video metadata',
+            default => 'generation',
+        };
+
+        return ($data['success'] ?? true)
+            ? "\"{$title}\" — {$moduleLabel} is ready"
+            : "\"{$title}\" — {$moduleLabel} failed";
+    }
+}

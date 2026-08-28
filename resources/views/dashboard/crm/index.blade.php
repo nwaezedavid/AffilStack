@@ -1,0 +1,79 @@
+@extends('layouts.app')
+
+@section('title', 'CRM Contacts')
+
+@section('content')
+    <div class="flex items-center justify-between mb-5">
+        <p class="text-sm text-ink-600 max-w-lg">Every lead you save here — manually today, from Google Maps in a future update — lives in one exportable list.</p>
+        <a href="{{ route('crm.export') }}" class="text-sm rounded-md border border-line px-3 py-1.5 hover:bg-surface-muted transition whitespace-nowrap">Export CSV</a>
+    </div>
+
+    <details class="bg-surface border border-line rounded-lg p-5 mb-6">
+        <summary class="cursor-pointer text-sm font-medium text-ink-900">+ Add a contact manually</summary>
+        <form method="POST" action="{{ route('crm.store') }}" class="grid sm:grid-cols-2 gap-3 mt-4">
+            @csrf
+            <input name="name" placeholder="Name" class="rounded-md border border-line px-3 py-2 text-sm">
+            <input name="company" placeholder="Company" class="rounded-md border border-line px-3 py-2 text-sm">
+            <input name="title" placeholder="Title" class="rounded-md border border-line px-3 py-2 text-sm">
+            <input name="email" type="email" placeholder="Email" class="rounded-md border border-line px-3 py-2 text-sm">
+            <input name="phone" placeholder="Phone" class="rounded-md border border-line px-3 py-2 text-sm">
+            <input name="website" type="url" placeholder="Website" class="rounded-md border border-line px-3 py-2 text-sm">
+            <input name="location" placeholder="Location" class="rounded-md border border-line px-3 py-2 text-sm sm:col-span-2">
+            <textarea name="notes" placeholder="Notes" rows="2" class="rounded-md border border-line px-3 py-2 text-sm sm:col-span-2"></textarea>
+            <button class="sm:col-span-2 rounded-md bg-navy-900 text-white text-sm py-2 hover:bg-navy-800 transition">Save contact</button>
+        </form>
+    </details>
+
+    @if ($contacts->isEmpty())
+        <div class="bg-surface border border-dashed border-line rounded-lg p-8 text-center text-sm text-ink-600">
+            No contacts saved yet.
+        </div>
+    @else
+        <div class="bg-surface border border-line rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
+                    <tr>
+                        <th class="text-left px-4 py-2.5">Name</th>
+                        <th class="text-left px-4 py-2.5">Company</th>
+                        <th class="text-left px-4 py-2.5">Contact</th>
+                        <th class="text-left px-4 py-2.5">Source</th>
+                        <th class="text-left px-4 py-2.5">Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    @foreach ($contacts as $contact)
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-ink-900">{{ $contact->name ?: '—' }}</div>
+                                <div class="text-xs text-ink-600">{{ $contact->title }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-ink-900">{{ $contact->company ?: '—' }}</td>
+                            <td class="px-4 py-3 text-ink-600 text-xs">
+                                {{ $contact->email }}<br>{{ $contact->phone }}
+                            </td>
+                            <td class="px-4 py-3 text-ink-600 capitalize">{{ str_replace('_', ' ', $contact->source) }}</td>
+                            <td class="px-4 py-3">
+                                <form method="POST" action="{{ route('crm.update', $contact) }}">
+                                    @csrf @method('PATCH')
+                                    <select name="status" onchange="this.form.submit()" class="text-xs rounded border border-line px-2 py-1">
+                                        @foreach (['new', 'contacted', 'qualified', 'customer', 'unqualified'] as $status)
+                                            <option value="{{ $status }}" @selected($contact->status === $status)>{{ ucfirst($status) }}</option>
+                                        @endforeach
+                                    </select>
+                                </form>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <form method="POST" action="{{ route('crm.destroy', $contact) }}" onsubmit="return confirm('Remove this contact?')">
+                                    @csrf @method('DELETE')
+                                    <button class="text-xs text-red-600 hover:text-red-700">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-4">{{ $contacts->links() }}</div>
+    @endif
+@endsection

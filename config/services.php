@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'flutterwave' => [
+        'base_url' => env('FLUTTERWAVE_BASE_URL', 'https://api.flutterwave.com/v3'),
+        'public_key' => env('FLUTTERWAVE_PUBLIC_KEY'),
+        'secret_key' => env('FLUTTERWAVE_SECRET_KEY'),
+        // Set in the Flutterwave dashboard under Settings > Webhooks — NOT your API secret key.
+        'secret_hash' => env('FLUTTERWAVE_SECRET_HASH'),
+    ],
+
+    'google_places' => [
+        'api_key' => env('GOOGLE_PLACES_API_KEY'),
+    ],
+
 ];

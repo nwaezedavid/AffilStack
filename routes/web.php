@@ -1,7 +1,81 @@
 <?php
 
+use App\Http\Controllers\BillingController;
+use App\Http\Controllers\Dashboard\BlogController;
+use App\Http\Controllers\Dashboard\CrmController;
+use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Dashboard\LinkedInController;
+use App\Http\Controllers\Dashboard\OfferController;
+use App\Http\Controllers\Dashboard\SupportChatController;
+use App\Http\Controllers\Dashboard\SupportTicketController;
+use App\Http\Controllers\Dashboard\YouTubeController;
+use App\Http\Controllers\FlutterwaveWebhookController;
+use App\Http\Controllers\HelpController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\SeoController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::view('/', 'marketing.home')->name('home');
+Route::get('/help', [HelpController::class, 'index'])->name('help.index');
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+
+Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->name('webhooks.flutterwave');
+
+// The only door into an account: pick a plan, pay, get created. No open
+// registration exists anywhere in this app — see RegistrationController.
+Route::get('/pricing', [RegistrationController::class, 'pricing'])->name('registration.pricing');
+Route::get('/get-started/{plan}', [RegistrationController::class, 'showForm'])->name('registration.form');
+Route::post('/get-started/{plan}', [RegistrationController::class, 'store'])->name('registration.store');
+Route::get('/get-started/callback', [RegistrationController::class, 'callback'])->name('registration.callback');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
+    Route::post('/billing/checkout/{plan}', [BillingController::class, 'checkout'])->name('billing.checkout');
+    Route::get('/billing/callback', [BillingController::class, 'callback'])->name('billing.callback');
+
+    Route::get('/offers', [OfferController::class, 'index'])->name('offers.index');
+    Route::get('/offers/create', [OfferController::class, 'create'])->name('offers.create');
+    Route::post('/offers', [OfferController::class, 'store'])->name('offers.store');
+    Route::get('/offers/{offer}', [OfferController::class, 'show'])->name('offers.show');
+
+    Route::post('/offers/{offer}/blog-article', [BlogController::class, 'store'])->name('offers.blog.store');
+
+    Route::post('/offers/{offer}/linkedin/keywords', [LinkedInController::class, 'keywords'])->name('offers.linkedin.keywords');
+    Route::post('/offers/{offer}/linkedin/dm-sequence', [LinkedInController::class, 'dmSequence'])->name('offers.linkedin.dm');
+    Route::post('/offers/{offer}/linkedin/post', [LinkedInController::class, 'post'])->name('offers.linkedin.post');
+    Route::post('/offers/{offer}/linkedin/article', [LinkedInController::class, 'article'])->name('offers.linkedin.article');
+
+    Route::post('/offers/{offer}/youtube/script', [YouTubeController::class, 'script'])->name('offers.youtube.script');
+    Route::post('/offers/{offer}/youtube/metadata', [YouTubeController::class, 'metadata'])->name('offers.youtube.metadata');
+
+    Route::get('/crm', [CrmController::class, 'index'])->name('crm.index');
+    Route::post('/crm', [CrmController::class, 'store'])->name('crm.store');
+    Route::patch('/crm/{contact}', [CrmController::class, 'update'])->name('crm.update');
+    Route::delete('/crm/{contact}', [CrmController::class, 'destroy'])->name('crm.destroy');
+    Route::get('/crm-export', [CrmController::class, 'export'])->name('crm.export');
+
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
+
+    Route::get('/notifications/poll', [NotificationController::class, 'poll'])->name('notifications.poll');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+
+    Route::get('/support', [SupportTicketController::class, 'index'])->name('support.index');
+    Route::get('/support/create', [SupportTicketController::class, 'create'])->name('support.create');
+    Route::post('/support', [SupportTicketController::class, 'store'])->name('support.store');
+
+    // These fixed /support/chat* segments must be registered before the
+    // /support/{ticket} wildcard below, or "chat" gets swallowed as a
+    // ticket ID and 404s on route-model binding.
+    Route::get('/support/chat', [SupportChatController::class, 'show'])->name('support.chat');
+    Route::post('/support/chat/message', [SupportChatController::class, 'message'])->middleware('throttle:20,1')->name('support.chat.message');
+    Route::post('/support/chat/escalate', [SupportChatController::class, 'escalate'])->name('support.chat.escalate');
+
+    Route::get('/support/{ticket}', [SupportTicketController::class, 'show'])->name('support.show');
+    Route::post('/support/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('support.reply');
+    Route::post('/support/{ticket}/rate', [SupportTicketController::class, 'rate'])->name('support.rate');
 });
