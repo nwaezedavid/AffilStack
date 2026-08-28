@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['name', 'email', 'password', 'plan_id', 'billing_cycle', 'tx_ref', 'status', 'expires_at'])]
+#[Fillable(['name', 'email', 'password', 'plan_id', 'billing_cycle', 'tx_ref', 'status', 'expires_at', 'referred_by_user_id'])]
 #[Hidden(['password'])]
 class PendingSignup extends Model
 {
@@ -21,5 +21,10 @@ class PendingSignup extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    public function referredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referred_by_user_id');
     }
 }

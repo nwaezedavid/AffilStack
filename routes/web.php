@@ -7,6 +7,7 @@ use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\OfferController;
+use App\Http\Controllers\Dashboard\ReferralController as DashboardReferralController;
 use App\Http\Controllers\Dashboard\SupportChatController;
 use App\Http\Controllers\Dashboard\SupportTicketController;
 use App\Http\Controllers\Dashboard\UgcController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SeoController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +30,10 @@ Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap
 // Public, unauthenticated — whoever clicks a cloaked link is the offer's own
 // audience, not an AffiliStack user. See LinkCloakingService.
 Route::get('/go/{code}', [LinkController::class, 'redirect'])->name('links.redirect');
+
+// Public, unauthenticated — whoever clicks a referral link is a prospective
+// signup, not an AffiliStack user yet. See ReferralController.
+Route::get('/r/{code}', [ReferralController::class, 'redirect'])->name('referrals.redirect');
 
 Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->name('webhooks.flutterwave');
 
@@ -71,6 +77,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/links', [DashboardLinkController::class, 'index'])->name('links.index');
     Route::get('/links/{trackedLink}', [DashboardLinkController::class, 'show'])->name('links.show');
+
+    Route::get('/referrals', [DashboardReferralController::class, 'index'])->name('referrals.index');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
 

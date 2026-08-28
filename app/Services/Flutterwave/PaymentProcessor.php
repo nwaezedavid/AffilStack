@@ -7,6 +7,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Credits\CreditManager;
+use App\Services\Referrals\ReferralService;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Log;
  */
 class PaymentProcessor
 {
-    public function __construct(protected CreditManager $credits) {}
+    public function __construct(protected CreditManager $credits, protected ReferralService $referrals) {}
 
     public function process(array $flwData): ?PaymentTransaction
     {
@@ -119,6 +120,7 @@ class PaymentProcessor
 
         if ($user) {
             $transaction->update(['type' => 'subscription', 'user_id' => $user->id]);
+            $this->referrals->createReferralForNewUser($pending, $user);
         }
 
         return $transaction->fresh();
@@ -161,5 +163,7 @@ class PaymentProcessor
             'monthly_grant',
             $subscription
         );
+
+        $this->referrals->recordCommission($subscription, $transaction);
     }
 }

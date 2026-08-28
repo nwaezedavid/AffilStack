@@ -9,6 +9,7 @@ use App\Models\Plan;
 use App\Models\User;
 use App\Services\Flutterwave\FlutterwaveClient;
 use App\Services\Flutterwave\PaymentProcessor;
+use App\Services\Referrals\ReferralService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,7 +40,7 @@ class RegistrationController extends Controller
         return view('registration.signup', compact('plan'));
     }
 
-    public function store(Request $request, Plan $plan, FlutterwaveClient $flutterwave): RedirectResponse
+    public function store(Request $request, Plan $plan, FlutterwaveClient $flutterwave, ReferralService $referrals): RedirectResponse
     {
         if (! $plan->is_active) {
             return back()->with('error', 'That plan is no longer available.');
@@ -72,6 +73,8 @@ class RegistrationController extends Controller
             'status' => 'pending',
             'expires_at' => now()->addHours(24),
         ]);
+
+        $referrals->attachReferrerToPendingSignup($pending, $request);
 
         try {
             $checkout = $flutterwave->initiateSignupCheckout(

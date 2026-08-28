@@ -11,17 +11,19 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion'])]
+#[Fillable(['name', 'email', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
@@ -108,5 +110,53 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function trackedLinks(): HasMany
     {
         return $this->hasMany(TrackedLink::class);
+    }
+
+    /**
+     * As the referrer: every user this account has referred.
+     */
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(Referral::class, 'referrer_id');
+    }
+
+    public function referralClicks(): HasMany
+    {
+        return $this->hasMany(ReferralClick::class);
+    }
+
+    /**
+     * As the referred user: the single Referral row crediting whoever sent
+     * them, if any. Most users have none.
+     */
+    public function referredBy(): HasOne
+    {
+        return $this->hasOne(Referral::class, 'referred_user_id');
+    }
+
+    /**
+     * Lazily generate and persist this user's referral code on first use,
+     * the same "create on first real need" pattern as
+     * LinkCloakingService::getOrCreateForOffer() — most users never open
+     * the Referrals page, so most users never get one.
+     */
+    public function referralCode(): string
+    {
+        if ($this->referral_code) {
+            return $this->referral_code;
+        }
+
+        do {
+            $code = strtoupper(Str::random(8));
+        } while (static::where('referral_code', $code)->exists());
+
+        $this->update(['referral_code' => $code]);
+
+        return $code;
+    }
+
+    protected function referralLink(): Attribute
+    {
+        return Attribute::get(fn () => url('/r/'.$this->referralCode()));
     }
 }
