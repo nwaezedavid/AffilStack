@@ -138,6 +138,34 @@
                     <a href="{{ route('billing.index') }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Upgrade to unlock the UGC module &rarr;</a>
                 @endif
             </div>
+
+            <div class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">X (Twitter)</h3>
+                @if (auth()->user()->canUseChannel('x'))
+                    <p class="text-xs text-ink-600 mb-3">A full thread plus alternative opening hooks to test.</p>
+                    <form method="POST" action="{{ route('offers.x.thread', $offer) }}">
+                        @csrf
+                        <button class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Generate thread ({{ config('credits.costs.x_thread') }})</button>
+                    </form>
+                @else
+                    <p class="text-xs text-ink-600 mb-3">Not included in your current plan.</p>
+                    <a href="{{ route('billing.index') }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Upgrade to unlock the X module &rarr;</a>
+                @endif
+            </div>
+
+            <div class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">TikTok</h3>
+                @if (auth()->user()->canUseChannel('tiktok'))
+                    <p class="text-xs text-ink-600 mb-3">Script, on-screen text cues, and caption in one pass.</p>
+                    <form method="POST" action="{{ route('offers.tiktok.video', $offer) }}">
+                        @csrf
+                        <button class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Generate video package ({{ config('credits.costs.tiktok_video') }})</button>
+                    </form>
+                @else
+                    <p class="text-xs text-ink-600 mb-3">Not included in your current plan.</p>
+                    <a href="{{ route('billing.index') }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Upgrade to unlock the TikTok module &rarr;</a>
+                @endif
+            </div>
         </div>
     @elseif ($offer->status === 'queued')
         <div class="bg-surface border border-dashed border-line rounded-lg p-8 text-center text-sm text-ink-600 mb-8">
@@ -271,6 +299,39 @@
                                 </div>
                             @endforeach
                         </div>
+                    @elseif ($gen->module === 'x_thread')
+                        <details class="mb-3">
+                            <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View alternative hooks</summary>
+                            <ul class="list-disc list-inside text-sm text-ink-900 mt-2 space-y-1">
+                                @foreach ($gen->output_meta['hook_variants'] ?? [] as $hook)
+                                    <li>{{ $hook }}</li>
+                                @endforeach
+                            </ul>
+                        </details>
+                        <div class="space-y-2 mb-3">
+                            @foreach ($gen->output_meta['thread'] ?? [] as $tweet)
+                                <div class="border-l-2 border-gold-500 pl-3">
+                                    <div class="text-xs text-ink-400 font-mono">Tweet {{ $tweet['position'] ?? '' }}</div>
+                                    <div class="text-sm text-ink-900 whitespace-pre-line">{{ $offer->cloak($tweet['text'] ?? '', $gen->module) }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Best time: </span>{{ $gen->output_meta['best_posting_time'] ?? '' }}</div>
+                    @elseif ($gen->module === 'tiktok_video')
+                        <details class="mb-3">
+                            <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full script</summary>
+                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['script'] ?? '', $gen->module) }}</pre>
+                        </details>
+                        @if (!empty($gen->output_meta['on_screen_text']))
+                            <div class="text-xs uppercase text-ink-400 font-mono mb-1">On-screen text</div>
+                            <ul class="list-disc list-inside text-sm text-ink-900 mb-3 space-y-0.5">
+                                @foreach ($gen->output_meta['on_screen_text'] as $cue)
+                                    <li><span class="font-mono text-xs text-ink-400">{{ $cue['timing'] ?? '' }}</span> {{ $cue['text'] ?? '' }}</li>
+                                @endforeach
+                            </ul>
+                        @endif
+                        <p class="text-sm text-ink-900 whitespace-pre-line mb-2">{{ $offer->cloak($gen->output_meta['caption'] ?? '', $gen->module) }}</p>
+                        <div class="text-xs text-ink-600">{{ implode(', ', $gen->output_meta['hashtags'] ?? []) }}</div>
                     @elseif ($gen->module === 'ugc_content')
                         <details class="mb-3">
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full script</summary>

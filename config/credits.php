@@ -15,5 +15,7 @@ return [
         'youtube_metadata' => 10,
         'ugc_angles' => 6,
         'ugc_content' => 12,
+        'x_thread' => 8,
+        'tiktok_video' => 12,
     ],
 ];

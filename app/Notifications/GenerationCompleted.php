@@ -85,6 +85,8 @@ class GenerationCompleted extends Notification
             'youtube_metadata' => 'YouTube video metadata',
             'ugc_angles' => 'UGC angle ideas',
             'ugc_content' => 'UGC script & platform pack',
+            'x_thread' => 'X thread',
+            'tiktok_video' => 'TikTok video package',
             default => 'generation',
         };
     }
