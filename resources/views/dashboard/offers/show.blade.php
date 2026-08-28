@@ -255,6 +255,16 @@
                             </div>
                         </div>
                     @elseif ($gen->module === 'linkedin_dm_sequence')
+                        <div class="mb-3">
+                            @if ($gen->published_at)
+                                <span class="text-xs text-ink-400 font-mono">Started {{ $gen->published_at->diffForHumans() }} — follow-up reminders are on your <a href="{{ route('calendar.index') }}" class="text-brand-600 hover:text-brand-700 underline">content calendar</a>.</span>
+                            @else
+                                <form method="POST" action="{{ route('generations.nurture-started', $gen) }}">
+                                    @csrf
+                                    <button class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Mark as started today &mdash; get follow-up reminders</button>
+                                </form>
+                            @endif
+                        </div>
                         <div class="space-y-3">
                             @foreach ($gen->output_meta['messages'] ?? [] as $msg)
                                 <div class="border-l-2 border-gold-500 pl-3">
