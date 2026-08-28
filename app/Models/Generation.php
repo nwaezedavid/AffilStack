@@ -37,6 +37,7 @@ class Generation extends Model
             'blog_article' => $this->output_meta['title'] ?? $this->offer?->product_name ?? 'Untitled',
             'linkedin_article' => $this->output_meta['headline'] ?? $this->offer?->product_name ?? 'Untitled',
             'youtube_script' => $this->output_meta['working_title'] ?? $this->offer?->product_name ?? 'Untitled',
+            'pinterest_pin' => $this->output_meta['pins'][0]['title'] ?? $this->offer?->product_name ?? 'Untitled',
             default => $this->offer?->product_name ?? 'Untitled',
         };
     }

@@ -200,6 +200,20 @@
             </div>
 
             <div class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">Pinterest</h3>
+                @if (auth()->user()->canUseChannel('pinterest'))
+                    <p class="text-xs text-ink-600 mb-3">3 pin variants to test — title, description, and an image prompt for each.</p>
+                    <form method="POST" action="{{ route('offers.pinterest.pins', $offer) }}">
+                        @csrf
+                        <button class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Generate pins ({{ config('credits.costs.pinterest_pin') }})</button>
+                    </form>
+                @else
+                    <p class="text-xs text-ink-600 mb-3">Not included in your current plan.</p>
+                    <a href="{{ route('billing.index') }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Upgrade to unlock the Pinterest module &rarr;</a>
+                @endif
+            </div>
+
+            <div class="bg-surface border border-line rounded-lg p-5">
                 <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">Email nurture</h3>
                 @if (auth()->user()->isSeat())
                     <p class="text-xs text-ink-600">Not available on a team seat — CRM contacts are account-wide. Ask the account owner to generate this.</p>
@@ -445,6 +459,23 @@
                         <div class="mb-2">@include('dashboard.offers._disclosure_badge', ['text' => $gen->output_meta['caption'] ?? ''])</div>
                         <p class="text-sm text-ink-900 whitespace-pre-line mb-2">{{ $offer->cloak($gen->output_meta['caption'] ?? '', $gen->module) }}</p>
                         <div class="text-xs text-ink-600">{{ implode(', ', $gen->output_meta['hashtags'] ?? []) }}</div>
+                    @elseif ($gen->module === 'pinterest_pin')
+                        <div class="text-xs text-ink-600 mb-3"><span class="font-mono uppercase text-ink-400">Board: </span>{{ $gen->output_meta['board_suggestion'] ?? '' }}</div>
+                        <div class="space-y-3 mb-3">
+                            @foreach ($gen->output_meta['pins'] ?? [] as $pin)
+                                <div class="border-l-2 border-gold-500 pl-3">
+                                    <div class="text-sm font-medium text-ink-900">{{ $pin['title'] ?? '' }}</div>
+                                    <div class="mb-1">@include('dashboard.offers._disclosure_badge', ['text' => $pin['description'] ?? ''])</div>
+                                    <div class="text-sm text-ink-900 whitespace-pre-line">{{ $offer->cloak($pin['description'] ?? '', $gen->module) }}</div>
+                                    <details class="mt-1.5">
+                                        <summary class="cursor-pointer text-xs text-brand-600 hover:text-brand-700">Image prompt &amp; alt text</summary>
+                                        <div class="text-xs text-ink-600 mt-1.5"><span class="font-mono uppercase text-ink-400">Image prompt: </span>{{ $pin['image_prompt'] ?? '' }}</div>
+                                        <div class="text-xs text-ink-600 mt-1"><span class="font-mono uppercase text-ink-400">Alt text: </span>{{ $pin['alt_text'] ?? '' }}</div>
+                                    </details>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="text-xs text-ink-600">{{ implode(', ', $gen->output_meta['keywords'] ?? []) }}</div>
                     @elseif ($gen->module === 'ugc_content')
                         <details class="mb-3">
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full script</summary>

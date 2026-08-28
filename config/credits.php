@@ -17,6 +17,7 @@ return [
         'ugc_content' => 12,
         'x_thread' => 8,
         'tiktok_video' => 12,
+        'pinterest_pin' => 8,
         'email_nurture' => 10,
         'competitor_angles' => 6,
         'localization' => 8,

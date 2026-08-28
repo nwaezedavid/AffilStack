@@ -26,6 +26,7 @@ return [
         'ugc_content',
         'x_thread',
         'tiktok_video',
+        'pinterest_pin',
     ],
 
     // Days after a blog article's published_at before it's worth a content

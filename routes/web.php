@@ -13,6 +13,7 @@ use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\LocalizationController;
 use App\Http\Controllers\Dashboard\OfferController;
+use App\Http\Controllers\Dashboard\PinterestController;
 use App\Http\Controllers\Dashboard\ReferralController as DashboardReferralController;
 use App\Http\Controllers\Dashboard\SupportChatController;
 use App\Http\Controllers\Dashboard\SupportTicketController;
@@ -87,6 +88,8 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
     Route::post('/offers/{offer}/x/thread', [XController::class, 'thread'])->name('offers.x.thread');
 
     Route::post('/offers/{offer}/tiktok/video', [TikTokController::class, 'video'])->name('offers.tiktok.video');
+
+    Route::post('/offers/{offer}/pinterest/pins', [PinterestController::class, 'pins'])->name('offers.pinterest.pins');
 
     Route::post('/offers/{offer}/nurture/generate', [EmailNurtureController::class, 'generate'])->name('offers.nurture.generate');
 

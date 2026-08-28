@@ -102,5 +102,6 @@ return [
         'ugc_content',
         'x_thread',
         'tiktok_video',
+        'pinterest_pin',
     ],
 ];

@@ -56,6 +56,7 @@ class NotificationController extends Controller
             'ugc_content' => 'UGC script & platform pack',
             'x_thread' => 'X thread',
             'tiktok_video' => 'TikTok video package',
+            'pinterest_pin' => 'Pinterest pin pack',
             'email_nurture' => 'email nurture sequence',
             'competitor_angles' => 'competitor angle scan',
             default => 'generation',

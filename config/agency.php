@@ -35,6 +35,7 @@ return [
         'offers.ugc.content',
         'offers.x.thread',
         'offers.tiktok.video',
+        'offers.pinterest.pins',
         'generations.localize',
         'calendar.index',
         'calendar.update',

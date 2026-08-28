@@ -65,6 +65,7 @@ return [
         'linkedin_post' => ['format' => 'short', 'placement' => 'append'],
         'x_thread' => ['format' => 'short', 'placement' => 'append'],
         'tiktok_video' => ['format' => 'short', 'placement' => 'append'],
+        'pinterest_pin' => ['format' => 'short', 'placement' => 'append'],
         'ugc_content' => ['format' => 'short', 'placement' => 'append'],
         // Long-form because email tolerates (and reads better with) a full
         // sentence; appended like a P.S. signature line rather than
