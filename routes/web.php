@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\Dashboard\BlogController;
+use App\Http\Controllers\Dashboard\CompetitorAngleController;
 use App\Http\Controllers\Dashboard\ContentCalendarController;
 use App\Http\Controllers\Dashboard\CrmController;
 use App\Http\Controllers\Dashboard\DashboardController;
@@ -63,6 +64,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/offers/{offer}/disclosure', [OfferController::class, 'updateDisclosure'])->name('offers.disclosure.update');
 
     Route::post('/offers/{offer}/blog-article', [BlogController::class, 'store'])->name('offers.blog.store');
+
+    Route::post('/offers/{offer}/competitor-angles', [CompetitorAngleController::class, 'scan'])->name('offers.competitor.scan');
 
     Route::post('/offers/{offer}/linkedin/keywords', [LinkedInController::class, 'keywords'])->name('offers.linkedin.keywords');
     Route::post('/offers/{offer}/linkedin/dm-sequence', [LinkedInController::class, 'dmSequence'])->name('offers.linkedin.dm');

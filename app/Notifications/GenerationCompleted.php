@@ -88,6 +88,7 @@ class GenerationCompleted extends Notification
             'x_thread' => 'X thread',
             'tiktok_video' => 'TikTok video package',
             'email_nurture' => 'email nurture sequence',
+            'competitor_angles' => 'competitor angle scan',
             default => 'generation',
         };
     }

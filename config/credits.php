@@ -18,5 +18,6 @@ return [
         'x_thread' => 8,
         'tiktok_video' => 12,
         'email_nurture' => 10,
+        'competitor_angles' => 6,
     ],
 ];

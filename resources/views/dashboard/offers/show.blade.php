@@ -94,6 +94,15 @@
             </div>
 
             <div class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">Competitor angle scan</h3>
+                <p class="text-xs text-ink-600 mb-3">See which angles other affiliates already overuse for this product, so yours isn't one of them. <span class="font-mono text-ink-400">({{ config('credits.costs.competitor_angles') }} credits)</span></p>
+                <form method="POST" action="{{ route('offers.competitor.scan', $offer) }}">
+                    @csrf
+                    <button class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Scan competitor angles</button>
+                </form>
+            </div>
+
+            <div class="bg-surface border border-line rounded-lg p-5">
                 <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">LinkedIn</h3>
                 <p class="text-xs text-ink-600 mb-3">Content only — you send it. AffiliStack never DMs or posts for you.</p>
                 <div class="flex flex-wrap gap-2">
@@ -237,6 +246,38 @@
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full article</summary>
                             <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output, $gen->module) }}</pre>
                         </details>
+                    @elseif ($gen->module === 'competitor_angles')
+                        <p class="text-xs text-ink-600 mb-3">
+                            <span class="font-mono uppercase text-ink-400">Your current recommended angle: </span>{{ $offer->recommended_angle }}
+                        </p>
+                        <div class="space-y-2 mb-3">
+                            @foreach ($gen->output_meta['common_angles'] ?? [] as $angle)
+                                @php
+                                    $saturationColor = match ($angle['saturation'] ?? null) {
+                                        'high' => 'text-red-700 bg-red-50',
+                                        'medium' => 'text-gold-800 bg-gold-100',
+                                        default => 'text-emerald-700 bg-emerald-100',
+                                    };
+                                @endphp
+                                <div class="border-l-2 border-gold-500 pl-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium text-ink-900">{{ $angle['angle_name'] ?? '' }}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full font-mono {{ $saturationColor }}">{{ ucfirst($angle['saturation'] ?? 'unknown') }} saturation</span>
+                                        <span class="text-xs text-ink-400">{{ $angle['typical_channel'] ?? '' }}</span>
+                                    </div>
+                                    <div class="text-sm text-ink-900 italic">&ldquo;{{ $angle['example_headline'] ?? '' }}&rdquo;</div>
+                                    <div class="text-xs text-ink-600">{{ $angle['why_it_works'] ?? '' }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="text-sm text-ink-900 mb-2">
+                            <span class="font-mono uppercase text-xs text-ink-400 block mb-1">Differentiation opportunity</span>
+                            {{ $gen->output_meta['differentiation_opportunity'] ?? '' }}
+                        </div>
+                        <div class="text-sm text-ink-900">
+                            <span class="font-mono uppercase text-xs text-ink-400 block mb-1">Suggested adjustment</span>
+                            {{ $gen->output_meta['recommended_adjustment'] ?? '' }}
+                        </div>
                     @elseif ($gen->module === 'linkedin_keywords')
                         <div class="grid sm:grid-cols-2 gap-3 text-sm">
                             <div>
