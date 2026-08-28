@@ -169,7 +169,7 @@
                         <p class="text-xs text-ink-600 mb-3">{{ $gen->output_meta['meta_description'] ?? '' }}</p>
                         <details>
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full article</summary>
-                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $gen->output }}</pre>
+                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output, $gen->module) }}</pre>
                         </details>
                     @elseif ($gen->module === 'linkedin_keywords')
                         <div class="grid sm:grid-cols-2 gap-3 text-sm">
@@ -198,21 +198,21 @@
                             @endforeach
                         </div>
                     @elseif ($gen->module === 'linkedin_post')
-                        <p class="text-sm text-ink-900 whitespace-pre-line mb-3">{{ $gen->output_meta['post_text'] ?? '' }}</p>
+                        <p class="text-sm text-ink-900 whitespace-pre-line mb-3">{{ $offer->cloak($gen->output_meta['post_text'] ?? '', $gen->module) }}</p>
                         <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Image prompt: </span>{{ $gen->output_meta['image_prompt'] ?? '' }}</div>
                         <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Best time: </span>{{ $gen->output_meta['best_posting_time'] ?? '' }}</div>
                     @elseif ($gen->module === 'linkedin_article')
                         <p class="font-medium text-ink-900 mb-2">{{ $gen->output_meta['headline'] ?? '' }}</p>
                         <details>
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full article</summary>
-                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $gen->output_meta['article_markdown'] ?? '' }}</pre>
+                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['article_markdown'] ?? '', $gen->module) }}</pre>
                         </details>
                     @elseif ($gen->module === 'youtube_script')
                         <p class="font-medium text-ink-900 mb-1">{{ $gen->output_meta['working_title'] ?? '' }}</p>
                         <p class="text-xs text-ink-600 mb-3">~{{ $gen->output_meta['estimated_length_minutes'] ?? '?' }} min · {{ $gen->output_meta['hook'] ?? '' }}</p>
                         <details>
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full script</summary>
-                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $gen->output_meta['script_markdown'] ?? '' }}</pre>
+                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['script_markdown'] ?? '', $gen->module) }}</pre>
                             @if (!empty($gen->output_meta['b_roll_suggestions']))
                                 <div class="text-xs uppercase text-ink-400 font-mono mt-3 mb-1">B-roll ideas</div>
                                 <ul class="list-disc list-inside text-sm text-ink-900 space-y-0.5">
@@ -231,7 +231,7 @@
                         </ul>
                         <details class="mb-3">
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View description</summary>
-                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $gen->output_meta['description'] ?? '' }}</pre>
+                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['description'] ?? '', $gen->module) }}</pre>
                         </details>
                         <div class="grid sm:grid-cols-2 gap-3 text-sm mb-3">
                             <div>
@@ -274,7 +274,7 @@
                     @elseif ($gen->module === 'ugc_content')
                         <details class="mb-3">
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full script</summary>
-                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $gen->output_meta['script'] ?? '' }}</pre>
+                            <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['script'] ?? '', $gen->module) }}</pre>
                         </details>
                         @if (!empty($gen->output_meta['on_screen_text_ideas']))
                             <div class="text-xs uppercase text-ink-400 font-mono mb-1">On-screen text ideas</div>
@@ -289,7 +289,7 @@
                                 <div class="border-l-2 border-gold-500 pl-3">
                                     <div class="text-sm font-medium text-ink-900">{{ $platform['platform'] ?? '' }}</div>
                                     <div class="text-sm text-ink-900">{{ $platform['title'] ?? '' }}</div>
-                                    <div class="text-sm text-ink-900 whitespace-pre-line">{{ $platform['caption'] ?? '' }}</div>
+                                    <div class="text-sm text-ink-900 whitespace-pre-line">{{ $offer->cloak($platform['caption'] ?? '', $gen->module) }}</div>
                                     <div class="text-xs text-ink-600">{{ implode(', ', $platform['tags'] ?? []) }}</div>
                                     <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Tip: </span>{{ $platform['posting_tip'] ?? '' }}</div>
                                 </div>

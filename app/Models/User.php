@@ -104,4 +104,9 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     {
         return $this->hasMany(SupportTicket::class);
     }
+
+    public function trackedLinks(): HasMany
+    {
+        return $this->hasMany(TrackedLink::class);
+    }
 }

@@ -109,7 +109,7 @@ class LinkedInService
             and drive clicks without sounding like an ad.
 
             Return a JSON object with exactly these keys:
-            - "post_text": the full LinkedIn post, under 1300 characters, hook as line 1, line breaks for readability, a clear soft CTA, 3-5 relevant hashtags at the end.
+            - "post_text": the full LinkedIn post, under 1300 characters, hook as line 1, line breaks for readability, a clear soft CTA using the placeholder "{{AFFILIATE_LINK}}" (LinkedIn posts read better with the link in the first comment, so mention that naturally rather than pasting a raw URL inline), 3-5 relevant hashtags at the end.
             - "image_prompt": a detailed prompt (for an AI image generator) describing a scroll-stopping image to pair with this post.
             - "best_posting_time": one specific recommendation, e.g. "Tuesday 8-10am in the buyer's timezone".
             PROMPT;

@@ -4,6 +4,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\Dashboard\BlogController;
 use App\Http\Controllers\Dashboard\CrmController;
 use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\OfferController;
 use App\Http\Controllers\Dashboard\SupportChatController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Dashboard\UgcController;
 use App\Http\Controllers\Dashboard\YouTubeController;
 use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\HelpController;
+use App\Http\Controllers\LinkController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
@@ -22,6 +24,10 @@ Route::view('/', 'marketing.home')->name('home');
 Route::get('/help', [HelpController::class, 'index'])->name('help.index');
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+
+// Public, unauthenticated — whoever clicks a cloaked link is the offer's own
+// audience, not an AffiliStack user. See LinkCloakingService.
+Route::get('/go/{code}', [LinkController::class, 'redirect'])->name('links.redirect');
 
 Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->name('webhooks.flutterwave');
 
@@ -62,6 +68,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/crm/{contact}', [CrmController::class, 'update'])->name('crm.update');
     Route::delete('/crm/{contact}', [CrmController::class, 'destroy'])->name('crm.destroy');
     Route::get('/crm-export', [CrmController::class, 'export'])->name('crm.export');
+
+    Route::get('/links', [DashboardLinkController::class, 'index'])->name('links.index');
+    Route::get('/links/{trackedLink}', [DashboardLinkController::class, 'show'])->name('links.show');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
 

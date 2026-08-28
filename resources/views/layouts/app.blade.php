@@ -24,6 +24,7 @@
                         ['name' => 'dashboard', 'match' => 'dashboard', 'label' => 'Overview', 'icon' => '🏠'],
                         ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'Offer Research', 'icon' => '🔎'],
                         ['name' => 'crm.index', 'match' => 'crm.*', 'label' => 'CRM Contacts', 'icon' => '📇'],
+                        ['name' => 'links.index', 'match' => 'links.*', 'label' => 'Links & Clicks', 'icon' => '🔗'],
                         ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => '💬'],
                         ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => '💳'],
                     ];
