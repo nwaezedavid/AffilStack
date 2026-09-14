@@ -45,6 +45,7 @@ class BrandSettings extends Page
             'color_gold' => SiteSetting::get('color_gold', '#C9A24A'),
             'menu_items' => SiteSetting::get('menu_items', []),
             'header_announcement' => SiteSetting::get('header_announcement'),
+            'support_email' => SiteSetting::get('support_email', config('mail.from.address')),
             'footer_text' => SiteSetting::get('footer_text', '© '.date('Y').' AffilStack.'),
             'hero_headline' => SiteSetting::get('hero_headline'),
             'hero_subheadline' => SiteSetting::get('hero_subheadline'),
@@ -63,8 +64,13 @@ class BrandSettings extends Page
                     ->columns(2)
                     ->components([
                         TextInput::make('site_name')->required(),
+                        TextInput::make('support_email')
+                            ->label('Support email')
+                            ->email()
+                            ->helperText('Where Contact Us submissions are sent, and shown to visitors on the Contact page.'),
                         TextInput::make('header_announcement')
                             ->label('Header announcement (optional)')
+                            ->columnSpanFull()
                             ->helperText('A one-line banner shown at the top of every public page. Leave blank to hide it.'),
                         FileUpload::make('logo')
                             ->image()
@@ -144,8 +150,8 @@ class BrandSettings extends Page
 
         foreach ([
             'site_name', 'logo', 'favicon', 'color_primary', 'color_navy',
-            'color_gold', 'menu_items', 'header_announcement', 'footer_text',
-            'hero_headline', 'hero_subheadline', 'hero_media_type',
+            'color_gold', 'menu_items', 'header_announcement', 'support_email',
+            'footer_text', 'hero_headline', 'hero_subheadline', 'hero_media_type',
             'hero_image', 'hero_youtube_url',
         ] as $key) {
             $settingKey = match ($key) {

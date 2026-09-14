@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Dashboard\BlogController;
 use App\Http\Controllers\Dashboard\CompetitorAngleController;
 use App\Http\Controllers\Dashboard\ContentCalendarController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\RegistrationController;
@@ -38,6 +40,18 @@ Route::view('/', 'marketing.home')->name('home');
 Route::get('/help', [HelpController::class, 'index'])->name('help.index');
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+
+// Static, admin-editable pages — content lives in the site_pages table
+// (Filament: Content > Site Pages) so legal copy can be updated without a
+// code deploy.
+Route::get('/about', [PageController::class, 'show'])->defaults('slug', 'about')->name('about');
+Route::get('/terms', [PageController::class, 'show'])->defaults('slug', 'terms')->name('terms');
+Route::get('/privacy', [PageController::class, 'show'])->defaults('slug', 'privacy')->name('privacy');
+Route::get('/refund-policy', [PageController::class, 'show'])->defaults('slug', 'refund-policy')->name('refund-policy');
+Route::get('/cookie-policy', [PageController::class, 'show'])->defaults('slug', 'cookie-policy')->name('cookie-policy');
+
+Route::get('/contact', [ContactController::class, 'show'])->name('contact.show');
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
 
 // Public, unauthenticated — whoever clicks a cloaked link is the offer's own
 // audience, not an AffilStack user. See LinkCloakingService.

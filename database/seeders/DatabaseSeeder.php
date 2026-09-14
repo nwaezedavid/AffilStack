@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             FaqItemsSeeder::class,
             SwipeFileEntriesSeeder::class,
             HomepageFeaturesSeeder::class,
+            SitePagesSeeder::class,
         ]);
     }
 }

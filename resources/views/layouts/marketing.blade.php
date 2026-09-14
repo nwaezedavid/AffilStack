@@ -88,7 +88,16 @@
 
     @yield('content')
 
-    <footer class="border-t border-line py-6 text-center text-xs text-ink-400">
+    <footer class="border-t border-line py-8 text-center text-xs text-ink-400">
+        <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-4">
+            <a href="{{ route('about') }}" class="hover:text-ink-600">About</a>
+            <a href="{{ route('contact.show') }}" class="hover:text-ink-600">Contact</a>
+            <a href="{{ route('help.index') }}" class="hover:text-ink-600">Help</a>
+            <a href="{{ route('terms') }}" class="hover:text-ink-600">Terms</a>
+            <a href="{{ route('privacy') }}" class="hover:text-ink-600">Privacy</a>
+            <a href="{{ route('refund-policy') }}" class="hover:text-ink-600">Refunds</a>
+            <a href="{{ route('cookie-policy') }}" class="hover:text-ink-600">Cookies</a>
+        </div>
         {{ $footerText }}
     </footer>
 </body>
