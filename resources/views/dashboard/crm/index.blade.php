@@ -3,6 +3,26 @@
 @section('title', 'CRM Contacts')
 
 @section('content')
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <div class="bg-surface border border-line rounded-lg p-4">
+            <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Total contacts</div>
+            <div class="font-display font-semibold text-2xl text-navy-900">{{ number_format($stats['total']) }}</div>
+        </div>
+        @foreach ($stats['by_status'] as $status => $count)
+            <div class="bg-surface border border-line rounded-lg p-4">
+                <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">{{ ucfirst($status) }}</div>
+                <div class="font-display font-semibold text-2xl text-navy-900">{{ number_format($count) }}</div>
+            </div>
+        @endforeach
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 mb-6 text-sm text-ink-600">
+        <span class="px-2.5 py-1 rounded-full bg-surface-muted">{{ number_format($stats['sent_this_month']) }} email{{ $stats['sent_this_month'] === 1 ? '' : 's' }} sent this month</span>
+        @if ($stats['open_rate_this_month'] !== null)
+            <span class="px-2.5 py-1 rounded-full bg-surface-muted">{{ $stats['open_rate_this_month'] }}% open rate this month</span>
+        @endif
+    </div>
+
     <div class="flex items-center justify-between mb-5">
         <p class="text-sm text-ink-600 max-w-lg">Every lead you save here — manually, or via <a href="{{ route('leads.index') }}" class="text-brand-600 hover:text-brand-700 underline">Local Leads</a> from Google Maps — lives in one exportable list.</p>
         <a href="{{ route('crm.export') }}" class="text-sm rounded-md border border-line px-3 py-1.5 hover:bg-surface-muted transition whitespace-nowrap">Export CSV</a>

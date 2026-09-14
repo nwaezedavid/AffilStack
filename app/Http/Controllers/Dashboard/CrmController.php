@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\CrmContact;
+use App\Models\CrmEmailSend;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
@@ -25,11 +26,35 @@ class CrmController extends Controller
         return view('marketing.crm-unsubscribed', ['senderName' => $contact->user->name]);
     }
 
+    /**
+     * The pipeline stats header (task #90): a snapshot, not a full report —
+     * cheap enough to compute on every page load for one user's own data.
+     */
     public function index(): View
     {
-        $contacts = auth()->user()->crmContacts()->latest()->paginate(20);
+        $user = auth()->user();
+        $contacts = $user->crmContacts()->latest()->paginate(20);
 
-        return view('dashboard.crm.index', compact('contacts'));
+        $statusCounts = $user->crmContacts()
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $sendsThisMonth = CrmEmailSend::where('user_id', $user->id)
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->get(['status', 'opened_at']);
+        $sentThisMonth = $sendsThisMonth->where('status', 'sent')->count();
+        $openedThisMonth = $sendsThisMonth->whereNotNull('opened_at')->count();
+
+        $stats = [
+            'total' => $statusCounts->sum(),
+            'by_status' => collect(['new', 'contacted', 'qualified', 'customer', 'unqualified'])
+                ->mapWithKeys(fn ($status) => [$status => $statusCounts->get($status, 0)]),
+            'sent_this_month' => $sentThisMonth,
+            'open_rate_this_month' => $sentThisMonth > 0 ? (int) round($openedThisMonth / $sentThisMonth * 100) : null,
+        ];
+
+        return view('dashboard.crm.index', compact('contacts', 'stats'));
     }
 
     public function store(Request $request): RedirectResponse
