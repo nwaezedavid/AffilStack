@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'user_id', 'plan_id', 'status', 'billing_cycle', 'flutterwave_customer_email',
-    'flutterwave_tx_ref', 'flutterwave_plan_id', 'trial_ends_at', 'current_period_start',
+    'user_id', 'plan_id', 'status', 'billing_cycle', 'gateway', 'gateway_customer_id',
+    'gateway_subscription_id', 'trial_ends_at', 'current_period_start',
     'current_period_end', 'cancel_at_period_end', 'canceled_at',
 ])]
 class Subscription extends Model

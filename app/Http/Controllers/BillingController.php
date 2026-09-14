@@ -4,32 +4,40 @@ namespace App\Http\Controllers;
 
 use App\Models\PaymentTransaction;
 use App\Models\Plan;
-use App\Services\Flutterwave\FlutterwaveClient;
-use App\Services\Flutterwave\PaymentProcessor;
+use App\Services\Payments\PaymentGatewayManager;
+use App\Services\Payments\PaymentProcessor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class BillingController extends Controller
 {
-    public function index(): View
+    public function index(PaymentGatewayManager $gateways): View
     {
         $plans = Plan::where('is_active', true)->orderBy('sort_order')->get();
         $subscription = auth()->user()->activeSubscription;
+        $enabledGateways = $gateways->enabled();
 
-        return view('billing.index', compact('plans', 'subscription'));
+        return view('billing.index', compact('plans', 'subscription', 'enabledGateways'));
     }
 
-    public function checkout(Request $request, Plan $plan, FlutterwaveClient $flutterwave): RedirectResponse
+    public function checkout(Request $request, Plan $plan, PaymentGatewayManager $gateways): RedirectResponse
     {
         $validated = $request->validate([
             'billing_cycle' => 'required|in:monthly,yearly',
         ]);
 
+        $enabledGateways = $gateways->enabled();
+
+        if (empty($enabledGateways)) {
+            return back()->with('error', 'Payments are temporarily unavailable — please try again shortly.');
+        }
+
+        $gateway = $enabledGateways[0];
         $amount = $validated['billing_cycle'] === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents;
 
         try {
-            $checkout = $flutterwave->initiateCheckout(auth()->user(), $plan, $validated['billing_cycle']);
+            $checkout = $gateway->initiateCheckout(auth()->user(), $plan, $validated['billing_cycle']);
         } catch (\RuntimeException $e) {
             report($e);
 
@@ -39,6 +47,7 @@ class BillingController extends Controller
         PaymentTransaction::create([
             'user_id' => auth()->id(),
             'type' => 'subscription',
+            'gateway' => $gateway->key(),
             'tx_ref' => $checkout['tx_ref'],
             'amount_cents' => $amount,
             'currency' => $plan->currency,
@@ -48,18 +57,17 @@ class BillingController extends Controller
         return redirect()->away($checkout['link']);
     }
 
-    public function callback(Request $request, FlutterwaveClient $flutterwave, PaymentProcessor $processor): RedirectResponse
+    public function callback(Request $request, PaymentGatewayManager $gateways, PaymentProcessor $processor): RedirectResponse
     {
-        $txRef = $request->query('tx_ref');
-        $transactionId = $request->query('transaction_id');
-        $status = $request->query('status');
+        $gatewayKey = (string) $request->query('gateway', 'flutterwave');
+        $gateway = $gateways->get($gatewayKey);
+        $result = $gateway->resolveFromCallback($request);
 
-        if (! $txRef || ! $transactionId || $status !== 'successful') {
+        if (! $result) {
             return redirect()->route('billing.index')->with('error', 'Payment was not completed.');
         }
 
-        $verified = $flutterwave->verifyTransaction($transactionId);
-        $transaction = $processor->process($verified);
+        $transaction = $processor->process($gatewayKey, $result);
 
         if ($transaction && $transaction->status === 'successful') {
             return redirect()->route('dashboard')->with('success', 'Your plan is now active. Welcome to AffilStack.');

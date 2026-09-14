@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Flutterwave;
+namespace App\Services\Payments;
 
 use App\Models\PaymentTransaction;
 use App\Models\Plan;
@@ -13,22 +13,26 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 
 /**
- * The one place that turns a verified Flutterwave transaction into an
- * active subscription + credit grant. Called from both the browser redirect
- * callback and the server-to-server webhook, so it must be idempotent —
- * either caller might arrive first, or the webhook might retry.
+ * The one place that turns a verified, gateway-normalized payment result
+ * into an active subscription + credit grant. Called from both the browser
+ * redirect callback and the server-to-server webhook, for either gateway,
+ * so it must be idempotent — either caller might arrive first, or the
+ * webhook might retry.
  */
 class PaymentProcessor
 {
     public function __construct(protected CreditManager $credits, protected ReferralService $referrals) {}
 
-    public function process(array $flwData): ?PaymentTransaction
+    /**
+     * @param  array{tx_ref: string, remote_id: string, status: string, amount: float, currency: string, meta: array<string, mixed>, customer_reference?: string, subscription_reference?: string, raw: array<string, mixed>}  $result
+     */
+    public function process(string $gateway, array $result): ?PaymentTransaction
     {
-        $txRef = (string) ($flwData['tx_ref'] ?? '');
+        $txRef = $result['tx_ref'];
         $transaction = PaymentTransaction::where('tx_ref', $txRef)->first();
 
         if (! $transaction) {
-            Log::warning('Flutterwave payment for unknown tx_ref', ['tx_ref' => $txRef]);
+            Log::warning('Payment webhook/callback for unknown tx_ref', ['gateway' => $gateway, 'tx_ref' => $txRef]);
 
             return null;
         }
@@ -38,22 +42,21 @@ class PaymentProcessor
             return $transaction;
         }
 
-        $status = (string) ($flwData['status'] ?? '');
         $expectedAmount = $transaction->amount_cents / 100;
-        $actualAmount = (float) ($flwData['amount'] ?? 0);
-        $actualCurrency = (string) ($flwData['currency'] ?? '');
+        $isSuccessful = in_array($result['status'], ['successful', 'succeeded', 'complete', 'paid'], true);
 
-        if ($status !== 'successful' || $actualAmount < $expectedAmount || $actualCurrency !== $transaction->currency) {
+        if (! $isSuccessful || $result['amount'] < $expectedAmount || $result['currency'] !== $transaction->currency) {
             $transaction->update([
                 'status' => 'failed',
-                'flutterwave_tx_id' => (string) ($flwData['id'] ?? $transaction->flutterwave_tx_id),
-                'raw_payload' => $flwData,
+                'gateway' => $gateway,
+                'gateway_tx_id' => $result['remote_id'] ?: $transaction->gateway_tx_id,
+                'raw_payload' => $result['raw'],
                 'processed_at' => now(),
             ]);
 
-            Log::warning('Flutterwave payment failed verification', [
-                'tx_ref' => $txRef, 'status' => $status,
-                'expected' => $expectedAmount, 'actual' => $actualAmount,
+            Log::warning('Payment failed verification', [
+                'gateway' => $gateway, 'tx_ref' => $txRef, 'status' => $result['status'],
+                'expected' => $expectedAmount, 'actual' => $result['amount'],
             ]);
 
             return $transaction;
@@ -61,8 +64,9 @@ class PaymentProcessor
 
         $transaction->update([
             'status' => 'successful',
-            'flutterwave_tx_id' => (string) ($flwData['id'] ?? ''),
-            'raw_payload' => $flwData,
+            'gateway' => $gateway,
+            'gateway_tx_id' => $result['remote_id'],
+            'raw_payload' => $result['raw'],
             'processed_at' => now(),
         ]);
 
@@ -71,7 +75,7 @@ class PaymentProcessor
         }
 
         if ($transaction->type === 'subscription') {
-            $this->activateSubscription($transaction, $flwData);
+            $this->activateSubscription($transaction, $gateway, $result);
         }
 
         return $transaction;
@@ -88,7 +92,7 @@ class PaymentProcessor
         $pending = $transaction->pendingSignup;
 
         if (! $pending) {
-            Log::error('Flutterwave signup payment succeeded but pending signup record is missing', ['tx_ref' => $transaction->tx_ref]);
+            Log::error('Signup payment succeeded but pending signup record is missing', ['tx_ref' => $transaction->tx_ref]);
 
             return $transaction;
         }
@@ -126,15 +130,18 @@ class PaymentProcessor
         return $transaction->fresh();
     }
 
-    protected function activateSubscription(PaymentTransaction $transaction, array $flwData): void
+    /**
+     * @param  array<string, mixed>  $result
+     */
+    protected function activateSubscription(PaymentTransaction $transaction, string $gateway, array $result): void
     {
-        $meta = $flwData['meta'] ?? [];
+        $meta = $result['meta'] ?? [];
         $planId = $meta['plan_id'] ?? null;
         $billingCycle = $meta['billing_cycle'] ?? 'monthly';
         $plan = $planId ? Plan::find($planId) : null;
 
         if (! $plan || ! $transaction->user_id) {
-            Log::error('Flutterwave payment succeeded but plan or user could not be resolved', ['tx_ref' => $transaction->tx_ref]);
+            Log::error('Payment succeeded but plan or user could not be resolved', ['gateway' => $gateway, 'tx_ref' => $transaction->tx_ref]);
 
             return;
         }
@@ -147,8 +154,9 @@ class PaymentProcessor
                 'plan_id' => $plan->id,
                 'status' => 'active',
                 'billing_cycle' => $billingCycle,
-                'flutterwave_customer_email' => $transaction->user->email,
-                'flutterwave_tx_ref' => $transaction->tx_ref,
+                'gateway' => $gateway,
+                'gateway_customer_id' => $result['customer_reference'] ?? $transaction->user->email,
+                'gateway_subscription_id' => $result['subscription_reference'] ?? null,
                 'current_period_start' => now(),
                 'current_period_end' => $periodEnd,
                 'cancel_at_period_end' => false,

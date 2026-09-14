@@ -65,10 +65,16 @@ Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'hand
 
 // The only door into an account: pick a plan, pay, get created. No open
 // registration exists anywhere in this app — see RegistrationController.
+//
+// /get-started/callback MUST be registered before /get-started/{plan} —
+// both are GET requests under the same prefix, and Laravel matches routes
+// in registration order, so a wildcard registered first would swallow
+// "callback" as a {plan} route-model-binding lookup and 404 on every real
+// payment redirect. (Caught by tests/Feature/PaymentSignupFlowTest.)
 Route::get('/pricing', [RegistrationController::class, 'pricing'])->name('registration.pricing');
+Route::get('/get-started/callback', [RegistrationController::class, 'callback'])->name('registration.callback');
 Route::get('/get-started/{plan}', [RegistrationController::class, 'showForm'])->name('registration.form');
 Route::post('/get-started/{plan}', [RegistrationController::class, 'store'])->name('registration.store');
-Route::get('/get-started/callback', [RegistrationController::class, 'callback'])->name('registration.callback');
 
 Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

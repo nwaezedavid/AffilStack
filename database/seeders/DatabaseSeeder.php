@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             SwipeFileEntriesSeeder::class,
             HomepageFeaturesSeeder::class,
             SitePagesSeeder::class,
+            PaymentGatewaySettingsSeeder::class,
         ]);
     }
 }

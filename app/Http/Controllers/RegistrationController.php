@@ -7,8 +7,8 @@ use App\Models\PaymentTransaction;
 use App\Models\PendingSignup;
 use App\Models\Plan;
 use App\Models\User;
-use App\Services\Flutterwave\FlutterwaveClient;
-use App\Services\Flutterwave\PaymentProcessor;
+use App\Services\Payments\PaymentGatewayManager;
+use App\Services\Payments\PaymentProcessor;
 use App\Services\Referrals\ReferralService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,11 +40,19 @@ class RegistrationController extends Controller
         return view('registration.signup', compact('plan'));
     }
 
-    public function store(Request $request, Plan $plan, FlutterwaveClient $flutterwave, ReferralService $referrals): RedirectResponse
+    public function store(Request $request, Plan $plan, PaymentGatewayManager $gateways, ReferralService $referrals): RedirectResponse
     {
         if (! $plan->is_active) {
             return back()->with('error', 'That plan is no longer available.');
         }
+
+        $enabledGateways = $gateways->enabled();
+
+        if (empty($enabledGateways)) {
+            return back()->with('error', 'Payments are temporarily unavailable — please try again shortly.');
+        }
+
+        $gateway = $enabledGateways[0];
 
         $validated = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
@@ -77,7 +85,7 @@ class RegistrationController extends Controller
         $referrals->attachReferrerToPendingSignup($pending, $request);
 
         try {
-            $checkout = $flutterwave->initiateSignupCheckout(
+            $checkout = $gateway->initiateSignupCheckout(
                 $validated['email'],
                 $validated['name'],
                 $plan,
@@ -96,6 +104,7 @@ class RegistrationController extends Controller
         PaymentTransaction::create([
             'pending_signup_id' => $pending->id,
             'type' => 'signup',
+            'gateway' => $gateway->key(),
             'tx_ref' => $checkout['tx_ref'],
             'amount_cents' => $validated['billing_cycle'] === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents,
             'currency' => $plan->currency,
@@ -105,18 +114,17 @@ class RegistrationController extends Controller
         return redirect()->away($checkout['link']);
     }
 
-    public function callback(Request $request, FlutterwaveClient $flutterwave, PaymentProcessor $processor): RedirectResponse
+    public function callback(Request $request, PaymentGatewayManager $gateways, PaymentProcessor $processor): RedirectResponse
     {
-        $txRef = $request->query('tx_ref');
-        $transactionId = $request->query('transaction_id');
-        $status = $request->query('status');
+        $gatewayKey = (string) $request->query('gateway', 'flutterwave');
+        $gateway = $gateways->get($gatewayKey);
+        $result = $gateway->resolveFromCallback($request);
 
-        if (! $txRef || ! $transactionId || $status !== 'successful') {
+        if (! $result) {
             return redirect()->route('registration.pricing')->with('error', 'Payment was not completed, so no account was created.');
         }
 
-        $verified = $flutterwave->verifyTransaction($transactionId);
-        $transaction = $processor->process($verified);
+        $transaction = $processor->process($gatewayKey, $result);
 
         if ($transaction && $transaction->status === 'successful' && $transaction->user_id) {
             Auth::login($transaction->user);

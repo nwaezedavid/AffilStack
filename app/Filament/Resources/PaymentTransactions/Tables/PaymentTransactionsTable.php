@@ -15,6 +15,7 @@ class PaymentTransactionsTable
             ->columns([
                 TextColumn::make('user.name')->searchable(),
                 TextColumn::make('type')->badge(),
+                TextColumn::make('gateway')->badge()->color('gray'),
                 TextColumn::make('tx_ref')->searchable()->copyable()->limit(24),
                 TextColumn::make('amount_cents')
                     ->label('Amount')
@@ -41,6 +42,10 @@ class PaymentTransactionsTable
                     'subscription' => 'Subscription',
                     'credit_topup' => 'Credit top-up',
                     'addon' => 'Add-on',
+                ]),
+                SelectFilter::make('gateway')->options([
+                    'stripe' => 'Stripe',
+                    'flutterwave' => 'Flutterwave',
                 ]),
             ])
             ->recordActions([])

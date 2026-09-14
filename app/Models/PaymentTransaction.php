@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'user_id', 'subscription_id', 'pending_signup_id', 'type', 'flutterwave_tx_id', 'tx_ref',
+    'user_id', 'subscription_id', 'pending_signup_id', 'type', 'gateway', 'gateway_tx_id', 'tx_ref',
     'amount_cents', 'currency', 'status', 'raw_payload', 'processed_at',
 ])]
 class PaymentTransaction extends Model
