@@ -1,0 +1,260 @@
+<?php
+
+namespace App\Services\Payments;
+
+use App\Models\PaymentGatewaySetting;
+use App\Models\Plan;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use RuntimeException;
+
+/**
+ * Stripe Checkout (mode=subscription), driven entirely through Http::asForm()
+ * rather than the stripe-php SDK — see FlutterwaveGateway for why this app
+ * avoids gateway SDKs. Line items use inline price_data instead of
+ * pre-created Stripe Price objects, so plans stay editable from Filament
+ * without touching Stripe's dashboard.
+ *
+ * Renewal-invoice events (invoice.paid, invoice.payment_failed,
+ * customer.subscription.deleted) are deliberately not handled here — that's
+ * the cross-gateway subscription-renewal-reliability work, not initial
+ * checkout. This gateway only resolves the one-time
+ * "checkout.session.completed" event that mirrors Flutterwave's
+ * callback/webhook shape.
+ */
+class StripeGateway implements PaymentGateway
+{
+    protected PaymentGatewaySetting $settings;
+
+    public function __construct()
+    {
+        $this->settings = PaymentGatewaySetting::forGateway($this->key());
+    }
+
+    public function key(): string
+    {
+        return 'stripe';
+    }
+
+    public function label(): string
+    {
+        return 'Stripe';
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->settings->is_enabled;
+    }
+
+    protected function baseUrl(): string
+    {
+        return (string) ($this->settings->credential('base_url') ?: config('services.stripe.base_url', 'https://api.stripe.com/v1'));
+    }
+
+    protected function secretKey(): string
+    {
+        return (string) ($this->settings->credential('secret_key') ?: config('services.stripe.secret_key'));
+    }
+
+    protected function webhookSecret(): string
+    {
+        return (string) ($this->settings->credential('webhook_secret') ?: config('services.stripe.webhook_secret'));
+    }
+
+    protected function client()
+    {
+        return Http::asForm()->withToken($this->secretKey())->baseUrl($this->baseUrl());
+    }
+
+    public function initiateSignupCheckout(string $email, string $name, Plan $plan, string $billingCycle, int $pendingSignupId): array
+    {
+        return $this->checkout($email, $plan, $billingCycle, route('registration.form', $plan), route('registration.callback', ['gateway' => $this->key()]), [
+            'pending_signup_id' => (string) $pendingSignupId,
+            'plan_id' => (string) $plan->id,
+            'billing_cycle' => $billingCycle,
+        ]);
+    }
+
+    public function initiateCheckout(User $user, Plan $plan, string $billingCycle): array
+    {
+        return $this->checkout($user->email, $plan, $billingCycle, route('billing.index'), route('billing.callback', ['gateway' => $this->key()]), [
+            'user_id' => (string) $user->id,
+            'plan_id' => (string) $plan->id,
+            'billing_cycle' => $billingCycle,
+        ]);
+    }
+
+    /**
+     * @param  array<string, string>  $meta
+     * @return array{link: string, tx_ref: string}
+     */
+    protected function checkout(string $email, Plan $plan, string $billingCycle, string $cancelUrl, string $callbackUrl, array $meta): array
+    {
+        $txRef = 'affilstack_'.$plan->slug.'_'.$billingCycle.'_'.Str::uuid();
+        $amountCents = $billingCycle === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents;
+        $meta = array_merge($meta, ['tx_ref' => $txRef]);
+
+        // Stripe's success_url template placeholder must reach Stripe
+        // literally — route() already produced the "?gateway=stripe" query,
+        // so append the placeholder rather than passing it through route().
+        $successUrl = $callbackUrl.'&session_id={CHECKOUT_SESSION_ID}';
+
+        $response = $this->client()->post('/checkout/sessions', [
+            'mode' => 'subscription',
+            'customer_email' => $email,
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+            'client_reference_id' => $txRef,
+            'metadata' => $meta,
+            'line_items' => [[
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => strtolower($plan->currency),
+                    'unit_amount' => $amountCents,
+                    'product_data' => [
+                        'name' => 'AffilStack — '.$plan->name.' plan',
+                    ],
+                    'recurring' => [
+                        'interval' => $billingCycle === 'yearly' ? 'year' : 'month',
+                    ],
+                ],
+            ]],
+        ]);
+
+        if ($response->failed() || ! $response->json('id')) {
+            throw new RuntimeException('Stripe checkout session creation failed: '.$response->body());
+        }
+
+        return [
+            'link' => (string) $response->json('url'),
+            'tx_ref' => $txRef,
+        ];
+    }
+
+    public function resolveFromCallback(Request $request): ?array
+    {
+        $sessionId = $request->query('session_id');
+
+        if (! $sessionId) {
+            return null;
+        }
+
+        return $this->normalize($this->retrieveSession((string) $sessionId));
+    }
+
+    public function verifyWebhookSignature(Request $request): bool
+    {
+        $secret = $this->webhookSecret();
+        $header = (string) $request->header('Stripe-Signature');
+
+        if ($secret === '' || $header === '') {
+            return false;
+        }
+
+        $parts = [];
+        foreach (explode(',', $header) as $pair) {
+            [$key, $value] = array_pad(explode('=', $pair, 2), 2, null);
+            $parts[$key][] = $value;
+        }
+
+        $timestamp = $parts['t'][0] ?? null;
+        $signatures = $parts['v1'] ?? [];
+
+        if (! $timestamp || empty($signatures)) {
+            return false;
+        }
+
+        $expected = hash_hmac('sha256', $timestamp.'.'.$request->getContent(), $secret);
+
+        foreach ($signatures as $signature) {
+            if (hash_equals($expected, (string) $signature)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function resolveFromWebhook(Request $request): ?array
+    {
+        $payload = $request->json()->all();
+
+        if (($payload['type'] ?? null) !== 'checkout.session.completed') {
+            return null;
+        }
+
+        $session = $payload['data']['object'] ?? null;
+
+        if (! $session || empty($session['id'])) {
+            return null;
+        }
+
+        // The signature already proves this body came from Stripe, so —
+        // unlike Flutterwave, which we re-verify server-to-server — it's
+        // safe (and the documented Stripe-recommended approach) to trust
+        // the event payload directly instead of an extra API round-trip.
+        return $this->normalize($session);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function retrieveSession(string $sessionId): array
+    {
+        $response = Http::withToken($this->secretKey())
+            ->baseUrl($this->baseUrl())
+            ->get("/checkout/sessions/{$sessionId}");
+
+        if ($response->failed()) {
+            throw new RuntimeException('Stripe session retrieval failed: '.$response->body());
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * @param  array<string, mixed>  $session
+     * @return array<string, mixed>
+     */
+    protected function normalize(array $session): array
+    {
+        $paid = ($session['payment_status'] ?? null) === 'paid';
+
+        return [
+            'tx_ref' => (string) (data_get($session, 'metadata.tx_ref') ?? $session['client_reference_id'] ?? ''),
+            'remote_id' => (string) ($session['payment_intent'] ?? $session['id'] ?? ''),
+            'status' => $paid ? 'successful' : (string) ($session['payment_status'] ?? 'unpaid'),
+            'amount' => ((float) ($session['amount_total'] ?? 0)) / 100,
+            'currency' => strtoupper((string) ($session['currency'] ?? '')),
+            'meta' => (array) ($session['metadata'] ?? []),
+            'customer_reference' => (string) ($session['customer'] ?? ''),
+            'subscription_reference' => (string) ($session['subscription'] ?? ''),
+            'raw' => $session,
+        ];
+    }
+
+    public function verifyCredentials(): array
+    {
+        $secretKey = $this->secretKey();
+
+        if ($secretKey === '') {
+            return ['success' => false, 'message' => 'No secret key configured.'];
+        }
+
+        $response = Http::withToken($secretKey)
+            ->baseUrl($this->baseUrl())
+            ->get('/balance');
+
+        if ($response->status() === 401) {
+            return ['success' => false, 'message' => 'Stripe rejected the secret key (401 Unauthorized). Double-check it was copied in full and matches the correct mode (test vs. live).'];
+        }
+
+        if ($response->failed()) {
+            return ['success' => false, 'message' => 'Stripe API request failed: HTTP '.$response->status().' — '.Str::limit($response->body(), 200)];
+        }
+
+        return ['success' => true, 'message' => 'Connected successfully — Stripe accepted the secret key.'];
+    }
+}

@@ -34,6 +34,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SeoController;
+use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'marketing.home')->name('home');
@@ -62,6 +63,7 @@ Route::get('/go/{code}', [LinkController::class, 'redirect'])->name('links.redir
 Route::get('/r/{code}', [ReferralController::class, 'redirect'])->name('referrals.redirect');
 
 Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->name('webhooks.flutterwave');
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
 
 // The only door into an account: pick a plan, pay, get created. No open
 // registration exists anywhere in this app — see RegistrationController.

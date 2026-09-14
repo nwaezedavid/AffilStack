@@ -40,6 +40,18 @@
                         <option value="yearly">Yearly — ${{ number_format($plan->priceYearly()) }}/yr (2 months free)</option>
                     </select>
                 </div>
+                @if (count($enabledGateways) > 1)
+                    <div>
+                        <label class="block text-sm font-medium text-ink-900 mb-1">Payment method</label>
+                        <select name="gateway" class="w-full rounded-md border border-line px-3 py-2 text-sm">
+                            @foreach ($enabledGateways as $gateway)
+                                <option value="{{ $gateway->key() }}">{{ $gateway->label() }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @elseif (count($enabledGateways) === 1)
+                    <input type="hidden" name="gateway" value="{{ $enabledGateways[0]->key() }}">
+                @endif
                 <button type="submit" class="w-full rounded-md bg-navy-900 text-white text-sm font-medium py-2.5 hover:bg-navy-800 transition">
                     Continue to secure payment
                 </button>

@@ -30,6 +30,6 @@
             @endforeach
         </div>
 
-        <p class="text-xs text-ink-400 mt-6 text-center">Payments are processed securely by Flutterwave. Every plan comes with a 14-day money-back guarantee — email support if it's not for you.</p>
+        <p class="text-xs text-ink-400 mt-6 text-center">Payments are processed securely by Stripe or Flutterwave. Every plan comes with a 14-day money-back guarantee — email support if it's not for you.</p>
     </div>
 @endsection

@@ -16,6 +16,7 @@ class PaymentGatewayManager
      */
     protected array $gateways = [
         'flutterwave' => FlutterwaveGateway::class,
+        'stripe' => StripeGateway::class,
     ];
 
     public function get(string $key): PaymentGateway

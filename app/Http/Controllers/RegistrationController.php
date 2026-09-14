@@ -35,9 +35,11 @@ class RegistrationController extends Controller
         return view('registration.pricing', compact('plans'));
     }
 
-    public function showForm(Plan $plan): View
+    public function showForm(Plan $plan, PaymentGatewayManager $gateways): View
     {
-        return view('registration.signup', compact('plan'));
+        $enabledGateways = $gateways->enabled();
+
+        return view('registration.signup', compact('plan', 'enabledGateways'));
     }
 
     public function store(Request $request, Plan $plan, PaymentGatewayManager $gateways, ReferralService $referrals): RedirectResponse
@@ -52,7 +54,7 @@ class RegistrationController extends Controller
             return back()->with('error', 'Payments are temporarily unavailable — please try again shortly.');
         }
 
-        $gateway = $enabledGateways[0];
+        $gateway = collect($enabledGateways)->first(fn ($g) => $g->key() === $request->input('gateway')) ?? $enabledGateways[0];
 
         $validated = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],

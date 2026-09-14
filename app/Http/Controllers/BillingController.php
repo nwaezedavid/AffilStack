@@ -33,7 +33,7 @@ class BillingController extends Controller
             return back()->with('error', 'Payments are temporarily unavailable — please try again shortly.');
         }
 
-        $gateway = $enabledGateways[0];
+        $gateway = collect($enabledGateways)->first(fn ($g) => $g->key() === $request->input('gateway')) ?? $enabledGateways[0];
         $amount = $validated['billing_cycle'] === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents;
 
         try {

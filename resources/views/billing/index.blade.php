@@ -35,6 +35,15 @@
                         <option value="monthly">Monthly — ${{ number_format($plan->priceMonthly()) }}/mo</option>
                         <option value="yearly">Yearly — ${{ number_format($plan->priceYearly()) }}/yr</option>
                     </select>
+                    @if (count($enabledGateways) > 1)
+                        <select name="gateway" class="w-full rounded-md border border-line px-2 py-1.5 text-xs">
+                            @foreach ($enabledGateways as $gateway)
+                                <option value="{{ $gateway->key() }}">{{ $gateway->label() }}</option>
+                            @endforeach
+                        </select>
+                    @elseif (count($enabledGateways) === 1)
+                        <input type="hidden" name="gateway" value="{{ $enabledGateways[0]->key() }}">
+                    @endif
                     <button class="w-full rounded-md bg-navy-900 text-white text-sm py-2 hover:bg-navy-800 transition">
                         {{ $subscription?->plan_id === $plan->id ? 'Current plan' : 'Choose plan' }}
                     </button>
@@ -43,5 +52,5 @@
         @endforeach
     </div>
 
-    <p class="text-xs text-ink-400 mt-6">Payments are processed securely by Flutterwave. You'll be redirected to their checkout to complete payment.</p>
+    <p class="text-xs text-ink-400 mt-6">Payments are processed securely by {{ $enabledGateways ? collect($enabledGateways)->map->label()->implode(' or ') : 'our payment provider' }}. You'll be redirected to complete payment.</p>
 @endsection

@@ -43,6 +43,14 @@ return [
         'secret_hash' => env('FLUTTERWAVE_SECRET_HASH'),
     ],
 
+    'stripe' => [
+        'base_url' => env('STRIPE_BASE_URL', 'https://api.stripe.com/v1'),
+        'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),
+        'secret_key' => env('STRIPE_SECRET_KEY'),
+        // Set in the Stripe dashboard under Developers > Webhooks (signing secret, starts "whsec_").
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
     'google_places' => [
         'api_key' => env('GOOGLE_PLACES_API_KEY'),
     ],
