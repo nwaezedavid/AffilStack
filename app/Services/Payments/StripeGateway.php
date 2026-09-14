@@ -17,12 +17,14 @@ use RuntimeException;
  * pre-created Stripe Price objects, so plans stay editable from Filament
  * without touching Stripe's dashboard.
  *
- * Renewal-invoice events (invoice.paid, invoice.payment_failed,
- * customer.subscription.deleted) are deliberately not handled here — that's
- * the cross-gateway subscription-renewal-reliability work, not initial
- * checkout. This gateway only resolves the one-time
- * "checkout.session.completed" event that mirrors Flutterwave's
- * callback/webhook shape.
+ * resolveFromWebhook() only ever resolves the one-time
+ * "checkout.session.completed" event, mirroring Flutterwave's
+ * callback/webhook shape (initial signup/upgrade checkout). The recurring
+ * renewal-cycle events — invoice.paid, invoice.payment_failed,
+ * customer.subscription.deleted — are resolved separately by
+ * resolveRenewalEvent() and handled by SubscriptionRenewalService (task
+ * #85), since they don't fit the tx_ref-based shape PaymentProcessor
+ * expects: a renewal has no PaymentTransaction row yet to match against.
  */
 class StripeGateway implements PaymentGateway
 {
@@ -232,6 +234,93 @@ class StripeGateway implements PaymentGateway
             'customer_reference' => (string) ($session['customer'] ?? ''),
             'subscription_reference' => (string) ($session['subscription'] ?? ''),
             'raw' => $session,
+        ];
+    }
+
+    /**
+     * Resolves the recurring-billing webhook events checkout doesn't cover
+     * — see class docblock. Deliberately separate from resolveFromWebhook()
+     * / the PaymentGateway interface: nothing else needs a gateway to
+     * report these, and StripeWebhookController calls this alongside
+     * resolveFromWebhook() for every incoming event, so exactly one of the
+     * two (or neither, for event types this app doesn't act on) matches
+     * any given payload.
+     *
+     * @return null|array{kind: string, gateway_subscription_id: string, gateway_tx_id?: string, amount?: float, currency?: string, raw: array<string, mixed>}
+     */
+    public function resolveRenewalEvent(Request $request): ?array
+    {
+        $payload = $request->json()->all();
+        $object = $payload['data']['object'] ?? [];
+
+        return match ($payload['type'] ?? null) {
+            'invoice.paid' => $this->resolveInvoicePaid($object),
+            'invoice.payment_failed' => $this->resolveInvoiceFailed($object),
+            'customer.subscription.deleted' => $this->resolveSubscriptionDeleted($object),
+            default => null,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $invoice
+     * @return array<string, mixed>|null
+     */
+    protected function resolveInvoicePaid(array $invoice): ?array
+    {
+        // Checkout's own first invoice also fires invoice.paid (with
+        // billing_reason "subscription_create") at the same time as
+        // checkout.session.completed — that one is already handled by
+        // resolveFromWebhook()/PaymentProcessor. Only "subscription_cycle"
+        // is a genuine recurring renewal.
+        if (($invoice['billing_reason'] ?? null) !== 'subscription_cycle') {
+            return null;
+        }
+
+        if (empty($invoice['subscription'])) {
+            return null;
+        }
+
+        return [
+            'kind' => 'renewed',
+            'gateway_subscription_id' => (string) $invoice['subscription'],
+            'gateway_tx_id' => (string) ($invoice['id'] ?? ''),
+            'amount' => ((float) ($invoice['amount_paid'] ?? 0)) / 100,
+            'currency' => strtoupper((string) ($invoice['currency'] ?? '')),
+            'raw' => $invoice,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $invoice
+     * @return array<string, mixed>|null
+     */
+    protected function resolveInvoiceFailed(array $invoice): ?array
+    {
+        if (empty($invoice['subscription'])) {
+            return null;
+        }
+
+        return [
+            'kind' => 'payment_failed',
+            'gateway_subscription_id' => (string) $invoice['subscription'],
+            'raw' => $invoice,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $subscription
+     * @return array<string, mixed>|null
+     */
+    protected function resolveSubscriptionDeleted(array $subscription): ?array
+    {
+        if (empty($subscription['id'])) {
+            return null;
+        }
+
+        return [
+            'kind' => 'canceled',
+            'gateway_subscription_id' => (string) $subscription['id'],
+            'raw' => $subscription,
         ];
     }
 

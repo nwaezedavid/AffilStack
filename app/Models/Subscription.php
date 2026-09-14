@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'user_id', 'plan_id', 'status', 'billing_cycle', 'gateway', 'gateway_customer_id',
     'gateway_subscription_id', 'trial_ends_at', 'current_period_start',
-    'current_period_end', 'cancel_at_period_end', 'canceled_at',
+    'current_period_end', 'cancel_at_period_end', 'canceled_at', 'renewal_reminder_sent_at',
 ])]
 class Subscription extends Model
 {
@@ -22,6 +22,7 @@ class Subscription extends Model
             'current_period_end' => 'datetime',
             'canceled_at' => 'datetime',
             'cancel_at_period_end' => 'boolean',
+            'renewal_reminder_sent_at' => 'datetime',
         ];
     }
 

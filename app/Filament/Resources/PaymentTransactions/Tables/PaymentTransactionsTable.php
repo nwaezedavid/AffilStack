@@ -39,7 +39,9 @@ class PaymentTransactionsTable
                     'refunded' => 'Refunded',
                 ]),
                 SelectFilter::make('type')->options([
+                    'signup' => 'Signup (unconverted)',
                     'subscription' => 'Subscription',
+                    'renewal' => 'Renewal',
                     'credit_topup' => 'Credit top-up',
                     'addon' => 'Add-on',
                 ]),

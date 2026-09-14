@@ -23,6 +23,20 @@ ScheduleMonitoring::track(
     'signups:prune-expired',
 );
 
+// Subscription renewal reliability (task #85). Stripe renews itself via
+// webhook (see StripeWebhookController/SubscriptionRenewalService) — these
+// two exist for Flutterwave, which never auto-renews, and as the
+// safety-net that actually revokes access once a period lapses either way.
+ScheduleMonitoring::track(
+    Schedule::command('subscriptions:send-renewal-reminders')->daily()->withoutOverlapping(),
+    'subscriptions:send-renewal-reminders',
+);
+
+ScheduleMonitoring::track(
+    Schedule::command('subscriptions:expire-lapsed')->hourly()->withoutOverlapping(),
+    'subscriptions:expire-lapsed',
+);
+
 // Self-maintenance: keep the run-history table itself from growing forever.
 Schedule::call(fn () => ScheduledTaskRun::where('created_at', '<', now()->subDays(30))->delete())
     ->daily()
