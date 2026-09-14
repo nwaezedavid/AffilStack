@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\CrmEmailTrackingController;
 use App\Http\Controllers\Dashboard\BlogController;
 use App\Http\Controllers\Dashboard\CompetitorAngleController;
 use App\Http\Controllers\Dashboard\ContentCalendarController;
@@ -63,6 +64,14 @@ Route::get('/go/{code}', [LinkController::class, 'redirect'])->name('links.redir
 // signup, not an AffilStack user yet. See ReferralController.
 Route::get('/r/{code}', [ReferralController::class, 'redirect'])->name('referrals.redirect');
 
+// CRM/email dashboard: public, unauthenticated — the open pixel and click
+// redirect are hit by the CRM contact's own email client, never by an
+// AffilStack user, and the unsubscribe link must work without logging in.
+// See CrmEmailService/CrmEmailTrackingController.
+Route::get('/e/o/{token}.png', [CrmEmailTrackingController::class, 'open'])->name('crm.track.open');
+Route::get('/e/c/{token}', [CrmEmailTrackingController::class, 'click'])->name('crm.track.click');
+Route::get('/crm/unsubscribe/{token}', [CrmController::class, 'unsubscribe'])->name('crm.unsubscribe');
+
 Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->name('webhooks.flutterwave');
 Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
 
@@ -122,6 +131,7 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
     Route::post('/offers/{offer}/pinterest/pins', [PinterestController::class, 'pins'])->name('offers.pinterest.pins');
 
     Route::post('/offers/{offer}/nurture/generate', [EmailNurtureController::class, 'generate'])->name('offers.nurture.generate');
+    Route::post('/generations/{generation}/nurture/send', [EmailNurtureController::class, 'send'])->name('generations.nurture.send');
 
     Route::get('/crm', [CrmController::class, 'index'])->name('crm.index');
     Route::post('/crm', [CrmController::class, 'store'])->name('crm.store');

@@ -11,6 +11,20 @@ use Illuminate\View\View;
 
 class CrmController extends Controller
 {
+    /**
+     * Public, unauthenticated — see routes/web.php and CrmEmailService.
+     */
+    public function unsubscribe(string $token): View
+    {
+        $contact = CrmContact::where('unsubscribe_token', $token)->firstOrFail();
+
+        if (! $contact->isUnsubscribed()) {
+            $contact->update(['unsubscribed_at' => now()]);
+        }
+
+        return view('marketing.crm-unsubscribed', ['senderName' => $contact->user->name]);
+    }
+
     public function index(): View
     {
         $contacts = auth()->user()->crmContacts()->latest()->paginate(20);

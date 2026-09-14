@@ -69,6 +69,16 @@ class Generation extends Model
     }
 
     /**
+     * Real emails actually sent from this generation (CRM dashboard phase,
+     * email_nurture module only) — see CrmEmailService. Distinct from this
+     * generation's own AI-drafted output_meta['emails'].
+     */
+    public function emailSends(): HasMany
+    {
+        return $this->hasMany(CrmEmailSend::class);
+    }
+
+    /**
      * Whether $user may view/act on this generation — its creator, or
      * anyone with access to its offer (a team seat scoped to that one
      * offer, or the offer's owner touching a seat's work). Routes through
