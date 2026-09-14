@@ -511,11 +511,49 @@
                         </p>
                         <div class="space-y-3">
                             @foreach ($gen->output_meta['emails'] ?? [] as $email)
+                                @php
+                                    $lastSend = $gen->emailSends->where('sequence_step', $email['step'] ?? null)->sortByDesc('created_at')->first();
+                                @endphp
                                 <div class="border-l-2 border-gold-500 pl-3">
-                                    <div class="text-xs text-ink-400 font-mono">Email {{ $email['step'] ?? '' }} &middot; {{ $email['send_timing'] ?? '' }}</div>
+                                    <div class="flex items-center justify-between gap-3 flex-wrap">
+                                        <div class="text-xs text-ink-400 font-mono">Email {{ $email['step'] ?? '' }} &middot; {{ $email['send_timing'] ?? '' }}</div>
+                                        @if ($lastSend)
+                                            <div class="flex items-center gap-1.5 text-xs">
+                                                @if ($lastSend->status === 'failed')
+                                                    <span class="px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-mono">✗ send failed</span>
+                                                @else
+                                                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-mono">✓ sent {{ $lastSend->sent_at?->diffForHumans() }}</span>
+                                                    @if ($lastSend->opened_at)
+                                                        <span class="px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 font-mono">opened</span>
+                                                    @endif
+                                                    @if ($lastSend->first_clicked_at)
+                                                        <span class="px-2 py-0.5 rounded-full bg-gold-100 text-gold-800 font-mono">clicked</span>
+                                                    @endif
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </div>
                                     <div class="text-sm font-medium text-ink-900">{{ $email['subject'] ?? '' }}</div>
                                     <div class="mb-1">@include('dashboard.offers._disclosure_badge', ['text' => $email['body'] ?? ''])</div>
                                     <div class="text-sm text-ink-900 whitespace-pre-line">{{ $offer->cloak($email['body'] ?? '', $gen->module) }}</div>
+
+                                    <div class="mt-2">
+                                        @if (! $nurtureContact)
+                                            {{-- no send action: contact is gone --}}
+                                        @elseif ($nurtureContact->isUnsubscribed())
+                                            <span class="text-xs text-ink-400">{{ $nurtureContact->name }} has unsubscribed — this step can't be sent.</span>
+                                        @elseif (! $nurtureContact->email)
+                                            <span class="text-xs text-ink-400">No email address on file for {{ $nurtureContact->name }}.</span>
+                                        @else
+                                            <form method="POST" action="{{ route('generations.nurture.send', $gen) }}" onsubmit="return confirm('Send this email to {{ $nurtureContact->name }} now?')">
+                                                @csrf
+                                                <input type="hidden" name="step" value="{{ $email['step'] ?? '' }}">
+                                                <button class="text-xs rounded-md border border-line px-2.5 py-1.5 hover:bg-surface-muted transition">
+                                                    {{ $lastSend && $lastSend->status !== 'failed' ? 'Resend' : 'Send now' }}
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </div>
                             @endforeach
                         </div>

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CrmContacts;
 
 use App\Filament\Resources\CrmContacts\Pages\EditCrmContact;
 use App\Filament\Resources\CrmContacts\Pages\ListCrmContacts;
+use App\Filament\Resources\CrmContacts\RelationManagers\EmailSendsRelationManager;
 use App\Filament\Resources\CrmContacts\Schemas\CrmContactForm;
 use App\Filament\Resources\CrmContacts\Tables\CrmContactsTable;
 use App\Models\CrmContact;
@@ -36,6 +37,13 @@ class CrmContactResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            EmailSendsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

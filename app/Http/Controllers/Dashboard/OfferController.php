@@ -61,7 +61,7 @@ class OfferController extends Controller
     {
         abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
-        $offer->load('generations', 'researchClips');
+        $offer->load('generations.emailSends', 'researchClips');
         $contacts = auth()->user()->crmContacts()->orderBy('name')->get();
 
         return view('dashboard.offers.show', compact('offer', 'contacts'));
