@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             FaqItemsSeeder::class,
             SwipeFileEntriesSeeder::class,
+            HomepageFeaturesSeeder::class,
         ]);
     }
 }

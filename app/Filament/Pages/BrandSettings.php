@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -45,6 +46,11 @@ class BrandSettings extends Page
             'menu_items' => SiteSetting::get('menu_items', []),
             'header_announcement' => SiteSetting::get('header_announcement'),
             'footer_text' => SiteSetting::get('footer_text', '© '.date('Y').' AffilStack.'),
+            'hero_headline' => SiteSetting::get('hero_headline'),
+            'hero_subheadline' => SiteSetting::get('hero_subheadline'),
+            'hero_media_type' => SiteSetting::get('hero_media_type', 'none'),
+            'hero_image' => SiteSetting::get('hero_image_path'),
+            'hero_youtube_url' => SiteSetting::get('hero_youtube_url'),
         ]);
     }
 
@@ -80,6 +86,36 @@ class BrandSettings extends Page
                         ColorPicker::make('color_gold')->label('Gold (accent)'),
                     ]),
 
+                Section::make('Homepage hero')
+                    ->description('The main banner at the top of the homepage. Leave the headline/subheadline blank to keep the default copy.')
+                    ->columns(2)
+                    ->components([
+                        TextInput::make('hero_headline')->columnSpanFull(),
+                        Textarea::make('hero_subheadline')->rows(2)->columnSpanFull(),
+                        Select::make('hero_media_type')
+                            ->label('Hero media')
+                            ->options([
+                                'none' => 'None',
+                                'image' => 'Image',
+                                'youtube' => 'YouTube video',
+                            ])
+                            ->default('none')
+                            ->live()
+                            ->columnSpanFull(),
+                        FileUpload::make('hero_image')
+                            ->image()
+                            ->disk('public')
+                            ->directory('branding')
+                            ->visible(fn ($get) => $get('hero_media_type') === 'image')
+                            ->columnSpanFull(),
+                        TextInput::make('hero_youtube_url')
+                            ->label('YouTube URL')
+                            ->url()
+                            ->placeholder('https://www.youtube.com/watch?v=...')
+                            ->visible(fn ($get) => $get('hero_media_type') === 'youtube')
+                            ->columnSpanFull(),
+                    ]),
+
                 Section::make('Navigation menu')
                     ->components([
                         Repeater::make('menu_items')
@@ -109,10 +145,13 @@ class BrandSettings extends Page
         foreach ([
             'site_name', 'logo', 'favicon', 'color_primary', 'color_navy',
             'color_gold', 'menu_items', 'header_announcement', 'footer_text',
+            'hero_headline', 'hero_subheadline', 'hero_media_type',
+            'hero_image', 'hero_youtube_url',
         ] as $key) {
             $settingKey = match ($key) {
                 'logo' => 'logo_path',
                 'favicon' => 'favicon_path',
+                'hero_image' => 'hero_image_path',
                 default => $key,
             };
 
