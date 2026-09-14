@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\PaymentGatewaySetting;
+use App\Services\Payments\PaymentCredentialAdvisor;
 use App\Services\Payments\PaymentGatewayManager;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -41,6 +42,15 @@ class PaymentGatewaySettings extends Page
      * @var array<string, mixed>
      */
     public ?array $data = [];
+
+    /**
+     * AI explanations of the most recent failed verification, keyed by
+     * gateway — populated on demand via the "Explain with AI" action so a
+     * non-technical admin isn't left staring at a raw HTTP error.
+     *
+     * @var array<string, string>
+     */
+    public array $aiExplanations = [];
 
     public function mount(): void
     {
@@ -126,10 +136,16 @@ class PaymentGatewaySettings extends Page
 
         $when = $settings->last_verified_at->diffForHumans();
 
-        return match ($settings->last_verification_status) {
+        $line = match ($settings->last_verification_status) {
             'success' => "✓ Verified {$when} — {$settings->last_verification_message}",
             default => "✗ Verification failed {$when} — {$settings->last_verification_message}",
         };
+
+        if ($explanation = $this->aiExplanations[$gateway] ?? null) {
+            $line .= " — AI assistant: {$explanation}";
+        }
+
+        return $line;
     }
 
     public function save(): void
@@ -180,6 +196,30 @@ class PaymentGatewaySettings extends Page
             ->send();
     }
 
+    /**
+     * Explains the gateway's last failed verification in plain English via
+     * the app's existing AI provider abstraction (task #83). Only the
+     * gateway name and the already-sanitized failure message are sent —
+     * never any credential, entered or stored.
+     */
+    public function explainFailure(string $gateway, PaymentCredentialAdvisor $advisor): void
+    {
+        $settings = PaymentGatewaySetting::forGateway($gateway);
+
+        if ($settings->last_verification_status !== 'failed' || ! $settings->last_verification_message) {
+            return;
+        }
+
+        $this->aiExplanations[$gateway] = $explanation = $advisor->explain($gateway, $settings->last_verification_message);
+
+        Notification::make()
+            ->title(ucfirst($gateway).' verification — AI explanation')
+            ->body($explanation)
+            ->info()
+            ->persistent()
+            ->send();
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -187,10 +227,22 @@ class PaymentGatewaySettings extends Page
                 ->label('Verify Flutterwave')
                 ->color('gray')
                 ->action(fn (PaymentGatewayManager $gateways) => $this->verify('flutterwave', $gateways)),
+            Action::make('explain_flutterwave')
+                ->label('Explain with AI')
+                ->color('gray')
+                ->icon(Heroicon::OutlinedSparkles)
+                ->visible(fn () => PaymentGatewaySetting::forGateway('flutterwave')->last_verification_status === 'failed')
+                ->action(fn (PaymentCredentialAdvisor $advisor) => $this->explainFailure('flutterwave', $advisor)),
             Action::make('verify_stripe')
                 ->label('Verify Stripe')
                 ->color('gray')
                 ->action(fn (PaymentGatewayManager $gateways) => $this->verify('stripe', $gateways)),
+            Action::make('explain_stripe')
+                ->label('Explain with AI')
+                ->color('gray')
+                ->icon(Heroicon::OutlinedSparkles)
+                ->visible(fn () => PaymentGatewaySetting::forGateway('stripe')->last_verification_status === 'failed')
+                ->action(fn (PaymentCredentialAdvisor $advisor) => $this->explainFailure('stripe', $advisor)),
         ];
     }
 

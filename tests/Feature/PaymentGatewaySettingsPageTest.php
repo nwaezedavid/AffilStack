@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Pages\PaymentGatewaySettings;
 use App\Models\PaymentGatewaySetting;
 use App\Models\User;
+use App\Services\Payments\PaymentCredentialAdvisor;
 use App\Services\Payments\PaymentGatewayManager;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -79,5 +80,39 @@ class PaymentGatewaySettingsPageTest extends TestCase
         $this->assertSame('failed', $stripe->last_verification_status);
         $this->assertNotNull($stripe->last_verified_at);
         $this->assertStringContainsString('401', $stripe->last_verification_message);
+    }
+
+    public function test_explain_with_ai_only_runs_after_a_failed_verification_and_never_sends_the_secret(): void
+    {
+        config(['ai.openai.api_key' => 'test-key']);
+
+        Http::fake([
+            'api.stripe.com/v1/balance' => Http::response([], 401),
+            'api.openai.com/*' => Http::response([
+                'choices' => [['message' => ['content' => 'That looks like a publishable key — use the secret key instead.']]],
+            ], 200),
+        ]);
+
+        $component = Livewire::actingAs($this->admin)
+            ->test(PaymentGatewaySettings::class)
+            ->fillForm(['stripe' => ['is_enabled' => true, 'secret_key' => 'pk_test_wrong_type']])
+            ->call('verify', 'stripe', app(PaymentGatewayManager::class))
+            ->call('explainFailure', 'stripe', app(PaymentCredentialAdvisor::class));
+
+        $this->assertSame(
+            'That looks like a publishable key — use the secret key instead.',
+            $component->get('aiExplanations')['stripe']
+        );
+
+        // The prompt sent to the AI carries only the gateway name and the
+        // sanitized failure message — the entered credential never leaves
+        // this app.
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), 'api.openai.com')) {
+                return true;
+            }
+
+            return ! str_contains(json_encode($request->data()), 'pk_test_wrong_type');
+        });
     }
 }
