@@ -30,6 +30,18 @@
         </button>
     </form>
 
+    @if (\App\Models\GoogleOauthSetting::current()->is_enabled)
+        <div class="flex items-center gap-3 my-6">
+            <div class="flex-1 h-px bg-line"></div>
+            <span class="text-xs text-ink-400 uppercase tracking-wide">or</span>
+            <div class="flex-1 h-px bg-line"></div>
+        </div>
+
+        <a href="{{ route('google.redirect') }}" class="w-full flex items-center justify-center gap-2 rounded-md border border-line text-sm font-medium py-2.5 hover:bg-surface transition">
+            Continue with Google
+        </a>
+    @endif
+
     <p class="mt-6 text-center text-sm text-ink-600">
         New to AffilStack? <a href="{{ route('registration.pricing') }}" class="text-brand-600 hover:text-brand-700 font-medium">See plans &amp; pricing</a>
     </p>

@@ -106,6 +106,7 @@ class PaymentProcessor
                 $user = User::create([
                     'name' => $pending->name,
                     'email' => $pending->email,
+                    'google_id' => $pending->google_id,
                     'password' => $pending->password, // already hashed at signup time
                 ]);
                 $user->assignRole('user');

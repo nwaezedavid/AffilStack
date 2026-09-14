@@ -57,6 +57,23 @@
                 </button>
             </form>
 
+            @if (\App\Models\GoogleOauthSetting::current()->is_enabled)
+                <div class="flex items-center gap-3 my-6">
+                    <div class="flex-1 h-px bg-line"></div>
+                    <span class="text-xs text-ink-400 uppercase tracking-wide">or</span>
+                    <div class="flex-1 h-px bg-line"></div>
+                </div>
+
+                <form method="POST" action="{{ route('registration.google', $plan) }}">
+                    @csrf
+                    <input type="hidden" name="billing_cycle" value="monthly">
+                    <button type="submit" class="w-full flex items-center justify-center gap-2 rounded-md border border-line text-sm font-medium py-2.5 hover:bg-white transition">
+                        Continue with Google
+                    </button>
+                    <p class="text-xs text-ink-400 mt-2 text-center">Starts on monthly billing — switch to yearly anytime from your dashboard.</p>
+                </form>
+            @endif
+
             <p class="mt-6 text-center text-sm text-ink-600">
                 Already have an account? <a href="{{ route('login') }}" class="text-brand-600 hover:text-brand-700 font-medium">Sign in</a>
             </p>

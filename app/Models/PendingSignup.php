@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['name', 'email', 'password', 'plan_id', 'billing_cycle', 'tx_ref', 'status', 'expires_at', 'referred_by_user_id'])]
+#[Fillable(['name', 'email', 'google_id', 'password', 'plan_id', 'billing_cycle', 'tx_ref', 'status', 'expires_at', 'referred_by_user_id'])]
 #[Hidden(['password'])]
 class PendingSignup extends Model
 {

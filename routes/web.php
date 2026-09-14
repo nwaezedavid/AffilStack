@@ -26,6 +26,7 @@ use App\Http\Controllers\Dashboard\UgcController;
 use App\Http\Controllers\Dashboard\XController;
 use App\Http\Controllers\Dashboard\YouTubeController;
 use App\Http\Controllers\FlutterwaveWebhookController;
+use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\NotificationController;
@@ -77,6 +78,12 @@ Route::get('/pricing', [RegistrationController::class, 'pricing'])->name('regist
 Route::get('/get-started/callback', [RegistrationController::class, 'callback'])->name('registration.callback');
 Route::get('/get-started/{plan}', [RegistrationController::class, 'showForm'])->name('registration.form');
 Route::post('/get-started/{plan}', [RegistrationController::class, 'store'])->name('registration.store');
+Route::post('/get-started/{plan}/google', [GoogleAuthController::class, 'redirectForSignup'])->name('registration.google');
+
+// "Continue with Google" — one callback for both the login page and the
+// signup form; see GoogleAuthController for how it tells them apart.
+Route::get('/auth/google', [GoogleAuthController::class, 'redirectForLogin'])->name('google.redirect');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
 
 Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

@@ -55,4 +55,9 @@ return [
         'api_key' => env('GOOGLE_PLACES_API_KEY'),
     ],
 
+    'google_oauth' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+    ],
+
 ];
