@@ -19,7 +19,7 @@ use RuntimeException;
  * category, thumbnail prompt) written to match the script that was actually
  * generated — not just the offer in isolation. Like LinkedIn's image_prompt
  * fields, the thumbnail is a text prompt for the user to run through an
- * image generator of their choice, not an image AffiliStack creates itself.
+ * image generator of their choice, not an image AffilStack creates itself.
  *
  * Runs in the background — see OfferResearchService for the same
  * queue()/run() split.

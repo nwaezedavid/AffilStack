@@ -110,7 +110,7 @@
 
             <div class="bg-surface border border-line rounded-lg p-5">
                 <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">LinkedIn</h3>
-                <p class="text-xs text-ink-600 mb-3">Content only — you send it. AffiliStack never DMs or posts for you.</p>
+                <p class="text-xs text-ink-600 mb-3">Content only — you send it. AffilStack never DMs or posts for you.</p>
                 <div class="flex flex-wrap gap-2">
                     <form method="POST" action="{{ route('offers.linkedin.keywords', $offer) }}">
                         @csrf

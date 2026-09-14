@@ -77,7 +77,7 @@ class CrmController extends Controller
 
         return Response::make($csv, 200, [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="affilistack-contacts.csv"',
+            'Content-Disposition' => 'attachment; filename="affilstack-contacts.csv"',
         ]);
     }
 }

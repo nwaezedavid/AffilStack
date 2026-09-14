@@ -17,7 +17,7 @@ class FaqItemsSeeder extends Seeder
         $items = [
             [
                 'category' => 'account',
-                'question' => 'How do I create an AffiliStack account?',
+                'question' => 'How do I create an AffilStack account?',
                 'answer' => "There's no separate sign-up step — pick a plan on the Pricing page, complete payment, and your account is created automatically the moment payment is confirmed. There's no free trial account without a paid plan.",
             ],
             [
@@ -43,7 +43,7 @@ class FaqItemsSeeder extends Seeder
             [
                 'category' => 'features',
                 'question' => 'What are credits and how do they work?',
-                'answer' => 'Credits are what AffiliStack uses to meter AI usage — offer research, blog articles, and LinkedIn content each consume a set number of credits per generation. Your plan includes a monthly credit allowance, visible in your dashboard sidebar.',
+                'answer' => 'Credits are what AffilStack uses to meter AI usage — offer research, blog articles, and LinkedIn content each consume a set number of credits per generation. Your plan includes a monthly credit allowance, visible in your dashboard sidebar.',
             ],
             [
                 'category' => 'features',

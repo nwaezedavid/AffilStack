@@ -10,13 +10,13 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $email = env('ADMIN_EMAIL', 'admin@affilistack.test');
+        $email = env('ADMIN_EMAIL', 'admin@affilstack.test');
         $password = env('ADMIN_PASSWORD', 'change-this-password');
 
         $admin = User::firstOrCreate(
             ['email' => $email],
             [
-                'name' => 'AffiliStack Admin',
+                'name' => 'AffilStack Admin',
                 'password' => Hash::make($password),
                 'credits_balance' => 0,
             ]

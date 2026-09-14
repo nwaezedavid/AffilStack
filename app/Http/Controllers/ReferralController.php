@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 /**
  * Public, unauthenticated referral redirect — whoever clicks /r/{code} is a
- * prospective signup, not an AffiliStack user yet. Logs the click, sets the
+ * prospective signup, not an AffilStack user yet. Logs the click, sets the
  * attribution cookie RegistrationController::store() reads later, and sends
  * them to pricing. An unrecognized code degrades to a plain, cookie-less
  * redirect to pricing rather than a 404 — a stale or mistyped referral link

@@ -62,7 +62,7 @@ class BillingController extends Controller
         $transaction = $processor->process($verified);
 
         if ($transaction && $transaction->status === 'successful') {
-            return redirect()->route('dashboard')->with('success', 'Your plan is now active. Welcome to AffiliStack.');
+            return redirect()->route('dashboard')->with('success', 'Your plan is now active. Welcome to AffilStack.');
         }
 
         return redirect()->route('billing.index')->with('error', 'We could not verify that payment. No charge was applied to your plan.');

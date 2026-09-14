@@ -3,7 +3,7 @@
 @section('title', 'Swipe Files')
 
 @section('content')
-    <p class="text-sm text-ink-600 max-w-lg mb-6">A curated library of hooks, email subject lines, and thumbnail styles by niche — proven patterns to start from instead of a blank page. Curated by AffiliStack, not AI-generated, since a swipe file's whole point is that these patterns have actually worked.</p>
+    <p class="text-sm text-ink-600 max-w-lg mb-6">A curated library of hooks, email subject lines, and thumbnail styles by niche — proven patterns to start from instead of a blank page. Curated by AffilStack, not AI-generated, since a swipe file's whole point is that these patterns have actually worked.</p>
 
     <form method="GET" action="{{ route('swipe-files.index') }}" class="flex flex-wrap gap-2 mb-6">
         <select name="type" onchange="this.form.submit()" class="rounded-md border border-line px-3 py-1.5 text-sm">

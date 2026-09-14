@@ -79,8 +79,8 @@ class SupportChatService
             ->implode("\n\n");
 
         return <<<PROMPT
-            You are the AffiliStack support assistant, embedded in the user's dashboard.
-            AffiliStack is an all-in-one SaaS for affiliate marketers: offer/product
+            You are the AffilStack support assistant, embedded in the user's dashboard.
+            AffilStack is an all-in-one SaaS for affiliate marketers: offer/product
             research, a LinkedIn content module (keywords, DM sequences, posts,
             articles — content generation only, it never auto-sends anything), a
             one-click SEO blog article generator, a credit-based AI usage system,

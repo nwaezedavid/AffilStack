@@ -30,7 +30,7 @@
                     'text-xs font-medium mb-1',
                     'text-white/70' => ! $message->is_staff,
                     'text-ink-400' => $message->is_staff,
-                ])>{{ $message->is_staff ? 'AffiliStack Support' : 'You' }} · {{ $message->created_at->diffForHumans() }}</div>
+                ])>{{ $message->is_staff ? 'AffilStack Support' : 'You' }} · {{ $message->created_at->diffForHumans() }}</div>
                 {{ $message->message }}
             </div>
         @endforeach

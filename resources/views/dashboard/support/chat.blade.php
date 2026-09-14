@@ -7,7 +7,7 @@
 
     <div class="bg-surface border border-line rounded-lg mt-4 flex flex-col" style="height: 65vh;">
         <div class="border-b border-line px-4 py-3">
-            <h1 class="text-sm font-semibold text-ink-900">AffiliStack AI Assistant</h1>
+            <h1 class="text-sm font-semibold text-ink-900">AffilStack AI Assistant</h1>
             <p class="text-xs text-ink-400">Answers instantly from our knowledge base. Ask it to reach a human anytime.</p>
         </div>
 
@@ -20,7 +20,7 @@
                 ])>{{ $message->content }}</div>
             @empty
                 <div class="bg-surface-muted text-ink-900 rounded-lg px-3 py-2 text-sm max-w-lg">
-                    Hi! I'm the AffiliStack assistant. Ask me anything about offers, LinkedIn content, billing, or your account — and I'll connect you to a human if I can't help.
+                    Hi! I'm the AffilStack assistant. Ask me anything about offers, LinkedIn content, billing, or your account — and I'll connect you to a human if I can't help.
                 </div>
             @endforelse
         </div>

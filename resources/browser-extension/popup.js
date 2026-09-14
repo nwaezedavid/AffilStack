@@ -1,4 +1,4 @@
-// Popup logic for the AffiliStack Research Capture extension.
+// Popup logic for the AffilStack Research Capture extension.
 //
 // Deliberately uses activeTab + scripting (injected only when the popup
 // opens, only into the current tab) rather than a persistent content
@@ -102,7 +102,7 @@ async function init() {
       formEl.hidden = true;
     }
   } catch (error) {
-    setStatus("Couldn't reach AffiliStack — check your connection.", 'error');
+    setStatus("Couldn't reach AffilStack — check your connection.", 'error');
   }
 }
 
@@ -134,7 +134,7 @@ saveButton.addEventListener('click', async () => {
     });
 
     if (response.ok) {
-      setStatus('Saved to AffiliStack.', 'success');
+      setStatus('Saved to AffilStack.', 'success');
       setTimeout(() => window.close(), 900);
     } else {
       const body = await response.json().catch(() => ({}));
@@ -142,7 +142,7 @@ saveButton.addEventListener('click', async () => {
       saveButton.disabled = false;
     }
   } catch (error) {
-    setStatus("Couldn't reach AffiliStack — check your connection.", 'error');
+    setStatus("Couldn't reach AffilStack — check your connection.", 'error');
     saveButton.disabled = false;
   }
 });

@@ -95,7 +95,7 @@ class ExtensionController extends Controller
     public function download(): BinaryFileResponse
     {
         $sourceDir = resource_path('browser-extension');
-        $zipPath = storage_path('app/affilistack-extension.zip');
+        $zipPath = storage_path('app/affilstack-extension.zip');
 
         if (file_exists($zipPath)) {
             unlink($zipPath);
@@ -110,12 +110,12 @@ class ExtensionController extends Controller
                 continue;
             }
 
-            $relativePath = 'affilistack-extension/'.substr($file->getPathname(), strlen($sourceDir) + 1);
+            $relativePath = 'affilstack-extension/'.substr($file->getPathname(), strlen($sourceDir) + 1);
             $zip->addFile($file->getPathname(), $relativePath);
         }
 
         $zip->close();
 
-        return response()->download($zipPath, 'affilistack-extension.zip')->deleteFileAfterSend();
+        return response()->download($zipPath, 'affilstack-extension.zip')->deleteFileAfterSend();
     }
 }

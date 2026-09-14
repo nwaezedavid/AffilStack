@@ -1,9 +1,17 @@
+<?php
+    $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
+    $logo = \App\Models\SiteSetting::get('logo_path');
+    $favicon = \App\Models\SiteSetting::get('favicon_path');
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Dashboard') · AffiliStack</title>
+    <title>@yield('title', 'Dashboard') · {{ $siteName }}</title>
+    @if ($favicon)
+        <link rel="icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
+    @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
@@ -13,8 +21,12 @@
         <aside class="w-64 shrink-0 bg-navy-900 text-white flex flex-col">
             <div class="px-5 py-5 border-b border-white/10">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-display font-semibold text-lg">
-                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-gold-400 text-sm">AS</span>
-                    AffiliStack
+                    @if ($logo)
+                        <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($logo) }}" alt="{{ $siteName }}" class="h-8 w-auto">
+                    @else
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-gold-400 text-sm">{{ \Illuminate\Support\Str::of($siteName)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->implode('') }}</span>
+                        {{ $siteName }}
+                    @endif
                 </a>
             </div>
 

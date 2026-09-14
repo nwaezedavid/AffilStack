@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * Core feature 7 (Phase 2): finds candidate local businesses for a
- * niche + location via the Google Places API, feeding AffiliStack's
+ * niche + location via the Google Places API, feeding AffilStack's
  * existing CRM (CrmContact already had `source`/`raw_data` columns from
  * Phase 1, unused until now) — the "no live web-browsing" limitation noted
  * on item 4 (competitor angle scanner) doesn't apply here, since this

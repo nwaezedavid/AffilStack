@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 /**
  * Public, unauthenticated redirect for every cloaked /go/{code} link —
- * whoever clicks one is the offer's own audience, not an AffiliStack user.
+ * whoever clicks one is the offer's own audience, not an AffilStack user.
  * See LinkCloakingService for how these links get created.
  */
 class LinkController extends Controller

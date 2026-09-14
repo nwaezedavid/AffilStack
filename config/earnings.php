@@ -2,7 +2,7 @@
 
 // Feature 2 (conversion & earnings tracker). Affiliate networks report
 // conversions on their own dashboards, not ours — the only way to match a
-// network's payout back to one of AffiliStack's own cloaked links is to
+// network's payout back to one of AffilStack's own cloaked links is to
 // pass the link's code through as a "sub ID" tracking parameter, which most
 // networks (PartnerStack, Impact, ShareASale, and others) echo back
 // verbatim in their reporting exports. See LinkController::redirect().

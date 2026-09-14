@@ -12,7 +12,7 @@ use App\Services\Credits\CreditManager;
 use App\Services\Credits\InsufficientCreditsException;
 
 /**
- * Feature 4 (Phase 3 backlog, item 4): competitor angle scanner. AffiliStack
+ * Feature 4 (Phase 3 backlog, item 4): competitor angle scanner. AffilStack
  * has no live web-browsing or scraping capability — every module, this one
  * included, calls the AI provider directly with just the offer's context
  * (see the plan's "AI provider" cross-cutting note) — so this surfaces the

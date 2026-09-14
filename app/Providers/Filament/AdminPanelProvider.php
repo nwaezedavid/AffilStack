@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Widgets\RevenueOverview;
 use App\Filament\Widgets\SupportInboxWidget;
+use App\Models\SiteSetting;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -19,6 +20,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -29,7 +31,13 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('AffiliStack Admin')
+            ->brandName(fn () => SiteSetting::get('site_name', 'AffilStack').' Admin')
+            ->brandLogo(fn () => ($logo = SiteSetting::get('logo_path'))
+                ? Storage::disk('public')->url($logo)
+                : null)
+            ->favicon(fn () => ($favicon = SiteSetting::get('favicon_path'))
+                ? Storage::disk('public')->url($favicon)
+                : null)
             ->login()
             ->multiFactorAuthentication([
                 AppAuthentication::make()->recoverable(),

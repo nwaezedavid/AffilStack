@@ -5,7 +5,7 @@
 @section('content')
     <p class="text-sm text-ink-600 max-w-lg mb-6">
         Capture a product page, competitor ad, or LinkedIn post while you're browsing — the extension sends it
-        straight to AffiliStack, where you can attach it to an offer or spin up a new one from it.
+        straight to AffilStack, where you can attach it to an offer or spin up a new one from it.
     </p>
 
     {{-- Install --}}
@@ -14,7 +14,7 @@
         <ol class="text-sm text-ink-600 space-y-1.5 list-decimal list-inside mb-4">
             <li>Download the extension below and unzip it.</li>
             <li>In Chrome, go to <span class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">chrome://extensions</span> and turn on Developer mode (top right).</li>
-            <li>Click "Load unpacked" and select the unzipped <span class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">affilistack-extension</span> folder.</li>
+            <li>Click "Load unpacked" and select the unzipped <span class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">affilstack-extension</span> folder.</li>
             <li>Click the extension icon, open its options, and paste in a token from the box below.</li>
         </ol>
         <a href="{{ route('extension.download') }}" class="inline-flex items-center rounded-md bg-navy-900 text-white text-sm font-medium px-4 py-2 hover:bg-navy-800 transition">

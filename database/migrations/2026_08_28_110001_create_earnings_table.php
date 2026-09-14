@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('external_ref')->nullable();
             $table->unsignedInteger('amount_cents');
             $table->string('currency', 3)->default('USD');
-            $table->string('status')->default('pending'); // pending, approved, paid — as reported by the network, not AffiliStack's own billing
+            $table->string('status')->default('pending'); // pending, approved, paid — as reported by the network, not AffilStack's own billing
             $table->date('converted_at');
             $table->text('notes')->nullable();
             $table->timestamps();

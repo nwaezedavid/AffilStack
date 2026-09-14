@@ -1,4 +1,4 @@
-// Options page for the AffiliStack Research Capture extension.
+// Options page for the AffilStack Research Capture extension.
 // Verifies the pasted token against GET /api/me before storing it, so a
 // typo or a stale/revoked token is caught here instead of failing silently
 // the next time someone tries to save a page.

@@ -36,7 +36,7 @@ class BrandSettings extends Page
     public function mount(): void
     {
         $this->form->fill([
-            'site_name' => SiteSetting::get('site_name', 'AffiliStack'),
+            'site_name' => SiteSetting::get('site_name', 'AffilStack'),
             'logo' => SiteSetting::get('logo_path'),
             'favicon' => SiteSetting::get('favicon_path'),
             'color_primary' => SiteSetting::get('color_primary', '#2452D9'),
@@ -44,7 +44,7 @@ class BrandSettings extends Page
             'color_gold' => SiteSetting::get('color_gold', '#C9A24A'),
             'menu_items' => SiteSetting::get('menu_items', []),
             'header_announcement' => SiteSetting::get('header_announcement'),
-            'footer_text' => SiteSetting::get('footer_text', '© '.date('Y').' AffiliStack.'),
+            'footer_text' => SiteSetting::get('footer_text', '© '.date('Y').' AffilStack.'),
         ]);
     }
 

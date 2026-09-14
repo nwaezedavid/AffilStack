@@ -3,7 +3,7 @@
 /**
  * Content calendar & reminders (Phase 3, item 5).
  *
- * AffiliStack never posts on the user's behalf (LinkedIn's API forbids
+ * AffilStack never posts on the user's behalf (LinkedIn's API forbids
  * third-party auto-posting without a Marketing Partner agreement, and the
  * other channels are copy-paste by design too — see the plan's platform
  * limits section) so there is no real "auto-scheduler" that fires posts.

@@ -5,7 +5,7 @@
 @section('content')
     <div class="max-w-xl">
         <p class="text-sm text-ink-600 mb-6">
-            Give AffiliStack three things — the product name, its official URL, and the affiliate network it's on —
+            Give AffilStack three things — the product name, its official URL, and the affiliate network it's on —
             and it will tell you who the ideal buyer is, exactly where to find them, and which of your seven
             channels to promote it through first. <span class="font-mono text-ink-400">({{ config('credits.costs.research') }} credits)</span>
         </p>

@@ -1,5 +1,5 @@
 <?php
-    $siteName = \App\Models\SiteSetting::get('site_name', 'AffiliStack');
+    $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
     $logo = \App\Models\SiteSetting::get('logo_path');
     $favicon = \App\Models\SiteSetting::get('favicon_path');
     $announcement = \App\Models\SiteSetting::get('header_announcement');

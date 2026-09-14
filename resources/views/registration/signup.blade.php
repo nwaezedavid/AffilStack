@@ -1,6 +1,6 @@
 @extends('layouts.marketing')
 
-@section('title', 'Get started with '.$plan->name.' · '.(\App\Models\SiteSetting::get('site_name', 'AffiliStack')))
+@section('title', 'Get started with '.$plan->name.' · '.(\App\Models\SiteSetting::get('site_name', 'AffilStack')))
 
 @section('content')
     <div class="max-w-md mx-auto px-6 py-14">

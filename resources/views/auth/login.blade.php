@@ -4,7 +4,7 @@
 
 @section('content')
     <h2 class="font-display font-semibold text-xl text-navy-900 mb-1">Welcome back</h2>
-    <p class="text-sm text-ink-600 mb-6">Sign in to your AffiliStack dashboard.</p>
+    <p class="text-sm text-ink-600 mb-6">Sign in to your AffilStack dashboard.</p>
 
     <form method="POST" action="{{ route('login.store') }}" class="space-y-4">
         @csrf
@@ -31,6 +31,6 @@
     </form>
 
     <p class="mt-6 text-center text-sm text-ink-600">
-        New to AffiliStack? <a href="{{ route('registration.pricing') }}" class="text-brand-600 hover:text-brand-700 font-medium">See plans &amp; pricing</a>
+        New to AffilStack? <a href="{{ route('registration.pricing') }}" class="text-brand-600 hover:text-brand-700 font-medium">See plans &amp; pricing</a>
     </p>
 @endsection

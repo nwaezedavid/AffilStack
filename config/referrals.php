@@ -13,7 +13,7 @@ return [
     // before it stops attributing a signup to the referrer.
     'cookie_days' => (int) env('REFERRAL_COOKIE_DAYS', 60),
 
-    'cookie_name' => 'affilistack_ref',
+    'cookie_name' => 'affilstack_ref',
 
     // Where an unrecognized or expired /r/{code} link sends the visitor.
     'fallback_route' => 'registration.pricing',

@@ -57,7 +57,7 @@ class FlutterwaveClient
      */
     protected function checkout(string $email, string $name, Plan $plan, string $billingCycle, string $redirectUrl, array $meta): array
     {
-        $txRef = 'affilistack_'.$plan->slug.'_'.$billingCycle.'_'.Str::uuid();
+        $txRef = 'affilstack_'.$plan->slug.'_'.$billingCycle.'_'.Str::uuid();
         $amount = $billingCycle === 'yearly' ? $plan->priceYearly() : $plan->priceMonthly();
 
         $response = Http::withToken($this->secretKey)
@@ -72,7 +72,7 @@ class FlutterwaveClient
                     'name' => $name,
                 ],
                 'customizations' => [
-                    'title' => 'AffiliStack — '.$plan->name.' plan',
+                    'title' => 'AffilStack — '.$plan->name.' plan',
                     'description' => ucfirst($billingCycle).' subscription',
                 ],
                 'meta' => array_merge($meta, ['tx_ref' => $txRef]),

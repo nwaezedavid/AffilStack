@@ -40,11 +40,11 @@ Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 
 // Public, unauthenticated — whoever clicks a cloaked link is the offer's own
-// audience, not an AffiliStack user. See LinkCloakingService.
+// audience, not an AffilStack user. See LinkCloakingService.
 Route::get('/go/{code}', [LinkController::class, 'redirect'])->name('links.redirect');
 
 // Public, unauthenticated — whoever clicks a referral link is a prospective
-// signup, not an AffiliStack user yet. See ReferralController.
+// signup, not an AffilStack user yet. See ReferralController.
 Route::get('/r/{code}', [ReferralController::class, 'redirect'])->name('referrals.redirect');
 
 Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->name('webhooks.flutterwave');

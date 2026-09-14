@@ -3,7 +3,7 @@
 @section('title', 'Content Calendar')
 
 @section('content')
-    <p class="text-sm text-ink-600 max-w-lg mb-6">One view of everything you've generated across every channel, with a status and a target date — plus reminders for blog refreshes and LinkedIn follow-ups, computed from what you've actually published. AffiliStack never posts on your behalf, so nothing here fires automatically; it's a planning view, not an autopilot.</p>
+    <p class="text-sm text-ink-600 max-w-lg mb-6">One view of everything you've generated across every channel, with a status and a target date — plus reminders for blog refreshes and LinkedIn follow-ups, computed from what you've actually published. AffilStack never posts on your behalf, so nothing here fires automatically; it's a planning view, not an autopilot.</p>
 
     @if (! empty($reminders))
         <h3 class="font-display font-semibold text-sm text-navy-900 mb-3">Upcoming reminders</h3>

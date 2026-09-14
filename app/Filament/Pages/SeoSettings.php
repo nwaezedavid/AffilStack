@@ -60,7 +60,7 @@ class SeoSettings extends Page
                         TextInput::make('seo_blog_url')
                             ->label('Blog URL')
                             ->url()
-                            ->placeholder('https://blog.affilistack.com')
+                            ->placeholder('https://blog.affilstack.com')
                             ->helperText('Point your DNS for this subdomain at your WordPress install. Once set, "Blog" appears in the site nav automatically.'),
                     ]),
 

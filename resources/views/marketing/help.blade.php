@@ -1,8 +1,8 @@
 @extends('layouts.marketing')
 
-@section('title', 'Help & FAQ · '.\App\Models\SiteSetting::get('site_name', 'AffiliStack'))
+@section('title', 'Help & FAQ · '.\App\Models\SiteSetting::get('site_name', 'AffilStack'))
 
-@section('meta_description', 'Answers to common questions about AffiliStack — offer research, LinkedIn content, blog articles, billing, and your account.')
+@section('meta_description', 'Answers to common questions about AffilStack — offer research, LinkedIn content, blog articles, billing, and your account.')
 
 @section('content')
     <div class="max-w-3xl mx-auto px-6 py-14">

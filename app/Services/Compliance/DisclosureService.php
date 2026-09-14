@@ -9,7 +9,7 @@ namespace App\Services\Compliance;
  * placed above the content or a short hashtag-style line appended after
  * it). Also used standalone (hasDisclosure()) to detect whether content
  * already carries disclosure, so Offer::cloak() never stacks a second one
- * on top and the UI can show whether AffiliStack had to add one.
+ * on top and the UI can show whether AffilStack had to add one.
  */
 class DisclosureService
 {

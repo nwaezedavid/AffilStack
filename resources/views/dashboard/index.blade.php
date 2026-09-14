@@ -30,7 +30,7 @@
 
     @if ($offers->isEmpty())
         <div class="bg-surface border border-dashed border-line rounded-lg p-8 text-center text-sm text-ink-600">
-            You haven't researched an offer yet. Give AffiliStack a product name, its URL, and the affiliate network it's on —
+            You haven't researched an offer yet. Give AffilStack a product name, its URL, and the affiliate network it's on —
             it'll tell you who to sell to and how.
         </div>
     @else

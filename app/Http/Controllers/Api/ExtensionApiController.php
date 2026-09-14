@@ -67,6 +67,6 @@ class ExtensionApiController extends Controller
             'page_type' => $validated['page_type'],
         ]);
 
-        return response()->json(['id' => $clip->id, 'message' => 'Saved to AffiliStack.'], 201);
+        return response()->json(['id' => $clip->id, 'message' => 'Saved to AffilStack.'], 201);
     }
 }

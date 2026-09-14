@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
- * The only door into an AffiliStack account. There is no free signup —
+ * The only door into an AffilStack account. There is no free signup —
  * per product decision, a user picks a plan, pays through Flutterwave, and
  * the account is created the instant that payment verifies. See
  * PaymentProcessor::completeSignup() for the other half of this flow.
@@ -121,7 +121,7 @@ class RegistrationController extends Controller
         if ($transaction && $transaction->status === 'successful' && $transaction->user_id) {
             Auth::login($transaction->user);
 
-            return redirect()->route('dashboard')->with('success', 'Payment received — welcome to AffiliStack.');
+            return redirect()->route('dashboard')->with('success', 'Payment received — welcome to AffilStack.');
         }
 
         return redirect()->route('registration.pricing')->with('error', 'We could not verify that payment. No account was created.');

@@ -1,5 +1,5 @@
 {{-- Expects $text: the raw (uncloaked) generated text for one public-facing
-     field. Shows whether AffiliStack had to add disclosure wording or the
+     field. Shows whether AffilStack had to add disclosure wording or the
      AI already included something that reads as one. --}}
 @if ($offer->hasLinkPlaceholder($text ?? null))
     @if ($offer->needsDisclosure($text))

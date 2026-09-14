@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AffiliStack Research Capture",
+  "name": "AffilStack Research Capture",
   "version": "1.0.0",
-  "description": "Save the page you're looking at — a product page, a competitor ad, a LinkedIn post — straight into AffiliStack.",
+  "description": "Save the page you're looking at — a product page, a competitor ad, a LinkedIn post — straight into AffilStack.",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

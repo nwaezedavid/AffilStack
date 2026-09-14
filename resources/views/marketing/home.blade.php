@@ -1,6 +1,6 @@
 @extends('layouts.marketing')
 
-@section('title', (\App\Models\SiteSetting::get('site_name', 'AffiliStack')).' — The all-in-one platform for affiliate marketers')
+@section('title', (\App\Models\SiteSetting::get('site_name', 'AffilStack')).' — The all-in-one platform for affiliate marketers')
 
 @section('content')
     <section class="max-w-5xl mx-auto px-6 py-20 text-center">
@@ -8,7 +8,7 @@
             Find the offer. Find the buyer. Promote it everywhere — <span class="text-gold-600">in one click.</span>
         </h1>
         <p class="text-ink-600 mt-5 max-w-xl mx-auto">
-            AffiliStack turns a product name and an affiliate link into a research brief, a blog article,
+            AffilStack turns a product name and an affiliate link into a research brief, a blog article,
             and a full LinkedIn campaign — built for beginners, sharp enough for pros.
         </p>
         <div class="mt-8 flex items-center justify-center gap-3">

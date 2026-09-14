@@ -76,7 +76,7 @@ return [
 
     /*
      * Case-insensitive substrings that count as "already disclosed" —
-     * covers AffiliStack's own inserted wording plus common phrasing a
+     * covers AffilStack's own inserted wording plus common phrasing a
      * user (or the AI) might already have written, so we never stack a
      * second disclosure on top of one that's already there.
      */

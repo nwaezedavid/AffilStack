@@ -20,7 +20,7 @@ use App\Services\Credits\InsufficientCreditsException;
  * item 7's X hook_variants already established, applied here to the whole
  * pin rather than just the opening line.
  *
- * AffiliStack has no Pinterest publishing integration (same "content only,
+ * AffilStack has no Pinterest publishing integration (same "content only,
  * user copies/pastes it themselves" rule as every other channel — see the
  * plan's platform-limits section) so this produces the pin copy and an
  * image prompt for the user's own image generator, not a published pin.
