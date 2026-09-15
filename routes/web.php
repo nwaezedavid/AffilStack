@@ -132,6 +132,7 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
 
     Route::post('/offers/{offer}/ugc/angles', [UgcController::class, 'angles'])->name('offers.ugc.angles');
     Route::post('/offers/{offer}/ugc/content', [UgcController::class, 'content'])->name('offers.ugc.content');
+    Route::post('/offers/{offer}/ugc/video', [UgcController::class, 'video'])->name('offers.ugc.video');
 
     Route::post('/offers/{offer}/x/thread', [XController::class, 'thread'])->name('offers.x.thread');
 

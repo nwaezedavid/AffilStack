@@ -69,6 +69,7 @@ class NotificationController extends Controller
             'youtube_metadata' => 'YouTube video metadata',
             'ugc_angles' => 'UGC angle ideas',
             'ugc_content' => 'UGC script & platform pack',
+            'ugc_video' => 'UGC video',
             'x_thread' => 'X thread',
             'tiktok_video' => 'TikTok video package',
             'pinterest_pin' => 'Pinterest pin pack',

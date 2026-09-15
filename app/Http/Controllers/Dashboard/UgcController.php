@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\Generation;
 use App\Models\Offer;
 use App\Services\Credits\InsufficientCreditsException;
 use App\Services\Modules\UgcService;
+use App\Services\Modules\UgcVideoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 use RuntimeException;
 
 class UgcController extends Controller
@@ -56,5 +59,38 @@ class UgcController extends Controller
         ];
 
         return $this->run($offer, 'content', $service, $context);
+    }
+
+    public function video(Request $request, Offer $offer, UgcVideoService $service): RedirectResponse
+    {
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
+
+        if (! auth()->user()->canUseChannel('ugc')) {
+            return back()->with('error', 'The UGC module isn\'t included in your current plan — upgrade to unlock it.');
+        }
+
+        $request->validate([
+            'content_generation_id' => ['required', 'integer'],
+            'avatar_id' => ['required', 'string'],
+            'voice_id' => ['required', 'string'],
+        ]);
+
+        $contentGeneration = Generation::query()->findOrFail($request->integer('content_generation_id'));
+
+        try {
+            $service->queue(
+                auth()->user(),
+                $offer,
+                $contentGeneration,
+                $request->string('avatar_id')->toString(),
+                $request->string('voice_id')->toString(),
+            );
+        } catch (InsufficientCreditsException $e) {
+            return back()->with('error', 'Not enough credits to generate a UGC video. Upgrade your plan or buy a credit top-up.');
+        } catch (InvalidArgumentException|RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('offers.show', $offer)->with('success', 'UGC video queued — this can take a few minutes; we\'ll notify you when it\'s ready.');
     }
 }

@@ -501,6 +501,51 @@
                                 </div>
                             @endforeach
                         </div>
+                        @if ($ugcVideoReady)
+                            @php
+                                $existingVideo = $offer->generations->first(fn ($g) => $g->module === 'ugc_video' && ($g->input['content_generation_id'] ?? null) === $gen->id);
+                            @endphp
+                            <div class="mt-4 pt-4 border-t border-line">
+                                @if ($existingVideo)
+                                    <p class="text-xs text-ink-600">
+                                        @if ($existingVideo->status === 'queued')
+                                            A video is rendering for this script — see it below once it's ready.
+                                        @elseif ($existingVideo->status === 'failed')
+                                            The video for this script failed — see below for details.
+                                        @else
+                                            The video for this script is ready below.
+                                        @endif
+                                    </p>
+                                @elseif (empty($ugcAvatars) || empty($ugcVoices))
+                                    <p class="text-xs text-ink-400">Avatar/voice list is temporarily unavailable — try again shortly.</p>
+                                @else
+                                    <form method="POST" action="{{ route('offers.ugc.video', $offer) }}" class="space-y-2">
+                                        @csrf
+                                        <input type="hidden" name="content_generation_id" value="{{ $gen->id }}">
+                                        <div class="grid sm:grid-cols-2 gap-2">
+                                            <select name="avatar_id" required class="rounded-md border border-line text-xs px-2 py-1.5 bg-surface">
+                                                <option value="">Choose an avatar…</option>
+                                                @foreach ($ugcAvatars as $avatar)
+                                                    <option value="{{ $avatar['id'] }}">{{ $avatar['name'] }}</option>
+                                                @endforeach
+                                            </select>
+                                            <select name="voice_id" required class="rounded-md border border-line text-xs px-2 py-1.5 bg-surface">
+                                                <option value="">Choose a voice…</option>
+                                                @foreach ($ugcVoices as $voice)
+                                                    <option value="{{ $voice['id'] }}">{{ $voice['name'] }}{{ $voice['language'] ? ' · '.$voice['language'] : '' }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <button class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Generate video ({{ config('credits.costs.ugc_video') }})</button>
+                                    </form>
+                                @endif
+                            </div>
+                        @endif
+                    @elseif ($gen->module === 'ugc_video')
+                        <video controls preload="metadata" class="w-full max-w-xs rounded-lg border border-line bg-navy-950" src="{{ $gen->output }}"></video>
+                        <div class="mt-2">
+                            <a href="{{ $gen->output }}" download class="text-xs text-brand-600 hover:text-brand-700">Download video</a>
+                        </div>
                     @elseif ($gen->module === 'email_nurture')
                         @php
                             $nurtureContact = \App\Models\CrmContact::find($gen->input['contact_id'] ?? null);

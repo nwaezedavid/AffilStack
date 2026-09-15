@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Jobs;
+
+use App\Models\Generation;
+use App\Notifications\GenerationCompleted;
+use App\Services\Modules\UgcVideoService;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+
+/**
+ * Runs a UGC video generation in the background — unlike every other
+ * generation job, this genuinely blocks for minutes (submitting to HeyGen,
+ * then polling it to completion inside UgcVideoService::generate()), so
+ * this job's own timeout is set generously above that wait.
+ */
+class RunUgcVideoGeneration implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public int $tries = 1;
+
+    public int $timeout = 600;
+
+    public function __construct(public Generation $generation) {}
+
+    public function handle(UgcVideoService $service): void
+    {
+        $service->generate($this->generation);
+
+        $this->generation->refresh();
+
+        $this->generation->user->notify(new GenerationCompleted(
+            module: $this->generation->module,
+            title: $this->generation->offer->product_name,
+            success: $this->generation->status === 'completed',
+            url: route('offers.show', $this->generation->offer_id),
+            errorMessage: $this->generation->error_message,
+        ));
+    }
+}
