@@ -11,10 +11,7 @@
     $heroEmbedUrl = $heroMediaType === 'youtube' ? \App\Models\HomepageFeature::youtubeEmbedUrlFrom($heroYoutubeUrl) : null;
     $heroThumbUrl = $heroMediaType === 'youtube' ? \App\Models\HomepageFeature::youtubeThumbnailUrlFrom($heroYoutubeUrl) : null;
 
-    $features = \App\Models\HomepageFeature::query()
-        ->where('is_active', true)
-        ->orderBy('sort_order')
-        ->get();
+    $features = \App\Models\HomepageFeature::previewAwareActiveList();
 
     $metaDescriptionDefault = 'AffilStack is the all-in-one platform for affiliate marketers: offer research, AI-written content, UGC video, lead tracking, and a built-in affiliate program — everything you need to find an offer, find a buyer, and get paid.';
 

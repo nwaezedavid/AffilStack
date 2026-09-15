@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Agents;
 
 use App\Models\AgentTask;
+use App\Services\Agents\CreativeTaskExecutor;
 use App\Services\Agents\SecurityFixExecutor;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -18,7 +19,7 @@ use Illuminate\Console\Command;
 #[Description('Execute AI-agent tasks whose scheduled time has arrived')]
 class ExecuteDueAgentTasks extends Command
 {
-    public function handle(SecurityFixExecutor $securityExecutor): void
+    public function handle(SecurityFixExecutor $securityExecutor, CreativeTaskExecutor $creativeExecutor): void
     {
         $due = AgentTask::where('status', AgentTask::STATUS_SCHEDULED)
             ->where('scheduled_at', '<=', now())
@@ -27,8 +28,14 @@ class ExecuteDueAgentTasks extends Command
         foreach ($due as $task) {
             match ($task->agent) {
                 AgentTask::AGENT_SECURITY => $securityExecutor->execute($task),
-                // Sam/Brain/Tony don't schedule executable tasks yet — a
-                // task from any of them landing here today is a bug, not a
+                // Tony's own "Approve & publish" button already runs
+                // CreativeTaskExecutor synchronously the moment a
+                // super-admin approves — a task from him landing here is
+                // just the safety net for the rare case that call was
+                // interrupted, not the normal path.
+                AgentTask::AGENT_CREATIVE => $creativeExecutor->execute($task),
+                // Sam/Brain don't schedule executable tasks at all — a
+                // task from either landing here today is a bug, not a
                 // silent no-op, so it's marked failed rather than ignored.
                 default => $task->update([
                     'status' => AgentTask::STATUS_FAILED,

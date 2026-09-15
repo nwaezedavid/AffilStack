@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\CreativeTaskPreviewController;
 use App\Http\Controllers\CrmEmailTrackingController;
 use App\Http\Controllers\Dashboard\BlogController;
 use App\Http\Controllers\Dashboard\CompetitorAngleController;
@@ -93,6 +94,14 @@ Route::post('/get-started/{plan}/google', [GoogleAuthController::class, 'redirec
 // signup form; see GoogleAuthController for how it tells them apart.
 Route::get('/auth/google', [GoogleAuthController::class, 'redirectForLogin'])->name('google.redirect');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+
+// Tony (the Creative Agent) preview — lets an admin see exactly what a
+// pending creative AgentTask would look like live, rendered through the
+// real public templates, before a super-admin ever approves it. Admin-only
+// (checked inside the controller); deliberately outside the dashboard
+// group above since it has nothing to do with a user's own account. See
+// CreativeTaskPreviewController — nothing here writes to the database.
+Route::middleware('auth')->get('/admin-preview/creative-tasks/{agentTask}', [CreativeTaskPreviewController::class, 'show'])->name('creative-tasks.preview');
 
 Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

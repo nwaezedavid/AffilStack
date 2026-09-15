@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * `agents:execute-due-tasks` command, running on its own schedule, actually
  * carries it out once `scheduled_at` arrives.
  */
-#[Fillable(['agent', 'type', 'title', 'summary', 'payload', 'risk_level', 'status', 'scheduled_at', 'scheduled_until', 'approved_by_id', 'approved_at', 'executed_at', 'result'])]
+#[Fillable(['agent', 'type', 'title', 'summary', 'payload', 'requested_by_id', 'risk_level', 'status', 'scheduled_at', 'scheduled_until', 'approved_by_id', 'approved_at', 'executed_at', 'result'])]
 class AgentTask extends Model
 {
     /** @use HasFactory<AgentTaskFactory> */
@@ -59,6 +59,11 @@ class AgentTask extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_id');
+    }
+
+    public function requestedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'requested_by_id');
     }
 
     public function securityFinding(): HasOne

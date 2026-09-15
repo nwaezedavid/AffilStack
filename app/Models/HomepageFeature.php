@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 /**
  * A feature card on the public homepage. Admin-managed (Filament, "Content"
@@ -12,11 +13,55 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable(['title', 'description', 'icon', 'media_type', 'image_path', 'youtube_url', 'sort_order', 'is_active'])]
 class HomepageFeature extends Model
 {
+    /**
+     * @var Collection<int, self>|null
+     */
+    protected static ?Collection $previewOverride = null;
+
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * What the homepage's feature grid should actually query — normally
+     * just the real active features (marketing/home.blade.php calls this
+     * instead of querying directly), but during a Tony (the Creative
+     * Agent) preview this returns the request-scoped override list
+     * instead. See withPreviewFeature() / CreativeTaskPreviewController.
+     *
+     * @return Collection<int, self>
+     */
+    public static function previewAwareActiveList(): Collection
+    {
+        return static::$previewOverride
+            ?? static::query()->where('is_active', true)->orderBy('sort_order')->get();
+    }
+
+    /**
+     * Renders $callback with the real active feature list plus (or
+     * replacing, if $replaceId matches an existing one) $draftFeature —
+     * never persists anything, and always clears the override afterward
+     * even if rendering throws.
+     */
+    public static function withPreviewFeature(self $draftFeature, ?int $replaceId, callable $callback): mixed
+    {
+        static::$previewOverride = static::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->reject(fn (self $feature) => $replaceId && $feature->id === $replaceId)
+            ->push($draftFeature)
+            ->sortBy('sort_order')
+            ->values();
+
+        try {
+            return $callback();
+        } finally {
+            static::$previewOverride = null;
+        }
     }
 
     public function youtubeEmbedUrl(): ?string
