@@ -52,6 +52,17 @@ ScheduleMonitoring::track(
     'agents:execute-due-tasks',
 );
 
+// Sam, the Support Agent: onboarding and ticket-progress notifications fire
+// synchronously from model events (see SupportTicket/SupportTicketMessage
+// and PaymentProcessor) — this is the one part of Sam that runs on its own
+// schedule, drafting new canned-reply suggestions from how staff have
+// actually been replying. Weekly is enough signal to accumulate a genuine
+// pattern without spamming the Canned Replies resource with suggestions.
+ScheduleMonitoring::track(
+    Schedule::command('agents:support-suggest-templates')->weekly()->withoutOverlapping(),
+    'agents:support-suggest-templates',
+);
+
 // Self-maintenance: keep the run-history table itself from growing forever.
 Schedule::call(fn () => ScheduledTaskRun::where('created_at', '<', now()->subDays(30))->delete())
     ->daily()

@@ -79,7 +79,7 @@ class SupportTicketController extends Controller
 
         // A customer reply on a ticket the team considered done reopens it.
         $ticket->update([
-            'status' => in_array($ticket->status, ['resolved', 'closed'], true) ? 'open' : $ticket->status,
+            'status' => in_array($ticket->status, SupportTicket::DONE_STATUSES, true) ? 'open' : $ticket->status,
             'last_reply_at' => now(),
         ]);
 
@@ -92,7 +92,7 @@ class SupportTicketController extends Controller
     {
         $this->authorizeOwner($ticket);
 
-        abort_unless(in_array($ticket->status, ['resolved', 'closed'], true), 422);
+        abort_unless(in_array($ticket->status, SupportTicket::DONE_STATUSES, true), 422);
 
         $validated = $request->validate([
             'csat_rating' => 'required|integer|min:1|max:5',

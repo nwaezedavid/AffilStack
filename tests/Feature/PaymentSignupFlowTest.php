@@ -8,9 +8,11 @@ use App\Models\PendingSignup;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Notifications\WelcomeAboard;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 /**
@@ -38,6 +40,8 @@ class PaymentSignupFlowTest extends TestCase
 
     public function test_signup_creates_account_only_after_verified_payment(): void
     {
+        Notification::fake();
+
         $plan = Plan::create([
             'name' => 'Growth', 'slug' => 'growth', 'description' => 'Test plan',
             'price_monthly_cents' => 6700, 'price_yearly_cents' => 67000, 'currency' => 'USD',
@@ -111,6 +115,10 @@ class PaymentSignupFlowTest extends TestCase
         $transaction->refresh();
         $this->assertSame('successful', $transaction->status);
         $this->assertSame('998877', $transaction->gateway_tx_id);
+
+        // Triggered automatically on signup, per Sam's (the Support
+        // Agent's) spec — see PaymentProcessor::completeSignup().
+        Notification::assertSentTo($user, WelcomeAboard::class);
     }
 
     public function test_webhook_and_callback_racing_for_the_same_transaction_is_idempotent(): void

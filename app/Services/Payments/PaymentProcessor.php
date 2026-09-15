@@ -6,6 +6,7 @@ use App\Models\PaymentTransaction;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Services\Agents\SamAgentService;
 use App\Services\Credits\CreditManager;
 use App\Services\Referrals\ReferralService;
 use Carbon\Carbon;
@@ -21,7 +22,11 @@ use Illuminate\Support\Facades\Log;
  */
 class PaymentProcessor
 {
-    public function __construct(protected CreditManager $credits, protected ReferralService $referrals) {}
+    public function __construct(
+        protected CreditManager $credits,
+        protected ReferralService $referrals,
+        protected SamAgentService $sam,
+    ) {}
 
     /**
      * @param  array{tx_ref: string, remote_id: string, status: string, amount: float, currency: string, meta: array<string, mixed>, customer_reference?: string, subscription_reference?: string, raw: array<string, mixed>}  $result
@@ -111,6 +116,11 @@ class PaymentProcessor
                 ]);
                 $user->assignRole('user');
                 $pending->update(['status' => 'completed']);
+
+                // Triggered automatically on signup, per Sam's (the Support
+                // Agent's) spec — only here, never in the race-condition
+                // "adopt the already-created user" branch below.
+                $this->sam->onboardNewUser($user);
             } catch (QueryException $e) {
                 // Webhook and callback raced each other into User::create()
                 // at the same instant — the other one won, so just adopt it.

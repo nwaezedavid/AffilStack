@@ -4,6 +4,7 @@ namespace App\Filament\Resources\SupportTickets\RelationManagers;
 
 use App\Models\CannedReply;
 use App\Models\SupportTicket;
+use App\Services\Agents\SamAgentService;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -31,12 +32,19 @@ class MessagesRelationManager extends RelationManager
         return $schema->components([
             Select::make('canned_reply_id')
                 ->label('Start from a canned reply (optional)')
-                ->options(fn () => CannedReply::query()->pluck('title', 'id'))
+                ->options(fn () => CannedReply::query()->active()->pluck('title', 'id'))
                 ->live()
                 ->dehydrated(false)
                 ->afterStateUpdated(function ($state, Set $set): void {
-                    if ($state && $body = CannedReply::find($state)?->body) {
-                        $set('message', $body);
+                    if (! $state) {
+                        return;
+                    }
+
+                    $reply = CannedReply::find($state);
+
+                    if ($reply) {
+                        $set('message', $reply->body);
+                        app(SamAgentService::class)->recordCannedReplyUsage($reply);
                     }
                 }),
             Textarea::make('message')

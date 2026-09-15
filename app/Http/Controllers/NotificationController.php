@@ -50,6 +50,9 @@ class NotificationController extends Controller
             return match ($data['type']) {
                 'maintenance_scheduled' => 'Scheduled maintenance: '.Carbon::parse($data['starts_at'])->format('M j, g:ia'),
                 'maintenance_completed' => 'Scheduled maintenance is complete',
+                'welcome' => 'Welcome to AffilStack — say hi to Sam anytime from support chat',
+                'ticket_replied' => 'New reply on your ticket: '.($data['subject'] ?? ''),
+                'ticket_status_changed' => 'Your ticket was '.(($data['status'] ?? 'resolved') === 'closed' ? 'closed' : 'marked resolved').': '.($data['subject'] ?? ''),
                 default => $data['reason'] ?? 'Update from AffilStack',
             };
         }

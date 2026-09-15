@@ -17,7 +17,10 @@ use Filament\Tables\Table;
 /**
  * A small library of reusable reply templates support staff can drop into a
  * ticket reply (see SupportTickets' MessagesRelationManager) and then edit
- * before sending.
+ * before sending. Sam (the Support Agent) also drafts new suggestions here
+ * from recurring patterns in resolved tickets (SamAgentService::
+ * suggestTemplates()) — those land with status=suggested and need a
+ * staff/admin to activate them before they reach the picker.
  */
 class CannedReplyResource extends Resource
 {

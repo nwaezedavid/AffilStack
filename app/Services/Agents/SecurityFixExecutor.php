@@ -23,7 +23,7 @@ use RuntimeException;
  */
 class SecurityFixExecutor
 {
-    public function __construct(protected MaintenanceNotificationService $notifier) {}
+    public function __construct(protected SamAgentService $notifier) {}
 
     public function execute(AgentTask $task): void
     {

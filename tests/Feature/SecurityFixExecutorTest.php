@@ -6,7 +6,7 @@ use App\Models\AgentTask;
 use App\Models\SecurityFinding;
 use App\Models\User;
 use App\Notifications\MaintenanceCompleted;
-use App\Services\Agents\MaintenanceNotificationService;
+use App\Services\Agents\SamAgentService;
 use App\Services\Agents\SecurityFixExecutor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -54,7 +54,7 @@ class SecurityFixExecutorTest extends TestCase
         $mock->shouldAllowMockingProtectedMethods();
 
         (function () {
-            $this->notifier = app(MaintenanceNotificationService::class);
+            $this->notifier = app(SamAgentService::class);
         })->bindTo($mock, SecurityFixExecutor::class)();
 
         $mock->shouldReceive('envPath')->andReturn($this->fakeEnvPath);

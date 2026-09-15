@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Agents\SamAgentService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,5 +25,20 @@ class SupportTicketMessage extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Every staff reply is delivered to the ticket owner by Sam (the
+     * Support Agent) — mail + dashboard notification — regardless of where
+     * the reply was created from (the admin Messages relation manager
+     * today, potentially other paths later).
+     */
+    protected static function booted(): void
+    {
+        static::created(function (SupportTicketMessage $message): void {
+            if ($message->is_staff) {
+                app(SamAgentService::class)->notifyTicketReplied($message);
+            }
+        });
     }
 }
