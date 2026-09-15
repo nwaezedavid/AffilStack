@@ -37,6 +37,21 @@ ScheduleMonitoring::track(
     'subscriptions:expire-lapsed',
 );
 
+// Tom, the Security Agent: scans daily, then (separately) carries out
+// whatever a super-admin has approved and scheduled — see
+// SecurityScanService / SecurityFixExecutor / SecurityFindingResource.
+// Every future agent's approved work also runs through the same
+// execute-due-tasks command, on the same 5-minute cadence.
+ScheduleMonitoring::track(
+    Schedule::command('agents:security-scan')->daily()->withoutOverlapping(),
+    'agents:security-scan',
+);
+
+ScheduleMonitoring::track(
+    Schedule::command('agents:execute-due-tasks')->everyFiveMinutes()->withoutOverlapping(),
+    'agents:execute-due-tasks',
+);
+
 // Self-maintenance: keep the run-history table itself from growing forever.
 Schedule::call(fn () => ScheduledTaskRun::where('created_at', '<', now()->subDays(30))->delete())
     ->daily()

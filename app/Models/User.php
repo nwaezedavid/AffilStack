@@ -54,6 +54,16 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return $this->hasRole('admin') || $this->hasRole('support');
     }
 
+    /**
+     * The only role allowed to approve an AI agent's permission request
+     * (Tom's fixes, Tony's codebase changes) — deliberately separate from
+     * 'admin' so a future admin sub-account never inherits this authority.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('super-admin');
+    }
+
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);

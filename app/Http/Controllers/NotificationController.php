@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class NotificationController extends Controller
 {
@@ -42,6 +43,17 @@ class NotificationController extends Controller
      */
     protected function messageFor(array $data): string
     {
+        // Non-generation notifications (the AI agents' own) key off 'type'
+        // rather than 'module' — handled first so the fallback below never
+        // has to guess at a module label for them.
+        if (isset($data['type'])) {
+            return match ($data['type']) {
+                'maintenance_scheduled' => 'Scheduled maintenance: '.Carbon::parse($data['starts_at'])->format('M j, g:ia'),
+                'maintenance_completed' => 'Scheduled maintenance is complete',
+                default => $data['reason'] ?? 'Update from AffilStack',
+            };
+        }
+
         $title = $data['title'] ?? 'Your generation';
         $moduleLabel = match ($data['module'] ?? null) {
             'research' => 'offer research',

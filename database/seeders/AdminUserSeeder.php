@@ -26,6 +26,13 @@ class AdminUserSeeder extends Seeder
             $admin->assignRole('admin');
         }
 
+        // The seeded owner account is always the platform's super-admin —
+        // the only role allowed to approve an AI agent's permission
+        // requests or codebase changes. See RolesSeeder.
+        if (! $admin->hasRole('super-admin')) {
+            $admin->assignRole('super-admin');
+        }
+
         $this->command?->info("Admin user ready: {$email} — change the password immediately after first login.");
     }
 }
