@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\FaqItems;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\FaqItems\Pages\CreateFaqItem;
 use App\Filament\Resources\FaqItems\Pages\EditFaqItem;
 use App\Filament\Resources\FaqItems\Pages\ListFaqItems;
@@ -21,6 +22,10 @@ use Filament\Tables\Table;
  */
 class FaqItemResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'support';
+
     protected static ?string $model = FaqItem::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQuestionMarkCircle;

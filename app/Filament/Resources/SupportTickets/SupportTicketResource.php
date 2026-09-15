@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SupportTickets;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\SupportTickets\Pages\ListSupportTickets;
 use App\Filament\Resources\SupportTickets\Pages\ViewSupportTicket;
 use App\Filament\Resources\SupportTickets\RelationManagers\MessagesRelationManager;
@@ -20,6 +21,10 @@ use Filament\Tables\Table;
  */
 class SupportTicketResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'support';
+
     protected static ?string $model = SupportTicket::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLifebuoy;

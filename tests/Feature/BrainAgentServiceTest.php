@@ -8,6 +8,7 @@ use App\Models\Offer;
 use App\Models\User;
 use App\Services\Agents\BrainAgentService;
 use App\Services\AI\AIProvider;
+use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -22,6 +23,21 @@ use Tests\TestCase;
 class BrainAgentServiceTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolesSeeder::class);
+    }
+
+    protected function superAdmin(): User
+    {
+        $user = User::factory()->create();
+        $user->assignRole('super-admin');
+
+        return $user;
+    }
 
     protected function fakeImageProvider(): void
     {
@@ -92,13 +108,23 @@ class BrainAgentServiceTest extends TestCase
         $this->assertSame(['https://cdn.example.com/generated.png'], $campaign->image_urls);
     }
 
+    public function test_approve_and_launch_refuses_a_non_super_admin_regardless_of_connection_or_status(): void
+    {
+        $this->connectBrainFully();
+        $campaign = MarketingCampaign::factory()->create();
+
+        $this->expectExceptionMessage('Only super-admin can approve and launch a live campaign.');
+
+        app(BrainAgentService::class)->approveAndLaunch($campaign, User::factory()->create());
+    }
+
     public function test_approve_and_launch_refuses_when_brain_is_not_fully_connected(): void
     {
         $campaign = MarketingCampaign::factory()->create();
 
         $this->expectException(RuntimeException::class);
 
-        app(BrainAgentService::class)->approveAndLaunch($campaign, User::factory()->create());
+        app(BrainAgentService::class)->approveAndLaunch($campaign, $this->superAdmin());
     }
 
     public function test_approve_and_launch_refuses_a_campaign_that_is_not_a_draft(): void
@@ -108,7 +134,7 @@ class BrainAgentServiceTest extends TestCase
 
         $this->expectExceptionMessage('Only a draft campaign can be approved and launched.');
 
-        app(BrainAgentService::class)->approveAndLaunch($campaign, User::factory()->create());
+        app(BrainAgentService::class)->approveAndLaunch($campaign, $this->superAdmin());
     }
 
     public function test_approve_and_launch_marks_the_campaign_running_on_success(): void
@@ -122,7 +148,7 @@ class BrainAgentServiceTest extends TestCase
             ]),
         ]);
 
-        $admin = User::factory()->create();
+        $admin = $this->superAdmin();
         app(BrainAgentService::class)->approveAndLaunch($campaign, $admin);
 
         $campaign->refresh();
@@ -143,7 +169,7 @@ class BrainAgentServiceTest extends TestCase
             ]),
         ]);
 
-        app(BrainAgentService::class)->approveAndLaunch($campaign, User::factory()->create());
+        app(BrainAgentService::class)->approveAndLaunch($campaign, $this->superAdmin());
 
         $campaign->refresh();
         $this->assertSame(MarketingCampaign::STATUS_FAILED, $campaign->status);

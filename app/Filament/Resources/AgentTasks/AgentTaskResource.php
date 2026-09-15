@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AgentTasks;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\AgentTasks\Pages\ListAgentTasks;
 use App\Filament\Resources\AgentTasks\Tables\AgentTasksTable;
 use App\Models\AgentTask;
@@ -17,6 +18,10 @@ use Filament\Tables\Table;
  */
 class AgentTaskResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'ai_agents';
+
     protected static ?string $model = AgentTask::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedListBullet;

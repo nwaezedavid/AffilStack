@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SecurityFindings;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\SecurityFindings\Pages\ListSecurityFindings;
 use App\Filament\Resources\SecurityFindings\Tables\SecurityFindingsTable;
 use App\Models\SecurityFinding;
@@ -18,6 +19,10 @@ use Filament\Tables\Table;
  */
 class SecurityFindingResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'ai_agents';
+
     protected static ?string $model = SecurityFinding::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldExclamation;

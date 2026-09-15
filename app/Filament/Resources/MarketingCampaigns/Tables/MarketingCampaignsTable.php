@@ -54,7 +54,9 @@ class MarketingCampaignsTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->modalDescription('This will use your connected Meta Ads MCP server to actually create and run this campaign.')
-                    ->visible(fn (MarketingCampaign $record) => $record->isDraft() && BrainAgentSetting::current()->canLaunchLiveCampaigns())
+                    ->visible(fn (MarketingCampaign $record) => $record->isDraft()
+                        && BrainAgentSetting::current()->canLaunchLiveCampaigns()
+                        && auth()->user()->isSuperAdmin())
                     ->action(function (MarketingCampaign $record) {
                         try {
                             app(BrainAgentService::class)->approveAndLaunch($record, auth()->user());

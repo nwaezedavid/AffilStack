@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\MarketingCampaigns;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\MarketingCampaigns\Pages\ListMarketingCampaigns;
 use App\Filament\Resources\MarketingCampaigns\Tables\MarketingCampaignsTable;
 use App\Models\MarketingCampaign;
@@ -20,6 +21,10 @@ use Filament\Tables\Table;
  */
 class MarketingCampaignResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'ai_agents';
+
     protected static ?string $model = MarketingCampaign::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMegaphone;

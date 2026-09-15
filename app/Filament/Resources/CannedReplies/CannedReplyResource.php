@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CannedReplies;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\CannedReplies\Pages\CreateCannedReply;
 use App\Filament\Resources\CannedReplies\Pages\EditCannedReply;
 use App\Filament\Resources\CannedReplies\Pages\ListCannedReplies;
@@ -24,6 +25,10 @@ use Filament\Tables\Table;
  */
 class CannedReplyResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'support';
+
     protected static ?string $model = CannedReply::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentDuplicate;

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CrmContacts;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\CrmContacts\Pages\EditCrmContact;
 use App\Filament\Resources\CrmContacts\Pages\ListCrmContacts;
 use App\Filament\Resources\CrmContacts\RelationManagers\EmailSendsRelationManager;
@@ -16,6 +17,10 @@ use Filament\Tables\Table;
 
 class CrmContactResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'crm_oversight';
+
     protected static ?string $model = CrmContact::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;

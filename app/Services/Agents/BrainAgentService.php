@@ -64,6 +64,14 @@ class BrainAgentService
      */
     public function approveAndLaunch(MarketingCampaign $campaign, User $admin): void
     {
+        // Real ad spend, like every other AI agent's consequential action
+        // (Tom's fixes, Tony's publishes), requires super-admin — enforced
+        // here, not just hidden in the UI, since an admin sub-account
+        // granted the "ai_agents" department can otherwise see this table.
+        if (! $admin->isSuperAdmin()) {
+            throw new RuntimeException('Only super-admin can approve and launch a live campaign.');
+        }
+
         if (! $campaign->isDraft()) {
             throw new InvalidArgumentException('Only a draft campaign can be approved and launched.');
         }

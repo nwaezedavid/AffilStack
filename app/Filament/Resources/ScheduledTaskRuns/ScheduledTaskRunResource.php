@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ScheduledTaskRuns;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\ScheduledTaskRuns\Pages\ListScheduledTaskRuns;
 use App\Filament\Resources\ScheduledTaskRuns\Tables\ScheduledTaskRunsTable;
 use App\Models\ScheduledTaskRun;
@@ -17,6 +18,10 @@ use Filament\Tables\Table;
  */
 class ScheduledTaskRunResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'system';
+
     protected static ?string $model = ScheduledTaskRun::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;

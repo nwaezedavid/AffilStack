@@ -42,8 +42,9 @@ class UserForm
                             ->relationship('roles', 'name')
                             ->multiple()
                             ->preload()
-                            ->options(fn () => Role::pluck('name', 'id'))
-                            ->helperText('Only "admin" and "support" roles can access this dashboard.'),
+                            ->options(fn () => Role::whereNotIn('name', ['admin_sub'])->pluck('name', 'id'))
+                            ->visible(fn () => auth()->user()?->isSuperAdmin() ?? false)
+                            ->helperText('Only super-admin can change roles here. Admin sub-accounts (department-scoped staff) are created from Users & Access > Admin Sub-Accounts, not this form.'),
                         TextInput::make('credits_balance')
                             ->label('Credit balance')
                             ->required()

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Models\HeyGenSetting;
 use App\Services\Video\HeyGenClient;
 use BackedEnum;
@@ -24,6 +25,10 @@ use Filament\Support\Icons\Heroicon;
  */
 class UgcVideoSettings extends Page
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'content';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedVideoCamera;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Content';

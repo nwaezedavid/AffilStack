@@ -51,17 +51,49 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->hasRole('admin') || $this->hasRole('support');
+        if ($this->is_suspended) {
+            return false;
+        }
+
+        return $this->hasRole('admin') || $this->hasRole('support') || $this->hasRole('admin_sub');
     }
 
     /**
      * The only role allowed to approve an AI agent's permission request
      * (Tom's fixes, Tony's codebase changes) — deliberately separate from
-     * 'admin' so a future admin sub-account never inherits this authority.
+     * 'admin' so an admin sub-account never inherits this authority.
      */
     public function isSuperAdmin(): bool
     {
         return $this->hasRole('super-admin');
+    }
+
+    /**
+     * Full, unscoped panel access — every Filament resource/page department
+     * check (see App\Filament\Concerns\ScopedToDepartment) bypasses for
+     * these two roles. Admin sub-accounts ('admin_sub') are never full
+     * admins — their access is exactly what their department permissions
+     * grant, nothing more.
+     */
+    public function isFullAdmin(): bool
+    {
+        return $this->hasRole('admin') || $this->hasRole('super-admin');
+    }
+
+    public function isAdminSubAccount(): bool
+    {
+        return $this->hasRole('admin_sub');
+    }
+
+    /**
+     * Whether this user's panel access covers a given department (see
+     * config('admin.departments')) — full admins always do; an admin
+     * sub-account only does when explicitly granted that department's
+     * permission (see AdminSubAccountResource).
+     */
+    public function canAccessDepartment(string $department): bool
+    {
+        return $this->isFullAdmin() || $this->getAllPermissions()->contains('name', "department.{$department}");
     }
 
     public function subscriptions(): HasMany

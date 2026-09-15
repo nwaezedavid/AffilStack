@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Models\BrainAgentSetting;
 use App\Services\AI\AnthropicClient;
 use BackedEnum;
@@ -27,6 +28,10 @@ use Filament\Support\Icons\Heroicon;
  */
 class BrainAgentSettings extends Page
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'ai_agents';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
 
     protected static string|\UnitEnum|null $navigationGroup = 'AI Agents';

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Models\SiteSetting;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -23,6 +24,10 @@ use Filament\Support\Icons\Heroicon;
  */
 class BrandSettings extends Page
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'site';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPaintBrush;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Site';

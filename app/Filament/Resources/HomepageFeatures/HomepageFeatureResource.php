@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\HomepageFeatures;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\HomepageFeatures\Pages\CreateHomepageFeature;
 use App\Filament\Resources\HomepageFeatures\Pages\EditHomepageFeature;
 use App\Filament\Resources\HomepageFeatures\Pages\ListHomepageFeatures;
@@ -20,6 +21,10 @@ use Filament\Tables\Table;
  */
 class HomepageFeatureResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'content';
+
     protected static ?string $model = HomepageFeature::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

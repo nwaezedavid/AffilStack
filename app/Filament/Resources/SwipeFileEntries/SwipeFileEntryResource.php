@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SwipeFileEntries;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\SwipeFileEntries\Pages\CreateSwipeFileEntry;
 use App\Filament\Resources\SwipeFileEntries\Pages\EditSwipeFileEntry;
 use App\Filament\Resources\SwipeFileEntries\Pages\ListSwipeFileEntries;
@@ -22,6 +23,10 @@ use Filament\Tables\Table;
  */
 class SwipeFileEntryResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'content';
+
     protected static ?string $model = SwipeFileEntry::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

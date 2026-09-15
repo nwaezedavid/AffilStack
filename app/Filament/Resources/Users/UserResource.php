@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
@@ -15,14 +16,30 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class UserResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'users_access';
+
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Users & Access';
+
+    /**
+     * Admin sub-accounts are managed exclusively from their own dedicated
+     * screen (AdminSubAccountResource) — never mixed into this one, which
+     * is scoped to platform customers so a department-scoped 'users_access'
+     * sub-account can never see or edit anyone's admin roles.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->whereDoesntHave('roles', fn ($query) => $query->where('name', 'admin_sub'));
+    }
 
     public static function form(Schema $schema): Schema
     {

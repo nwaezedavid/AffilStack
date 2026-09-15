@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Models\GoogleOauthSetting;
 use App\Services\Auth\GoogleOAuthService;
 use BackedEnum;
@@ -23,6 +24,10 @@ use Illuminate\Support\Facades\URL;
  */
 class GoogleOAuthSettings extends Page
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'site';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFingerPrint;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Site';

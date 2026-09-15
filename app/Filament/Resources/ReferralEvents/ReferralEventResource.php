@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ReferralEvents;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\ReferralEvents\Pages\ListReferralEvents;
 use App\Filament\Resources\ReferralEvents\Tables\ReferralEventsTable;
 use App\Models\ReferralEvent;
@@ -19,6 +20,10 @@ use Filament\Tables\Table;
  */
 class ReferralEventResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'billing';
+
     protected static ?string $model = ReferralEvent::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGift;

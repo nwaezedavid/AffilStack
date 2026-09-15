@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CreativeTasks;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\CreativeTasks\Pages\ListCreativeTasks;
 use App\Filament\Resources\CreativeTasks\Tables\CreativeTasksTable;
 use App\Models\AgentTask;
@@ -20,6 +21,10 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class CreativeTaskResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'ai_agents';
+
     protected static ?string $model = AgentTask::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPencilSquare;

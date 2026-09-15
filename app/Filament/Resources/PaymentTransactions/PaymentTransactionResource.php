@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PaymentTransactions;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\PaymentTransactions\Pages\ListPaymentTransactions;
 use App\Filament\Resources\PaymentTransactions\Tables\PaymentTransactionsTable;
 use App\Models\PaymentTransaction;
@@ -16,6 +17,10 @@ use Filament\Tables\Table;
  */
 class PaymentTransactionResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'billing';
+
     protected static ?string $model = PaymentTransaction::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;

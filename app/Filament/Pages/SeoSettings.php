@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Models\SiteSetting;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -24,6 +25,10 @@ use Filament\Support\Icons\Heroicon;
  */
 class SeoSettings extends Page
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'site';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMagnifyingGlassCircle;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Site';

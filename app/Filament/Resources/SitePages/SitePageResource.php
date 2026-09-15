@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SitePages;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\SitePages\Pages\CreateSitePage;
 use App\Filament\Resources\SitePages\Pages\EditSitePage;
 use App\Filament\Resources\SitePages\Pages\ListSitePages;
@@ -16,6 +17,10 @@ use Filament\Tables\Table;
 
 class SitePageResource extends Resource
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'content';
+
     protected static ?string $model = SitePage::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;

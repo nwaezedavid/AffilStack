@@ -32,7 +32,7 @@ class BrainAgentAdminUiTest extends TestCase
 
         $this->seed(RolesSeeder::class);
         $this->admin = User::factory()->create();
-        $this->admin->assignRole('admin');
+        $this->admin->assignRole(['admin', 'super-admin']);
     }
 
     public function test_admin_can_save_brain_credentials_from_the_settings_page(): void

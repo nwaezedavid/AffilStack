@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Concerns\ScopedToDepartment;
 use App\Models\PaymentGatewaySetting;
 use App\Services\Payments\PaymentCredentialAdvisor;
 use App\Services\Payments\PaymentGatewayManager;
@@ -28,6 +29,10 @@ use Filament\Support\Icons\Heroicon;
  */
 class PaymentGatewaySettings extends Page
 {
+    use ScopedToDepartment;
+
+    protected static string $department = 'billing';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Billing';
