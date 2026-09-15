@@ -63,6 +63,15 @@ ScheduleMonitoring::track(
     'agents:support-suggest-templates',
 );
 
+// Brain, the Marketing Agent: drafting and the one-click launch both happen
+// on demand from the admin dashboard — this is the only part of Brain that
+// runs on its own schedule, reviewing every live campaign daily through the
+// connected Meta Ads MCP server and adjusting it without asking again.
+ScheduleMonitoring::track(
+    Schedule::command('agents:marketing-optimize-campaigns')->daily()->withoutOverlapping(),
+    'agents:marketing-optimize-campaigns',
+);
+
 // Self-maintenance: keep the run-history table itself from growing forever.
 Schedule::call(fn () => ScheduledTaskRun::where('created_at', '<', now()->subDays(30))->delete())
     ->daily()
