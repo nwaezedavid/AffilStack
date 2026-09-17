@@ -163,6 +163,8 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
     Route::delete('/earnings/{earning}', [EarningsController::class, 'destroy'])->name('earnings.destroy');
 
     Route::get('/referrals', [DashboardReferralController::class, 'index'])->name('referrals.index');
+    Route::post('/referrals/payout-method', [DashboardReferralController::class, 'savePayoutMethod'])->name('referrals.payout-method');
+    Route::post('/referrals/payout', [DashboardReferralController::class, 'requestPayout'])->name('referrals.payout');
 
     Route::get('/calendar', [ContentCalendarController::class, 'index'])->name('calendar.index');
     Route::patch('/calendar/{generation}', [ContentCalendarController::class, 'update'])->name('calendar.update');

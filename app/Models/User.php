@@ -24,7 +24,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'agency_owner_id', 'seat_offer_id'])]
+#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
@@ -39,6 +39,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'is_suspended' => 'boolean',
             'notify_email_on_completion' => 'boolean',
             'last_active_at' => 'datetime',
+            'payout_details' => 'encrypted:array',
         ];
     }
 
@@ -293,5 +294,34 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     protected function referralLink(): Attribute
     {
         return Attribute::get(fn () => url('/r/'.$this->referralCode()));
+    }
+
+    public function referralPayouts(): HasMany
+    {
+        return $this->hasMany(ReferralPayout::class);
+    }
+
+    public function hasPayoutMethodOnFile(): bool
+    {
+        return filled($this->payout_method) && filled($this->payout_details);
+    }
+
+    /**
+     * The commission total (in cents, assumed single-currency — see
+     * ReferralPayoutService) that's been admin-approved but not yet
+     * claimed by a payout request. This, not lifetime earnings, is what
+     * counts toward config('referrals.minimum_payout_cents').
+     */
+    public function unpaidApprovedCommissionCents(): int
+    {
+        return (int) ReferralEvent::whereHas('referral', fn ($query) => $query->where('referrer_id', $this->id))
+            ->where('status', 'approved')
+            ->whereNull('referral_payout_id')
+            ->sum('amount_cents');
+    }
+
+    public function hasOpenPayoutRequest(): bool
+    {
+        return $this->referralPayouts()->where('status', 'requested')->exists();
     }
 }

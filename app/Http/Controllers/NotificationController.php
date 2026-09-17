@@ -53,6 +53,8 @@ class NotificationController extends Controller
                 'welcome' => 'Welcome to AffilStack — say hi to Sam anytime from support chat',
                 'ticket_replied' => 'New reply on your ticket: '.($data['subject'] ?? ''),
                 'ticket_status_changed' => 'Your ticket was '.(($data['status'] ?? 'resolved') === 'closed' ? 'closed' : 'marked resolved').': '.($data['subject'] ?? ''),
+                'referral_payout_processed' => 'Your referral payout of $'.number_format(($data['amount_cents'] ?? 0) / 100, 2).' was sent',
+                'referral_payout_rejected' => 'Your referral payout request needs attention',
                 default => $data['reason'] ?? 'Update from AffilStack',
             };
         }

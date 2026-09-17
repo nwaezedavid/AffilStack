@@ -17,4 +17,17 @@ return [
 
     // Where an unrecognized or expired /r/{code} link sends the visitor.
     'fallback_route' => 'registration.pricing',
+
+    // An affiliate can't request a payout until their approved-but-unpaid
+    // commission total clears this — keeps payouts worth the admin's time
+    // to process individually. See ReferralPayoutService::requestPayout().
+    'minimum_payout_cents' => (int) env('REFERRAL_MINIMUM_PAYOUT_CENTS', 5000),
+
+    // Payout methods an affiliate can put on file (dashboard.referrals).
+    // Each key's dynamic form fields live in
+    // resources/views/dashboard/referrals/index.blade.php.
+    'payout_methods' => [
+        'paypal' => 'PayPal',
+        'bank_transfer' => 'Bank transfer',
+    ],
 ];

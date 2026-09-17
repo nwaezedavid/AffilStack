@@ -32,17 +32,25 @@ class ReferralEventsTable
                     ->formatStateUsing(fn ($state, $record) => '$'.number_format($state / 100, 2).' '.$record->currency)
                     ->sortable(),
                 SelectColumn::make('status')
-                    ->options([
+                    ->options(fn ($record) => $record->referral_payout_id === null ? [
                         'pending' => 'Pending',
                         'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ] : [
                         'paid' => 'Paid',
-                    ]),
+                    ])
+                    // 'paid' is only ever reached through ReferralPayoutService
+                    // cascading a processed ReferralPayout (see ReferralEvent
+                    // docblock) — once an event is attached to a payout this
+                    // dropdown is locked so an admin can't hand-flip it back.
+                    ->disabled(fn ($record) => $record->referral_payout_id !== null),
                 TextColumn::make('occurred_at')->dateTime('M j, Y g:ia')->sortable(),
             ])
             ->filters([
                 SelectFilter::make('status')->options([
                     'pending' => 'Pending',
                     'approved' => 'Approved',
+                    'rejected' => 'Rejected',
                     'paid' => 'Paid',
                 ]),
                 SelectFilter::make('event_type')->options([

@@ -14,9 +14,11 @@ use Filament\Tables\Table;
 /**
  * The referral commission ledger. Rows are created only by
  * ReferralService::recordCommission() (see PaymentProcessor) — nothing
- * here is hand-created. Admins move status pending -> approved -> paid
- * inline in the table, the same pattern SupportTicketsTable uses for
- * ticket status.
+ * here is hand-created. Admins move status pending -> approved (or
+ * rejected) inline in the table, the same pattern SupportTicketsTable uses
+ * for ticket status; "paid" is locked once an event is attached to a
+ * payout — see App\Filament\Resources\ReferralPayouts for the actual
+ * payout workflow this feeds.
  */
 class ReferralEventResource extends Resource
 {
@@ -30,7 +32,7 @@ class ReferralEventResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Billing';
 
-    protected static ?string $navigationLabel = 'Referral Payouts';
+    protected static ?string $navigationLabel = 'Referral Commissions';
 
     public static function table(Table $table): Table
     {
