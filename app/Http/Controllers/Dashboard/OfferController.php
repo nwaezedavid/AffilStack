@@ -21,9 +21,24 @@ use Illuminate\View\View;
 
 class OfferController extends Controller
 {
-    public function index(): View
+    /**
+     * Audit gap #3: this list had no search or filter at all — fine at a
+     * handful of offers, painful once someone has dozens. `q` matches the
+     * product name; `status` narrows to one of Offer's own status values.
+     */
+    public function index(Request $request): View
     {
-        $offers = auth()->user()->visibleOffers()->latest()->paginate(10);
+        $query = auth()->user()->visibleOffers();
+
+        if ($search = trim((string) $request->query('q'))) {
+            $query->where('product_name', 'like', '%'.$search.'%');
+        }
+
+        if (in_array($request->query('status'), ['researching', 'ready', 'archived'], true)) {
+            $query->where('status', $request->query('status'));
+        }
+
+        $offers = $query->latest()->paginate(10)->withQueryString();
 
         return view('dashboard.offers.index', compact('offers'));
     }

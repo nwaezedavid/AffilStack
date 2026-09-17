@@ -71,6 +71,10 @@ class PaymentProcessor
             'status' => 'successful',
             'gateway' => $gateway,
             'gateway_tx_id' => $result['remote_id'],
+            // Only Flutterwave provides this (its flw_ref) — needed to
+            // match a later chargeback webhook back to this transaction.
+            // See FlutterwaveGateway::resolveRefundEvent().
+            'gateway_reference' => $result['reference'] ?? null,
             'raw_payload' => $result['raw'],
             'processed_at' => now(),
         ]);

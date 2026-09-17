@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Payments\PaymentProcessor;
+use App\Services\Payments\RefundProcessor;
 use App\Services\Payments\StripeGateway;
 use App\Services\Payments\SubscriptionRenewalService;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,7 @@ class StripeWebhookController extends Controller
         PaymentGatewayManager $gateways,
         PaymentProcessor $processor,
         SubscriptionRenewalService $renewals,
+        RefundProcessor $refunds,
     ): JsonResponse {
         $gateway = $gateways->get('stripe');
 
@@ -32,6 +34,11 @@ class StripeWebhookController extends Controller
         // Renewal-cycle events (task #85) — see StripeGateway::resolveRenewalEvent().
         if ($gateway instanceof StripeGateway && $renewalEvent = $gateway->resolveRenewalEvent($request)) {
             $renewals->handleStripeEvent($renewalEvent);
+        }
+
+        // Refunds/chargebacks (audit gap #6) — see StripeGateway::resolveRefundEvent().
+        if ($gateway instanceof StripeGateway && $refundEvent = $gateway->resolveRefundEvent($request)) {
+            $refunds->process('stripe', $refundEvent);
         }
 
         return response()->json(['status' => 'ok']);

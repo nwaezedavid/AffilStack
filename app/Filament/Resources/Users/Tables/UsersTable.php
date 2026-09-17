@@ -8,6 +8,8 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -16,6 +18,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 
 class UsersTable
@@ -53,11 +56,22 @@ class UsersTable
                     ->label('Joined')
                     ->dateTime('M j, Y')
                     ->sortable(),
+                TextColumn::make('deleted_at')
+                    ->label('Deletion requested')
+                    ->dateTime('M j, Y')
+                    ->description(fn (User $record) => $record->trashed() ? 'Purged '.$record->deleted_at->addDays(30)->diffForHumans() : null)
+                    ->placeholder('—')
+                    ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('roles')
                     ->relationship('roles', 'name'),
                 TernaryFilter::make('is_suspended'),
+                // Audit gap #4 — a self-deleted account is soft-deleted
+                // immediately and only force-deleted 30 days later (see
+                // PurgeDeletedAccounts), so this is how an admin finds one
+                // to restore inside that window.
+                TrashedFilter::make(),
             ])
             ->recordActions([
                 Action::make('grantCredits')
@@ -87,8 +101,15 @@ class UsersTable
                     ->icon('heroicon-o-no-symbol')
                     ->color(fn (User $record) => $record->is_suspended ? 'success' : 'danger')
                     ->requiresConfirmation()
+                    ->visible(fn (User $record) => ! $record->trashed())
                     ->action(fn (User $record) => $record->update(['is_suspended' => ! $record->is_suspended])),
-                EditAction::make(),
+                // Audit gap #4 — the only way to undo a self-service account
+                // deletion within its 30-day grace period (see
+                // ProfileController::destroy() / PurgeDeletedAccounts).
+                RestoreAction::make(),
+                ForceDeleteAction::make(),
+                EditAction::make()
+                    ->visible(fn (User $record) => ! $record->trashed()),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

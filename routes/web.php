@@ -109,7 +109,7 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->
 // CreativeTaskPreviewController — nothing here writes to the database.
 Route::middleware('auth')->get('/admin-preview/creative-tasks/{agentTask}', [CreativeTaskPreviewController::class, 'show'])->name('creative-tasks.preview');
 
-Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function () {
+Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
@@ -225,7 +225,15 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
     Route::post('/api-access/tokens', [ApiAccessController::class, 'createToken'])->name('api-access.tokens.store');
     Route::delete('/api-access/tokens/{token}', [ApiAccessController::class, 'revokeToken'])->name('api-access.tokens.destroy');
 
+    // Outbound webhooks (audit gap #7) — deliberately NOT added to
+    // config('agency.seat_allowed_routes'): owner-only, same as Referrals
+    // and Earnings, two of the four events a webhook can subscribe to.
+    Route::post('/api-access/webhooks', [ApiAccessController::class, 'storeWebhook'])->name('api-access.webhooks.store');
+    Route::patch('/api-access/webhooks/{webhook}/toggle', [ApiAccessController::class, 'toggleWebhook'])->name('api-access.webhooks.toggle');
+    Route::delete('/api-access/webhooks/{webhook}', [ApiAccessController::class, 'destroyWebhook'])->name('api-access.webhooks.destroy');
+
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/notifications/poll', [NotificationController::class, 'poll'])->name('notifications.poll');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');

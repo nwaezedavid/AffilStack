@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Webhooks\WebhookDispatcher;
 use Database\Factories\ReferralFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -28,6 +29,22 @@ class Referral extends Model
         return [
             'converted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Audit gap #7 (outbound webhooks — "referral.converted").
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (Referral $referral) {
+            if ($referral->wasChanged('status') && $referral->status === 'converted') {
+                app(WebhookDispatcher::class)->dispatch($referral->referrer, 'referral.converted', [
+                    'referral_id' => $referral->id,
+                    'referred_user_id' => $referral->referred_user_id,
+                    'converted_at' => $referral->converted_at?->toIso8601String(),
+                ]);
+            }
+        });
     }
 
     public function referrer(): BelongsTo

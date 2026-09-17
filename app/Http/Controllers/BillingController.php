@@ -18,7 +18,17 @@ class BillingController extends Controller
         $subscription = auth()->user()->activeSubscription;
         $enabledGateways = $gateways->enabled();
 
-        return view('billing.index', compact('plans', 'subscription', 'enabledGateways'));
+        // Audit gap #2: PaymentTransaction has recorded every charge since
+        // Phase 1, but this page never showed any of it — a user who
+        // needed a receipt for expensing/taxes had to ask support to pull
+        // it manually. Pending rows from an abandoned checkout are left
+        // out; they're not something the user actually needs to see.
+        $transactions = auth()->user()->transactions()
+            ->where('status', '!=', 'pending')
+            ->latest()
+            ->paginate(10, pageName: 'transactions_page');
+
+        return view('billing.index', compact('plans', 'subscription', 'enabledGateways', 'transactions'));
     }
 
     public function checkout(Request $request, Plan $plan, PaymentGatewayManager $gateways): RedirectResponse

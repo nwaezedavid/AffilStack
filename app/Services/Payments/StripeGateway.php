@@ -324,6 +324,75 @@ class StripeGateway implements PaymentGateway
         ];
     }
 
+    /**
+     * Audit gap #6: neither gateway handled a refund or chargeback at all —
+     * PaymentTransaction::status anticipated "refunded" in its own
+     * migration comment but nothing ever set it. Deliberately separate from
+     * resolveFromWebhook()/the PaymentGateway interface, same reasoning as
+     * resolveRenewalEvent() above: StripeWebhookController checks this
+     * alongside the other two for every incoming event.
+     *
+     * @return null|array{kind: string, gateway_tx_ids: array<int, string>, amount: float, currency: string, raw: array<string, mixed>}
+     */
+    public function resolveRefundEvent(Request $request): ?array
+    {
+        $payload = $request->json()->all();
+        $object = $payload['data']['object'] ?? [];
+
+        return match ($payload['type'] ?? null) {
+            'charge.refunded' => $this->resolveChargeRefunded($object),
+            'charge.dispute.created' => $this->resolveChargeDisputeCreated($object),
+            default => null,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $charge
+     * @return array<string, mixed>|null
+     */
+    protected function resolveChargeRefunded(array $charge): ?array
+    {
+        // A renewal's PaymentTransaction is keyed by its invoice id (see
+        // SubscriptionRenewalService::renew()), while an initial payment's
+        // is keyed by its payment_intent (see normalize() above) — a
+        // refunded charge carries both, so try each rather than assuming
+        // which one this transaction was stored under.
+        $ids = array_filter([$charge['payment_intent'] ?? null, $charge['invoice'] ?? null]);
+
+        if (empty($ids)) {
+            return null;
+        }
+
+        return [
+            'kind' => 'refunded',
+            'gateway_tx_ids' => array_map('strval', array_values($ids)),
+            'amount' => ((float) ($charge['amount_refunded'] ?? 0)) / 100,
+            'currency' => strtoupper((string) ($charge['currency'] ?? '')),
+            'raw' => $charge,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $dispute
+     * @return array<string, mixed>|null
+     */
+    protected function resolveChargeDisputeCreated(array $dispute): ?array
+    {
+        $ids = array_filter([$dispute['payment_intent'] ?? null]);
+
+        if (empty($ids)) {
+            return null;
+        }
+
+        return [
+            'kind' => 'charged_back',
+            'gateway_tx_ids' => array_map('strval', array_values($ids)),
+            'amount' => ((float) ($dispute['amount'] ?? 0)) / 100,
+            'currency' => strtoupper((string) ($dispute['currency'] ?? '')),
+            'raw' => $dispute,
+        ];
+    }
+
     public function verifyCredentials(): array
     {
         $secretKey = $this->secretKey();

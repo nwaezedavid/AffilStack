@@ -26,7 +26,7 @@ class PaymentTransactionsTable
                     ->colors([
                         'success' => 'successful',
                         'warning' => 'pending',
-                        'danger' => 'failed',
+                        'danger' => fn ($state) => in_array($state, ['failed', 'charged_back'], true),
                         'gray' => 'refunded',
                     ]),
                 TextColumn::make('processed_at')->dateTime('M j, Y g:ia')->sortable(),
@@ -37,6 +37,7 @@ class PaymentTransactionsTable
                     'successful' => 'Successful',
                     'failed' => 'Failed',
                     'refunded' => 'Refunded',
+                    'charged_back' => 'Charged back',
                 ]),
                 SelectFilter::make('type')->options([
                     'signup' => 'Signup (unconverted)',

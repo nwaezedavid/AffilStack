@@ -21,19 +21,24 @@ class ReferralPayoutService
 {
     /**
      * Called from the affiliate's own dashboard. Claims every currently
-     * unattached, admin-approved commission event in the user's dominant
-     * currency (there's no multi-currency payout in v1 — a mixed-currency
-     * affiliate just gets whichever currency has the larger unattached
-     * balance this time, and the rest waits for their next request).
+     * unattached, admin-approved commission event in the given currency.
+     * A mixed-currency affiliate can hold one open request per currency —
+     * request USD today, EUR tomorrow — rather than being limited to
+     * whichever currency happens to have the largest balance (audit gap
+     * #5). When no currency is given (kept for backward compatibility
+     * with callers that predate multi-currency support), falls back to
+     * whichever currency currently has the largest unattached balance.
      */
-    public function requestPayout(User $user): ReferralPayout
+    public function requestPayout(User $user, ?string $currency = null): ReferralPayout
     {
         if (! $user->hasPayoutMethodOnFile()) {
             throw new InvalidArgumentException('Add your payout details before requesting a payout.');
         }
 
-        if ($user->hasOpenPayoutRequest()) {
-            throw new RuntimeException('You already have a payout request being processed.');
+        if ($user->hasOpenPayoutRequest($currency)) {
+            throw new RuntimeException($currency
+                ? "You already have a {$currency} payout request being processed."
+                : 'You already have a payout request being processed.');
         }
 
         $claimable = ReferralEvent::whereHas('referral', fn ($query) => $query->where('referrer_id', $user->id))
@@ -45,13 +50,15 @@ class ReferralPayoutService
             throw new InvalidArgumentException('You have no approved commissions to pay out yet.');
         }
 
-        $currency = $claimable->groupBy('currency')->map->sum('amount_cents')->sortDesc()->keys()->first();
-        $events = $claimable->where('currency', $currency);
+        $byCurrency = $claimable->groupBy('currency');
+        $currency ??= $byCurrency->map->sum('amount_cents')->sortDesc()->keys()->first();
+
+        $events = $byCurrency->get($currency, collect());
         $total = $events->sum('amount_cents');
 
         if ($total < (int) config('referrals.minimum_payout_cents')) {
             $minimum = number_format(config('referrals.minimum_payout_cents') / 100, 2);
-            throw new InvalidArgumentException("You need at least \${$minimum} in approved commissions to request a payout.");
+            throw new InvalidArgumentException("You need at least {$minimum} {$currency} in approved commissions to request a payout.");
         }
 
         return DB::transaction(function () use ($user, $events, $total, $currency) {

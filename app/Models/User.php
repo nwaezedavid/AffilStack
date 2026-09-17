@@ -17,8 +17,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
@@ -30,7 +32,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, InteractsWithAppAuthentication, InteractsWithAppAuthenticationRecovery, LogsActivity, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, InteractsWithAppAuthentication, InteractsWithAppAuthenticationRecovery, LogsActivity, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
     protected function casts(): array
     {
@@ -41,6 +43,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'notify_email_on_completion' => 'boolean',
             'last_active_at' => 'datetime',
             'payout_details' => 'encrypted:array',
+            'deleted_at' => 'datetime',
         ];
     }
 
@@ -405,16 +408,28 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return $this->hasMany(ReferralPayout::class);
     }
 
+    /**
+     * Audit gap #7 (outbound webhooks) — see App\Services\Webhooks\WebhookDispatcher.
+     */
+    public function webhookEndpoints(): HasMany
+    {
+        return $this->hasMany(WebhookEndpoint::class);
+    }
+
     public function hasPayoutMethodOnFile(): bool
     {
         return filled($this->payout_method) && filled($this->payout_details);
     }
 
     /**
-     * The commission total (in cents, assumed single-currency — see
-     * ReferralPayoutService) that's been admin-approved but not yet
-     * claimed by a payout request. This, not lifetime earnings, is what
-     * counts toward config('referrals.minimum_payout_cents').
+     * The commission total (in cents, summed across every currency the
+     * affiliate has earned in) that's been admin-approved but not yet
+     * claimed by a payout request. Kept for API consumers and the
+     * Intelligence Centre, which only need a single at-a-glance figure —
+     * see unpaidApprovedCommissionByCurrency() for the per-currency
+     * breakdown that actually drives payout eligibility (audit gap #5:
+     * summing different currencies together here is a display
+     * simplification, not something request eligibility relies on).
      */
     public function unpaidApprovedCommissionCents(): int
     {
@@ -424,8 +439,30 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             ->sum('amount_cents');
     }
 
-    public function hasOpenPayoutRequest(): bool
+    /**
+     * Same balance as unpaidApprovedCommissionCents(), broken out per
+     * currency — what ReferralPayoutService and the Referrals page use so
+     * a mixed-currency affiliate can request a payout for each currency
+     * they've earned in, rather than only ever the single largest one.
+     *
+     * @return Collection<string, int>
+     */
+    public function unpaidApprovedCommissionByCurrency(): Collection
     {
-        return $this->referralPayouts()->where('status', 'requested')->exists();
+        return ReferralEvent::whereHas('referral', fn ($query) => $query->where('referrer_id', $this->id))
+            ->where('status', 'approved')
+            ->whereNull('referral_payout_id')
+            ->selectRaw('currency, sum(amount_cents) as total')
+            ->groupBy('currency')
+            ->pluck('total', 'currency')
+            ->map(fn ($total) => (int) $total);
+    }
+
+    public function hasOpenPayoutRequest(?string $currency = null): bool
+    {
+        return $this->referralPayouts()
+            ->where('status', 'requested')
+            ->when($currency, fn ($query) => $query->where('currency', $currency))
+            ->exists();
     }
 }

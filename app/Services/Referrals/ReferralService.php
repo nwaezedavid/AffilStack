@@ -125,4 +125,43 @@ class ReferralService
             $referral->update(['status' => 'converted', 'converted_at' => now()]);
         }
     }
+
+    /**
+     * Called from RefundProcessor when a payment tied to a referral
+     * commission is refunded or charged back (audit gap #6 — previously
+     * there was no clawback path at all). A commission that hasn't yet been
+     * committed to any payout is simply voided — nothing to claw back. One
+     * that's already paid, or already claimed by a payout request awaiting
+     * processing, is left alone historically (a "paid" event should keep
+     * meaning a real payout batch went out — see ReferralEvent) and instead
+     * offset by a negative ledger entry that nets out of the referrer's
+     * next payout, the same commission ledger every other event lives in.
+     */
+    public function reverseCommission(PaymentTransaction $transaction, string $reason): void
+    {
+        $event = ReferralEvent::where('payment_transaction_id', $transaction->id)
+            ->whereNotIn('status', ['reversed', 'rejected'])
+            ->whereNotIn('event_type', ['refund', 'chargeback'])
+            ->first();
+
+        if (! $event) {
+            return;
+        }
+
+        if ($event->status !== 'paid' && $event->referral_payout_id === null) {
+            $event->update(['status' => 'reversed']);
+
+            return;
+        }
+
+        ReferralEvent::create([
+            'referral_id' => $event->referral_id,
+            'payment_transaction_id' => $transaction->id,
+            'event_type' => $reason === 'charged_back' ? 'chargeback' : 'refund',
+            'amount_cents' => -$event->amount_cents,
+            'currency' => $event->currency,
+            'status' => 'approved',
+            'occurred_at' => now(),
+        ]);
+    }
 }

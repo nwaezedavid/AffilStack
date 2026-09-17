@@ -58,5 +58,29 @@
                 </form>
             @endif
         </div>
+
+        <div class="bg-surface border border-red-200 rounded-lg p-6">
+            <h3 class="font-display font-semibold text-sm text-red-700 mb-2">Delete account</h3>
+            <p class="text-sm text-ink-600 mb-4">
+                This deactivates your account immediately — you won't be able to sign in, and no further credits
+                will be used. It's kept for 30 days in case you change your mind; contact support during that
+                window to have it restored. After 30 days it's permanently deleted.
+            </p>
+            <form method="POST" action="{{ route('profile.destroy') }}"
+                  onsubmit="return confirm('Delete your account? You\'ll be signed out immediately and have 30 days to contact support if you change your mind.');"
+                  class="flex items-end gap-2">
+                @csrf
+                @method('DELETE')
+                <div>
+                    <label class="block text-xs font-medium text-ink-900 mb-1">Confirm your password</label>
+                    <input type="password" name="password" required
+                           class="rounded-md border border-line px-2.5 py-2 text-sm @error('password') border-red-400 @enderror">
+                    @error('password')
+                        <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                <button type="submit" class="rounded-md border border-red-200 text-red-700 text-sm px-4 py-2 hover:bg-red-50 transition">Delete my account</button>
+            </form>
+        </div>
     </div>
 @endsection

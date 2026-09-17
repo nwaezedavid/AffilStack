@@ -137,6 +137,16 @@ class FlutterwaveGateway implements PaymentGateway
 
     public function resolveFromWebhook(Request $request): ?array
     {
+        // A chargeback webhook (audit gap #6) uses the same event/data
+        // envelope as a charge, but data.id is the chargeback's own id, not
+        // a transaction to verify — without this guard it would previously
+        // have been misread as one. Refund webhooks don't need a guard here:
+        // they're a bare object with no "data" key at all, so $payload below
+        // is already empty for them.
+        if (str_starts_with((string) $request->input('event', ''), 'chargeback.')) {
+            return null;
+        }
+
         $payload = $request->input('data', []);
 
         if (empty($payload['id'])) {
@@ -147,6 +157,68 @@ class FlutterwaveGateway implements PaymentGateway
         // look at — always re-verify the actual amount/status
         // server-to-server rather than trusting the webhook body directly.
         return $this->normalize($this->verifyTransaction((string) $payload['id']));
+    }
+
+    /**
+     * Audit gap #6: neither gateway handled a refund or chargeback at all.
+     * Refund webhooks (must be explicitly enabled on the Flutterwave
+     * account) arrive as a bare object with no "event"/"data" envelope, so
+     * they're detected structurally via the TransactionId field rather than
+     * an event name. Chargebacks use the normal envelope but identify the
+     * disputed charge by flw_ref rather than the numeric transaction id —
+     * see gateway_reference on PaymentTransaction.
+     *
+     * @return null|array{kind: string, gateway_tx_ids?: array<int, string>, gateway_references?: array<int, string>, amount: float, raw: array<string, mixed>}
+     */
+    public function resolveRefundEvent(Request $request): ?array
+    {
+        $payload = $request->json()->all();
+
+        if (array_key_exists('TransactionId', $payload)) {
+            return $this->resolveRefundCompleted($payload);
+        }
+
+        if (str_starts_with((string) ($payload['event'] ?? ''), 'chargeback.')) {
+            return $this->resolveChargebackEvent((array) ($payload['data'] ?? []));
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $refund
+     * @return array<string, mixed>|null
+     */
+    protected function resolveRefundCompleted(array $refund): ?array
+    {
+        if (($refund['status'] ?? null) !== 'completed' || empty($refund['TransactionId'])) {
+            return null;
+        }
+
+        return [
+            'kind' => 'refunded',
+            'gateway_tx_ids' => [(string) $refund['TransactionId']],
+            'amount' => (float) ($refund['AmountRefunded'] ?? 0),
+            'raw' => $refund,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>|null
+     */
+    protected function resolveChargebackEvent(array $data): ?array
+    {
+        if (empty($data['flw_ref'])) {
+            return null;
+        }
+
+        return [
+            'kind' => 'charged_back',
+            'gateway_references' => [(string) $data['flw_ref']],
+            'amount' => (float) ($data['amount'] ?? 0),
+            'raw' => $data,
+        ];
     }
 
     /**
@@ -179,6 +251,10 @@ class FlutterwaveGateway implements PaymentGateway
             'currency' => (string) ($flwData['currency'] ?? ''),
             'meta' => (array) ($flwData['meta'] ?? []),
             'customer_reference' => (string) ($flwData['customer']['email'] ?? ''),
+            // Stored so a later chargeback webhook — which identifies the
+            // disputed charge by flw_ref, not the numeric id — can still be
+            // matched back to this transaction. See resolveRefundEvent().
+            'reference' => (string) ($flwData['flw_ref'] ?? ''),
             'raw' => $flwData,
         ];
     }

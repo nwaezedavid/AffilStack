@@ -85,21 +85,36 @@
         <div class="bg-surface border border-line rounded-lg p-6">
             <h2 class="text-sm font-semibold text-navy-900 mb-3">Request a payout</h2>
             @php
-                $unpaidCents = $user->unpaidApprovedCommissionCents();
+                // Audit gap #5: a mixed-currency affiliate used to only ever
+                // be offered whichever currency had the largest unattached
+                // balance — this lists every currency they've earned in so
+                // each can be requested on its own.
+                $balancesByCurrency = $user->unpaidApprovedCommissionByCurrency();
                 $minimumCents = config('referrals.minimum_payout_cents');
             @endphp
-            <p class="text-sm text-ink-600 mb-4">You have <span class="font-medium text-ink-900">${{ number_format($unpaidCents / 100, 2) }}</span> in approved commissions available to request.</p>
-            @if ($user->hasOpenPayoutRequest())
-                <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">A payout request is already being processed — you'll be notified once it's paid.</p>
+            @if ($balancesByCurrency->isEmpty())
+                <p class="text-sm text-ink-500">You don't have any approved commissions to pay out yet.</p>
             @elseif (! $user->hasPayoutMethodOnFile())
                 <p class="text-sm text-ink-500">Add your payout details before requesting a payout.</p>
-            @elseif ($unpaidCents < $minimumCents)
-                <p class="text-sm text-ink-500">You need at least ${{ number_format($minimumCents / 100, 2) }} in approved commissions to request a payout — you're ${{ number_format(($minimumCents - $unpaidCents) / 100, 2) }} away.</p>
             @else
-                <form method="POST" action="{{ route('referrals.payout') }}">
-                    @csrf
-                    <button type="submit" class="w-full rounded-md bg-navy-900 text-white text-sm font-medium py-2 hover:bg-navy-800 transition">Request payout of ${{ number_format($unpaidCents / 100, 2) }}</button>
-                </form>
+                <div class="space-y-3">
+                    @foreach ($balancesByCurrency as $currency => $cents)
+                        <div class="flex items-center justify-between gap-3 {{ ! $loop->last ? 'pb-3 border-b border-line' : '' }}">
+                            <p class="text-sm text-ink-600">You have <span class="font-medium text-ink-900">{{ $currency }} {{ number_format($cents / 100, 2) }}</span> in approved commissions.</p>
+                            @if ($user->hasOpenPayoutRequest($currency))
+                                <span class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5 whitespace-nowrap">Request processing</span>
+                            @elseif ($cents < $minimumCents)
+                                <span class="text-xs text-ink-500 whitespace-nowrap">{{ $currency }} {{ number_format(($minimumCents - $cents) / 100, 2) }} short of minimum</span>
+                            @else
+                                <form method="POST" action="{{ route('referrals.payout') }}">
+                                    @csrf
+                                    <input type="hidden" name="currency" value="{{ $currency }}">
+                                    <button type="submit" class="rounded-md bg-navy-900 text-white text-xs font-medium px-3 py-1.5 hover:bg-navy-800 transition whitespace-nowrap">Request {{ $currency }} {{ number_format($cents / 100, 2) }}</button>
+                                </form>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
             @endif
         </div>
     </div>

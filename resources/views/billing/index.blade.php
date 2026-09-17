@@ -53,4 +53,46 @@
     </div>
 
     <p class="text-xs text-ink-400 mt-6">Payments are processed securely by {{ $enabledGateways ? collect($enabledGateways)->map->label()->implode(' or ') : 'our payment provider' }}. You'll be redirected to complete payment.</p>
+
+    <h2 class="font-display font-semibold text-sm text-navy-900 mt-10 mb-3">Billing history</h2>
+
+    @if ($transactions->isEmpty())
+        <div class="bg-surface border border-dashed border-line rounded-lg p-6 text-center text-sm text-ink-600">
+            No payments recorded yet.
+        </div>
+    @else
+        <div class="bg-surface border border-line rounded-lg overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
+                    <tr>
+                        <th class="text-left px-4 py-2.5">Date</th>
+                        <th class="text-left px-4 py-2.5">Description</th>
+                        <th class="text-left px-4 py-2.5">Gateway</th>
+                        <th class="text-right px-4 py-2.5">Amount</th>
+                        <th class="text-left px-4 py-2.5">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    @foreach ($transactions as $transaction)
+                        <tr>
+                            <td class="px-4 py-3 text-ink-600">{{ ($transaction->processed_at ?? $transaction->created_at)->format('M j, Y') }}</td>
+                            <td class="px-4 py-3 text-ink-900 capitalize">{{ str_replace('_', ' ', $transaction->type) }}</td>
+                            <td class="px-4 py-3 text-ink-600 capitalize">{{ $transaction->gateway }}</td>
+                            <td class="px-4 py-3 text-right font-mono text-ink-900">{{ strtoupper($transaction->currency) }} {{ number_format($transaction->amount_cents / 100, 2) }}</td>
+                            <td class="px-4 py-3">
+                                <span @class([
+                                    'text-xs font-mono px-2 py-1 rounded capitalize',
+                                    'bg-emerald-50 text-emerald-700' => $transaction->status === 'successful',
+                                    'bg-red-50 text-red-700' => $transaction->status === 'failed',
+                                    'bg-amber-50 text-amber-700' => in_array($transaction->status, ['refunded', 'charged_back'], true),
+                                    'bg-surface-muted text-ink-600' => ! in_array($transaction->status, ['successful', 'failed', 'refunded', 'charged_back'], true),
+                                ])>{{ str_replace('_', ' ', $transaction->status) }}</span>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-4">{{ $transactions->onEachSide(1)->links() }}</div>
+    @endif
 @endsection

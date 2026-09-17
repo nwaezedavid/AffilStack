@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ApiTokenAuth;
+use App\Http\Middleware\EnsureAccountNotSuspended;
 use App\Http\Middleware\EnsureAdminApiToken;
 use App\Http\Middleware\RestrictAgencySeats;
 use Illuminate\Foundation\Application;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'restrict-agency-seats' => RestrictAgencySeats::class,
+            'not-suspended' => EnsureAccountNotSuspended::class,
             'api-token-auth' => ApiTokenAuth::class,
             'admin-api-token' => EnsureAdminApiToken::class,
         ]);

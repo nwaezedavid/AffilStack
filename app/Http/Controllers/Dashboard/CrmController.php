@@ -30,10 +30,31 @@ class CrmController extends Controller
      * The pipeline stats header (task #90): a snapshot, not a full report —
      * cheap enough to compute on every page load for one user's own data.
      */
-    public function index(): View
+    /**
+     * Audit gap #3: no search/filter existed here at all — painful once a
+     * user's contact list runs into the hundreds/thousands (Growth+ plans
+     * allow up to 5,000). `q` matches name/company/email; `status` narrows
+     * to one of CrmContact's own pipeline stages. The stats header above
+     * still reflects the whole pipeline, not just the filtered view.
+     */
+    public function index(Request $request): View
     {
         $user = auth()->user();
-        $contacts = $user->crmContacts()->latest()->paginate(20);
+        $query = $user->crmContacts();
+
+        if ($search = trim((string) $request->query('q'))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('company', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%');
+            });
+        }
+
+        if (in_array($request->query('status'), ['new', 'contacted', 'qualified', 'customer', 'unqualified'], true)) {
+            $query->where('status', $request->query('status'));
+        }
+
+        $contacts = $query->latest()->paginate(20)->withQueryString();
 
         $statusCounts = $user->crmContacts()
             ->selectRaw('status, count(*) as aggregate')

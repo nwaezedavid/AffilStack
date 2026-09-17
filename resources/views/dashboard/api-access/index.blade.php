@@ -51,6 +51,92 @@
         @endif
     </div>
 
+    {{-- Outbound webhooks (audit gap #7) — owner-only, see ApiAccessController --}}
+    @if (! auth()->user()->isSeat())
+        <div class="bg-surface border border-line rounded-lg p-5 mb-6">
+            <h3 class="font-display font-semibold text-sm text-navy-900 mb-2">Outbound webhooks</h3>
+            <p class="text-sm text-ink-600 mb-4">
+                Get a signed HTTP POST the moment something happens, instead of polling the API above. Each delivery
+                carries an <code class="font-mono text-xs bg-surface-muted px-1 py-0.5 rounded">X-AffilStack-Signature</code>
+                header — an HMAC-SHA256 of the raw request body using the endpoint's secret below — so you can verify
+                it actually came from AffilStack.
+            </p>
+
+            <form method="POST" action="{{ route('api-access.webhooks.store') }}" class="mb-5 space-y-2">
+                @csrf
+                <div class="flex items-center gap-2 flex-wrap">
+                    <input type="url" name="url" required placeholder="https://your-app.example.com/webhooks/affilstack"
+                           class="rounded-md border border-line px-3 py-2 text-sm flex-1 min-w-[16rem]">
+                    <button class="rounded-md border border-line text-ink-900 text-sm px-3 py-2 hover:bg-surface-muted transition">Add endpoint</button>
+                </div>
+                <div class="flex flex-wrap gap-3 text-xs text-ink-700">
+                    @foreach (config('webhooks.events') as $event => $label)
+                        <label class="flex items-center gap-1.5">
+                            <input type="checkbox" name="events[]" value="{{ $event }}" checked>
+                            {{ $label }}
+                        </label>
+                    @endforeach
+                </div>
+                @error('url')
+                    <p class="text-xs text-red-600">{{ $message }}</p>
+                @enderror
+                @error('events')
+                    <p class="text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </form>
+
+            @if ($webhookEndpoints->isEmpty())
+                <p class="text-sm text-ink-500">No webhook endpoints yet — add one above to get started.</p>
+            @else
+                <div class="space-y-3">
+                    @foreach ($webhookEndpoints as $endpoint)
+                        <div class="border border-line rounded-md p-3">
+                            <div class="flex items-center justify-between gap-3 flex-wrap">
+                                <div>
+                                    <p class="text-sm font-medium text-ink-900 break-all">{{ $endpoint->url }}</p>
+                                    <p class="text-xs text-ink-500 mt-0.5">
+                                        {{ collect($endpoint->events)->map(fn ($e) => config('webhooks.events')[$e] ?? $e)->implode(', ') }}
+                                    </p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span @class([
+                                        'text-xs font-mono px-2 py-0.5 rounded',
+                                        'bg-emerald-50 text-emerald-700' => $endpoint->is_active,
+                                        'bg-surface-muted text-ink-500' => ! $endpoint->is_active,
+                                    ])>{{ $endpoint->is_active ? 'Active' : 'Disabled' }}</span>
+                                    <form method="POST" action="{{ route('api-access.webhooks.toggle', $endpoint) }}">
+                                        @csrf @method('PATCH')
+                                        <button class="text-xs text-brand-600 hover:text-brand-700">{{ $endpoint->is_active ? 'Disable' : 'Enable' }}</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('api-access.webhooks.destroy', $endpoint) }}" onsubmit="return confirm('Remove this webhook endpoint?')">
+                                        @csrf @method('DELETE')
+                                        <button class="text-xs text-red-600 hover:text-red-700">Remove</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <p class="text-xs text-ink-500 mt-2">
+                                Signing secret: <code class="font-mono bg-surface-muted px-1.5 py-0.5 rounded">{{ $endpoint->secret }}</code>
+                                &middot; Last delivered: {{ $endpoint->last_triggered_at?->diffForHumans() ?? 'Never' }}
+                            </p>
+                            @if ($endpoint->deliveries->isNotEmpty())
+                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                    @foreach ($endpoint->deliveries as $delivery)
+                                        <span title="{{ $delivery->event }} — {{ $delivery->created_at->diffForHumans() }}" @class([
+                                            'text-[11px] font-mono px-1.5 py-0.5 rounded',
+                                            'bg-emerald-50 text-emerald-700' => $delivery->status === 'delivered',
+                                            'bg-red-50 text-red-700' => $delivery->status === 'failed',
+                                            'bg-amber-50 text-amber-700' => $delivery->status === 'pending',
+                                        ])>{{ $delivery->event }}: {{ $delivery->status }}</span>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    @endif
+
     {{-- Reference --}}
     <div class="bg-surface border border-line rounded-lg p-5">
         <h3 class="font-display font-semibold text-sm text-navy-900 mb-2">Endpoints</h3>

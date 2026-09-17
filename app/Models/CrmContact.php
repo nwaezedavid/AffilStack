@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Webhooks\WebhookDispatcher;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,26 @@ class CrmContact extends Model
             'raw_data' => 'array',
             'unsubscribed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Audit gap #7 (outbound webhooks — "crm_contact.created"). Hooked at
+     * the model level since contacts are created from three separate
+     * places (the API, Lead Finder, and the CRM dashboard's own form) —
+     * one choke point beats duplicating a dispatch call in each.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (CrmContact $contact) {
+            app(WebhookDispatcher::class)->dispatch($contact->user, 'crm_contact.created', [
+                'contact_id' => $contact->id,
+                'name' => $contact->name,
+                'email' => $contact->email,
+                'company' => $contact->company,
+                'source' => $contact->source,
+                'status' => $contact->status,
+            ]);
+        });
     }
 
     public function user(): BelongsTo

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Webhooks\WebhookDispatcher;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +24,40 @@ class Generation extends Model
             'scheduled_for' => 'date',
             'published_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Audit gap #7 (outbound webhooks — "generation.completed"). Hooked at
+     * the model level rather than in each of the 14+ module services that
+     * independently reach "completed" — a single, unmissable choke point
+     * beats duplicating a dispatch call in every one of them. Most modules
+     * create a row up front and update it to "completed" once the AI call
+     * returns, but at least one (OfferResearchService) creates it already
+     * completed in one step — both need a hook, or the latter never fires.
+     */
+    protected static function booted(): void
+    {
+        static::created(function (Generation $generation) {
+            if ($generation->status === 'completed') {
+                static::dispatchCompletedWebhook($generation);
+            }
+        });
+
+        static::updated(function (Generation $generation) {
+            if ($generation->wasChanged('status') && $generation->status === 'completed') {
+                static::dispatchCompletedWebhook($generation);
+            }
+        });
+    }
+
+    protected static function dispatchCompletedWebhook(Generation $generation): void
+    {
+        app(WebhookDispatcher::class)->dispatch($generation->user, 'generation.completed', [
+            'generation_id' => $generation->id,
+            'offer_id' => $generation->offer_id,
+            'module' => $generation->module,
+            'completed_at' => now()->toIso8601String(),
+        ]);
     }
 
     /**

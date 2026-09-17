@@ -26,6 +26,7 @@ class ReferralEventsTable
                     ->colors([
                         'success' => 'first_payment',
                         'gray' => 'renewal',
+                        'danger' => fn ($state) => in_array($state, ['refund', 'chargeback'], true),
                     ]),
                 TextColumn::make('amount_cents')
                     ->label('Commission')
@@ -39,11 +40,14 @@ class ReferralEventsTable
                     ] : [
                         'paid' => 'Paid',
                     ])
+                    // 'paid' and 'reversed' are both system-only outcomes —
                     // 'paid' is only ever reached through ReferralPayoutService
-                    // cascading a processed ReferralPayout (see ReferralEvent
-                    // docblock) — once an event is attached to a payout this
-                    // dropdown is locked so an admin can't hand-flip it back.
-                    ->disabled(fn ($record) => $record->referral_payout_id !== null),
+                    // cascading a processed ReferralPayout, and 'reversed'
+                    // only through RefundProcessor/ReferralService::
+                    // reverseCommission() when the underlying payment is
+                    // refunded or charged back (audit gap #6) — neither
+                    // dropdown should let an admin hand-flip these.
+                    ->disabled(fn ($record) => $record->referral_payout_id !== null || $record->status === 'reversed'),
                 TextColumn::make('occurred_at')->dateTime('M j, Y g:ia')->sortable(),
             ])
             ->filters([
@@ -52,10 +56,13 @@ class ReferralEventsTable
                     'approved' => 'Approved',
                     'rejected' => 'Rejected',
                     'paid' => 'Paid',
+                    'reversed' => 'Reversed',
                 ]),
                 SelectFilter::make('event_type')->options([
                     'first_payment' => 'First payment',
                     'renewal' => 'Renewal',
+                    'refund' => 'Refund clawback',
+                    'chargeback' => 'Chargeback clawback',
                 ]),
             ])
             ->recordActions([])

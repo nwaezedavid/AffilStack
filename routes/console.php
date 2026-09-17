@@ -72,6 +72,13 @@ ScheduleMonitoring::track(
     'agents:marketing-optimize-campaigns',
 );
 
+// Audit gap #4: self-service account deletion's 30-day grace period — see
+// ProfileController::destroy() / PurgeDeletedAccounts.
+ScheduleMonitoring::track(
+    Schedule::command('users:purge-deleted')->daily()->withoutOverlapping(),
+    'users:purge-deleted',
+);
+
 // Self-maintenance: keep the run-history table itself from growing forever.
 Schedule::call(fn () => ScheduledTaskRun::where('created_at', '<', now()->subDays(30))->delete())
     ->daily()

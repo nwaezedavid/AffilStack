@@ -60,6 +60,7 @@ return [
         'api-access.tokens.store',
         'api-access.tokens.destroy',
         'profile',
+        'profile.destroy',
         'notifications.poll',
         'notifications.read-all',
         'logout',

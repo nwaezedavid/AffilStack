@@ -74,8 +74,10 @@ class ReferralController extends Controller
 
     public function requestPayout(Request $request, ReferralPayoutService $service): RedirectResponse
     {
+        $currency = $request->string('currency')->upper()->value() ?: null;
+
         try {
-            $service->requestPayout($request->user());
+            $service->requestPayout($request->user(), $currency);
         } catch (InvalidArgumentException|RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }

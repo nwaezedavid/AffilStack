@@ -44,9 +44,28 @@
         </form>
     </details>
 
+    <form method="GET" action="{{ route('crm.index') }}" class="flex flex-wrap items-center gap-2 mb-4">
+        <input type="text" name="q" value="{{ request('q') }}" placeholder="Search by name, company, or email"
+               class="flex-1 min-w-[220px] rounded-md border border-line px-3 py-2 text-sm">
+        <select name="status" class="rounded-md border border-line px-3 py-2 text-sm">
+            <option value="">All statuses</option>
+            @foreach (['new', 'contacted', 'qualified', 'customer', 'unqualified'] as $status)
+                <option value="{{ $status }}" @selected(request('status') === $status)>{{ ucfirst($status) }}</option>
+            @endforeach
+        </select>
+        <button class="text-sm rounded-md border border-line text-ink-900 px-3 py-2 hover:bg-surface-muted transition">Filter</button>
+        @if (request('q') || request('status'))
+            <a href="{{ route('crm.index') }}" class="text-sm text-ink-500 hover:text-ink-700">Clear</a>
+        @endif
+    </form>
+
     @if ($contacts->isEmpty())
         <div class="bg-surface border border-dashed border-line rounded-lg p-8 text-center text-sm text-ink-600">
-            No contacts saved yet.
+            @if (request('q') || request('status'))
+                No contacts match your search.
+            @else
+                No contacts saved yet.
+            @endif
         </div>
     @else
         <div class="bg-surface border border-line rounded-lg overflow-hidden">
