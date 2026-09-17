@@ -28,12 +28,12 @@ return [
     */
     'departments' => [
         'support' => 'Support — tickets, canned replies, contact messages, FAQ',
-        'content' => 'Content — site pages, homepage features, swipe files, UGC video settings',
+        'content' => 'Content — site pages, homepage features, swipe files, UGC video, TikTok/Instagram publishing settings',
         'billing' => 'Billing — plans, payment transactions, referral payouts, payment gateway settings',
         'crm_oversight' => 'CRM Oversight — every user\'s CRM contacts',
         'ai_agents' => 'AI Agents — Tom/Sam/Brain/Tony dashboards (approving changes still requires super-admin)',
-        'system' => 'System — scheduled task run history',
-        'site' => 'Site — branding, SEO, Google login settings',
+        'system' => 'System — scheduled task run history, API tokens',
+        'site' => 'Site — branding, SEO, Google login, Gmail-sending, and LinkedIn Connect settings',
         'users_access' => 'Users & Access — manage customer accounts (never roles or admin sub-accounts)',
     ],
 

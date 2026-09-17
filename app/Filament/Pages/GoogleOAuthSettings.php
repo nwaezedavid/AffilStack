@@ -8,6 +8,8 @@ use App\Services\Auth\GoogleOAuthService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -49,6 +51,10 @@ class GoogleOAuthSettings extends Page
 
         $this->form->fill([
             'is_enabled' => $settings->is_enabled,
+            'gmail_sending_enabled' => $settings->gmail_sending_enabled,
+            'youtube_publishing_enabled' => $settings->youtube_publishing_enabled,
+            'youtube_approval_status' => $settings->youtube_approval_status,
+            'youtube_approval_notes' => $settings->youtube_approval_notes,
             'client_id' => $settings->credential('client_id'),
             'client_secret' => $settings->credential('client_secret'),
         ]);
@@ -79,6 +85,43 @@ class GoogleOAuthSettings extends Page
                             ->content(URL::route('google.callback'))
                             ->columnSpanFull(),
                     ]),
+                Section::make('Gmail sending (CRM nurture emails)')
+                    ->description('Lets a user connect their own Gmail account so their CRM nurture emails send from their address instead of AffilStack\'s — protects our shared sending domain\'s reputation. Uses the same client id/secret above, requesting the additional gmail.send scope. Google treats gmail.send as a restricted scope: it requires this OAuth consent screen to pass Google\'s security assessment before it works for anyone outside your own test users, even if "Continue with Google" above already works.')
+                    ->columns(2)
+                    ->components([
+                        Toggle::make('gmail_sending_enabled')
+                            ->label('Allow users to connect Gmail for sending')
+                            ->columnSpanFull(),
+                        Placeholder::make('gmail_redirect_uri')
+                            ->label('Additional authorized redirect URI')
+                            ->helperText('Add this one too — it\'s separate from the sign-in redirect above.')
+                            ->content(URL::route('email-connections.gmail.callback'))
+                            ->columnSpanFull(),
+                    ]),
+                Section::make('YouTube publishing (UGC videos)')
+                    ->description('Lets a user connect their YouTube channel so AffilStack can publish a rendered UGC video for them. Uses the same client id/secret above, requesting the additional youtube.upload scope. The YouTube Data API requires a separate Audit + Quota Extension before uploads work for real users — track that below. Until it\'s approved, publishing falls back to "download and post manually" even for a connected channel.')
+                    ->columns(2)
+                    ->components([
+                        Toggle::make('youtube_publishing_enabled')
+                            ->label('Allow users to connect YouTube')
+                            ->columnSpanFull(),
+                        Select::make('youtube_approval_status')
+                            ->label('Audit + Quota Extension status')
+                            ->options([
+                                'not_submitted' => 'Not submitted yet',
+                                'pending' => 'Submitted — awaiting review',
+                                'approved' => 'Approved',
+                            ])
+                            ->native(false),
+                        Placeholder::make('youtube_redirect_uri')
+                            ->label('Additional authorized redirect URI')
+                            ->helperText('Add this one too.')
+                            ->content(URL::route('social-connections.callback', ['provider' => 'youtube'])),
+                        Textarea::make('youtube_approval_notes')
+                            ->label('Notes')
+                            ->rows(2)
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -102,6 +145,10 @@ class GoogleOAuthSettings extends Page
     {
         GoogleOauthSetting::current()->update([
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
+            'gmail_sending_enabled' => (bool) ($data['gmail_sending_enabled'] ?? false),
+            'youtube_publishing_enabled' => (bool) ($data['youtube_publishing_enabled'] ?? false),
+            'youtube_approval_status' => $data['youtube_approval_status'] ?? 'not_submitted',
+            'youtube_approval_notes' => $data['youtube_approval_notes'] ?? null,
             'credentials' => array_filter([
                 'client_id' => $data['client_id'] ?? null,
                 'client_secret' => $data['client_secret'] ?? null,

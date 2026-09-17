@@ -8,13 +8,18 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Authenticates routes/api.php requests from the browser capture extension
- * (item 11) via "Authorization: Bearer <token>" — see ApiToken for how the
- * token itself is generated and hashed. Deliberately separate from the
- * dashboard's session-based auth: an extension runs in its own
- * chrome-extension:// origin, so a bearer token is the standard approach
- * (the same one Sanctum's own personal-access tokens use), not a session
- * cookie or CSRF token.
+ * Authenticates every routes/api.php request — originally just the browser
+ * capture extension (item 11), now also the general-purpose /v1/* API —
+ * via "Authorization: Bearer <token>" — see ApiToken for how the token
+ * itself is generated and hashed. Deliberately separate from the
+ * dashboard's session-based auth: an API client runs outside the app's own
+ * origin, so a bearer token is the standard approach (the same one
+ * Sanctum's own personal-access tokens use), not a session cookie or CSRF
+ * token.
+ *
+ * Stashes the resolved ApiToken itself on the request (not just its user)
+ * so a downstream middleware — see EnsureAdminApiToken — can check the
+ * token's own $type without a second lookup.
  */
 class ApiTokenAuth
 {
@@ -35,6 +40,7 @@ class ApiTokenAuth
         $token->update(['last_used_at' => now()]);
 
         $request->setUserResolver(fn () => $token->user);
+        $request->attributes->set('apiToken', $token);
 
         return $next($request);
     }

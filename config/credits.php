@@ -11,6 +11,7 @@ return [
         'linkedin_dm_sequence' => 8,
         'linkedin_post' => 5,
         'linkedin_article' => 12,
+        'linkedin_reply_draft' => 3,
         'youtube_script' => 15,
         'youtube_metadata' => 10,
         'ugc_angles' => 6,
@@ -27,5 +28,9 @@ return [
         'email_nurture' => 10,
         'competitor_angles' => 6,
         'localization' => 8,
+        // Task #7 (Intelligence Centre): one AI self-assessment run over
+        // the account's own activity/plan-usage numbers — priced like a
+        // single research/analysis call, not a content-generation module.
+        'intelligence_centre' => 10,
     ],
 ];

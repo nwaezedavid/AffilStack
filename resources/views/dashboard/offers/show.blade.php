@@ -128,6 +128,7 @@
                         @csrf
                         <button class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Article ({{ config('credits.costs.linkedin_article') }})</button>
                     </form>
+                    <a href="{{ route('offers.linkedin.reply-assistant', $offer) }}" class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition">Reply assistant ({{ config('credits.costs.linkedin_reply_draft') }})</a>
                 </div>
             </div>
 
@@ -349,14 +350,16 @@
                         <div class="mb-2">@include('dashboard.offers._disclosure_badge', ['text' => $gen->output_meta['post_text'] ?? ''])</div>
                         <p class="text-sm text-ink-900 whitespace-pre-line mb-3">{{ $offer->cloak($gen->output_meta['post_text'] ?? '', $gen->module) }}</p>
                         <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Image prompt: </span>{{ $gen->output_meta['image_prompt'] ?? '' }}</div>
-                        <div class="text-xs text-ink-600"><span class="font-mono uppercase text-ink-400">Best time: </span>{{ $gen->output_meta['best_posting_time'] ?? '' }}</div>
+                        <div class="text-xs text-ink-600 mb-2"><span class="font-mono uppercase text-ink-400">Best time: </span>{{ $gen->output_meta['best_posting_time'] ?? '' }}</div>
+                        <a href="{{ route('generations.linkedin.export', $gen) }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Export as text file</a>
                     @elseif ($gen->module === 'linkedin_article')
                         <p class="font-medium text-ink-900 mb-2">{{ $gen->output_meta['headline'] ?? '' }}</p>
                         <div class="mb-2">@include('dashboard.offers._disclosure_badge', ['text' => $gen->output_meta['article_markdown'] ?? ''])</div>
-                        <details>
+                        <details class="mb-2">
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View full article</summary>
                             <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['article_markdown'] ?? '', $gen->module) }}</pre>
                         </details>
+                        <a href="{{ route('generations.linkedin.export', $gen) }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Export as text file</a>
                     @elseif ($gen->module === 'youtube_script')
                         <p class="font-medium text-ink-900 mb-1">{{ $gen->output_meta['working_title'] ?? '' }}</p>
                         <p class="text-xs text-ink-600 mb-3">~{{ $gen->output_meta['estimated_length_minutes'] ?? '?' }} min · {{ $gen->output_meta['hook'] ?? '' }}</p>
@@ -545,6 +548,34 @@
                         <video controls preload="metadata" class="w-full max-w-xs rounded-lg border border-line bg-navy-950" src="{{ $gen->output }}"></video>
                         <div class="mt-2">
                             <a href="{{ $gen->output }}" download class="text-xs text-brand-600 hover:text-brand-700">Download video</a>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-line flex flex-wrap gap-2">
+                            @foreach ($publishProviders as $key => $provider)
+                                @php
+                                    $published = $gen->output_meta['published'][$key] ?? null;
+                                    $connection = $socialConnections->get($key);
+                                @endphp
+                                @if ($published)
+                                    <a href="{{ $published['url'] }}" target="_blank" rel="noopener" class="text-xs text-emerald-700 border border-emerald-200 rounded-md px-2.5 py-1.5">
+                                        Published to {{ $provider['label'] }} — view
+                                    </a>
+                                @elseif ($connection && $provider['approved'])
+                                    <form method="POST" action="{{ route('generations.publish', [$gen, $key]) }}">
+                                        @csrf
+                                        <button class="text-xs rounded-md border border-line text-ink-900 px-2.5 py-1.5 hover:bg-surface-muted transition">
+                                            Publish to {{ $provider['label'] }}
+                                        </button>
+                                    </form>
+                                @elseif ($connection)
+                                    <span class="text-xs text-ink-500 border border-line rounded-md px-2.5 py-1.5" title="Awaiting {{ $provider['label'] }}'s approval of AffilStack for publishing">
+                                        {{ $provider['label'] }}: awaiting approval
+                                    </span>
+                                @else
+                                    <a href="{{ route('social-connections.index') }}" class="text-xs text-ink-500 border border-line rounded-md px-2.5 py-1.5 hover:bg-surface-muted transition">
+                                        Connect {{ $provider['label'] }} to publish
+                                    </a>
+                                @endif
+                            @endforeach
                         </div>
                     @elseif ($gen->module === 'email_nurture')
                         @php

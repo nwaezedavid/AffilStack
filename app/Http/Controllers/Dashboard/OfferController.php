@@ -9,6 +9,9 @@ use App\Models\ResearchClip;
 use App\Services\Compliance\DisclosureService;
 use App\Services\Credits\InsufficientCreditsException;
 use App\Services\Modules\OfferResearchService;
+use App\Services\Social\InstagramPublishingService;
+use App\Services\Social\TikTokPublishingService;
+use App\Services\Social\YouTubePublishingService;
 use App\Services\Video\HeyGenClient;
 use App\Services\Video\VideoGenerationException;
 use Illuminate\Http\RedirectResponse;
@@ -72,7 +75,31 @@ class OfferController extends Controller
         $ugcAvatars = $ugcVideoReady ? $this->ugcVideoAvatars() : [];
         $ugcVoices = $ugcVideoReady ? $this->ugcVideoVoices() : [];
 
-        return view('dashboard.offers.show', compact('offer', 'contacts', 'ugcVideoReady', 'ugcAvatars', 'ugcVoices'));
+        $socialConnections = auth()->user()->socialConnections()->get()->keyBy('provider');
+        $publishProviders = $this->publishProviders();
+
+        return view('dashboard.offers.show', compact('offer', 'contacts', 'ugcVideoReady', 'ugcAvatars', 'ugcVoices', 'socialConnections', 'publishProviders'));
+    }
+
+    /**
+     * The publish-capable social platforms (task #2) and whether each has
+     * approved AffilStack for publishing yet — used by the ugc_video block
+     * to decide between a real "Publish" button and a "connect first" /
+     * "awaiting approval" state, falling back to the always-available
+     * manual download either way.
+     *
+     * @return array<string, array{label: string, approved: bool}>
+     */
+    protected function publishProviders(): array
+    {
+        return collect([
+            'youtube' => YouTubePublishingService::class,
+            'tiktok' => TikTokPublishingService::class,
+            'instagram' => InstagramPublishingService::class,
+        ])->map(fn (string $class, string $key) => [
+            'label' => ucfirst($key),
+            'approved' => app($class)->isApprovedForPublishing(),
+        ])->all();
     }
 
     /**

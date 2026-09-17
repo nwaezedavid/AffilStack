@@ -5,12 +5,15 @@ namespace Tests\Feature;
 use App\Mail\CrmNurtureEmail;
 use App\Models\CrmContact;
 use App\Models\CrmEmailSend;
+use App\Models\EmailConnection;
 use App\Models\Generation;
 use App\Models\Offer;
 use App\Models\User;
+use App\Services\Crm\PersonalEmailSender;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Mockery\MockInterface;
 use Tests\TestCase;
 
 /**
@@ -124,6 +127,64 @@ class CrmEmailSendingTest extends TestCase
             ->assertSessionHas('error');
 
         Mail::assertNothingSent();
+    }
+
+    // --- Task #1: routing through a connected Gmail/SMTP sender ------------
+
+    public function test_a_verified_connection_routes_the_send_through_it_instead_of_the_platform_mailer(): void
+    {
+        Mail::fake();
+        $connection = EmailConnection::create([
+            'user_id' => $this->user->id,
+            'provider' => 'smtp',
+            'credentials' => ['host' => 'smtp.example.com', 'port' => 587, 'username' => 'u', 'password' => 'p', 'from_email' => 'me@mydomain.com'],
+            'connected_email' => 'me@mydomain.com',
+            'verification_status' => 'success',
+        ]);
+
+        $this->mock(PersonalEmailSender::class, function (MockInterface $mock) use ($connection) {
+            $mock->shouldReceive('send')->once()->withArgs(function ($conn, $to, $subject, $html) use ($connection) {
+                return $conn->is($connection) && $to === 'lee@example.com' && $subject === 'Quick hello' && str_contains($html, 'introduce myself');
+            });
+        });
+
+        $response = $this->actingAs($this->user)
+            ->post(route('generations.nurture.send', $this->generation), ['step' => 1]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        Mail::assertNothingSent();
+
+        $send = CrmEmailSend::firstOrFail();
+        $this->assertSame('sent', $send->status);
+    }
+
+    public function test_an_unverified_connection_still_falls_back_to_the_platform_mailer(): void
+    {
+        Mail::fake();
+        EmailConnection::create([
+            'user_id' => $this->user->id,
+            'provider' => 'smtp',
+            'credentials' => ['host' => 'smtp.example.com', 'port' => 587, 'username' => 'u', 'password' => 'p', 'from_email' => 'me@mydomain.com'],
+            'connected_email' => 'me@mydomain.com',
+            'verification_status' => 'failed',
+        ]);
+
+        $this->actingAs($this->user)
+            ->post(route('generations.nurture.send', $this->generation), ['step' => 1]);
+
+        Mail::assertSent(CrmNurtureEmail::class);
+    }
+
+    public function test_no_connection_at_all_falls_back_to_the_platform_mailer(): void
+    {
+        Mail::fake();
+
+        $this->actingAs($this->user)
+            ->post(route('generations.nurture.send', $this->generation), ['step' => 1]);
+
+        Mail::assertSent(CrmNurtureEmail::class);
     }
 
     public function test_a_user_cannot_send_another_users_generation(): void

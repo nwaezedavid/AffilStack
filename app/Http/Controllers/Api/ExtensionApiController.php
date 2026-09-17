@@ -10,11 +10,14 @@ use Illuminate\Validation\Rule;
 
 /**
  * Backend for the browser capture extension (item 11) — see routes/api.php
- * and App\Http\Middleware\ApiTokenAuth. A team seat (item 10) never has an
- * API token of its own (ExtensionController, which issues them, is excluded
- * from config('agency.seat_allowed_routes')), so every request here is
- * necessarily an account owner — no offer-scoping check is needed the way
- * the dashboard controllers need Offer::isAccessibleBy().
+ * and App\Http\Middleware\ApiTokenAuth. ExtensionController (which issues
+ * tokens for these routes) is excluded from config('agency.seat_allowed_routes'),
+ * so a team seat (item 10) still can't reach this specific surface. A seat
+ * CAN now hold a token of its own via the general API's ApiAccessController
+ * (task #6) — but that token only ever authenticates the /v1/* routes
+ * below, which do their own Offer::isAccessibleBy() scoping, so this
+ * controller's own no-offer-scoping-needed assumption still holds for the
+ * requests it actually receives.
  */
 class ExtensionApiController extends Controller
 {

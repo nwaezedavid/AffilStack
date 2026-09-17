@@ -30,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path('afs-login')
             ->brandName(fn () => SiteSetting::get('site_name', 'AffilStack').' Admin')
             ->brandLogo(fn () => ($logo = SiteSetting::get('logo_path'))
                 ? Storage::disk('public')->url($logo)

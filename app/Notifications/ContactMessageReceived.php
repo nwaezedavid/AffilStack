@@ -35,6 +35,6 @@ class ContactMessageReceived extends Notification
             ->subject("Contact form: {$subject}")
             ->line("From: {$this->contactMessage->name} ({$this->contactMessage->email})")
             ->line($this->contactMessage->message)
-            ->action('View in admin', url('/admin/contact-messages/'.$this->contactMessage->id.'/edit'));
+            ->action('View in admin', route('filament.admin.resources.contact-messages.edit', $this->contactMessage));
     }
 }

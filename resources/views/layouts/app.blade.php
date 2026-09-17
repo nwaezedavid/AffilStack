@@ -50,11 +50,16 @@
                             $seatOfferItem,
                             ['name' => 'calendar.index', 'match' => 'calendar.*', 'label' => 'Content Calendar', 'icon' => '📅'],
                             ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => '🗂️'],
+                            ['name' => 'social-connections.index', 'match' => 'social-connections.*', 'label' => 'Connected Accounts', 'icon' => '🔗'],
+                            ['name' => 'api-access.index', 'match' => 'api-access.*', 'label' => 'API Access', 'icon' => '🔌'],
                         ]
                         : [
                             ['name' => 'dashboard', 'match' => 'dashboard', 'label' => 'Overview', 'icon' => '🏠'],
+                            ['name' => 'intelligence-centre.index', 'match' => 'intelligence-centre.*', 'label' => 'Intelligence Centre', 'icon' => '🧠'],
                             ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'Offer Research', 'icon' => '🔎'],
                             ['name' => 'crm.index', 'match' => 'crm.*', 'label' => 'CRM Contacts', 'icon' => '📇'],
+                            ['name' => 'email-connections.index', 'match' => 'email-connections.*', 'label' => 'Email Sending', 'icon' => '📧'],
+                            ['name' => 'social-connections.index', 'match' => 'social-connections.*', 'label' => 'Connected Accounts', 'icon' => '🔗'],
                             ['name' => 'leads.index', 'match' => 'leads.*', 'label' => 'Local Leads', 'icon' => '📍'],
                             ['name' => 'calendar.index', 'match' => 'calendar.*', 'label' => 'Content Calendar', 'icon' => '📅'],
                             ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => '🗂️'],
@@ -63,6 +68,7 @@
                             ['name' => 'referrals.index', 'match' => 'referrals.index', 'label' => 'Referrals', 'icon' => '🤝'],
                             ['name' => 'team.index', 'match' => 'team.*', 'label' => 'Team', 'icon' => '👥'],
                             ['name' => 'extension.index', 'match' => 'extension.*', 'label' => 'Browser Extension', 'icon' => '🧩'],
+                            ['name' => 'api-access.index', 'match' => 'api-access.*', 'label' => 'API Access', 'icon' => '🔌'],
                             ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => '💬'],
                             ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => '💳'],
                         ];

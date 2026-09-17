@@ -16,9 +16,17 @@ use Throwable;
 /**
  * CRM/email dashboard: actually sends one step of an AI-drafted
  * email_nurture sequence (Generation::output_meta['emails']) to the real
- * CRM contact it was written for, through the platform's own configured
- * mailer (config('mail.default') — the same one every other transactional
- * email in this app already uses; no per-user provider setup exists).
+ * CRM contact it was written for.
+ *
+ * Task #1: if the sequence's owner has connected their own Gmail or SMTP
+ * (User::emailConnection(), verified), the send goes out exclusively
+ * through that — protects AffilStack's own shared sending domain's
+ * reputation, per the backlog's stated reasoning, and means replies land
+ * in the user's own inbox rather than needing a reply-to trick. With no
+ * connection (the default), this still falls back to the platform's own
+ * configured mailer (config('mail.default')) exactly as before. Either
+ * way the same CrmNurtureEmail view is rendered — same tracking pixel,
+ * unsubscribe link, and cloaked body — only the transport differs.
  *
  * Two things happen to the raw drafted body before it's ever sent:
  *  - Offer::cloak() swaps in the real (disclosed) affiliate link, exactly
@@ -33,7 +41,7 @@ use Throwable;
  */
 class CrmEmailService
 {
-    public function __construct(protected LinkCloakingService $linkCloaking) {}
+    public function __construct(protected LinkCloakingService $linkCloaking, protected PersonalEmailSender $personalEmailSender) {}
 
     public function sendSequenceStep(Generation $generation, int $step): CrmEmailSend
     {
@@ -89,7 +97,15 @@ class CrmEmailService
         ]);
 
         try {
-            Mail::to($contact->email)->send(new CrmNurtureEmail($send));
+            $connection = $generation->user->emailConnection;
+            $mailable = new CrmNurtureEmail($send);
+
+            if ($connection && $connection->isVerified()) {
+                $this->personalEmailSender->send($connection, $contact->email, $send->subject, $mailable->render());
+            } else {
+                Mail::to($contact->email)->send($mailable);
+            }
+
             $send->update(['status' => 'sent', 'sent_at' => now()]);
         } catch (Throwable $e) {
             $send->update(['status' => 'failed', 'error_message' => $e->getMessage()]);

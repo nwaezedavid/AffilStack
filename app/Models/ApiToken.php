@@ -9,15 +9,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 /**
- * Feature 11 (Phase 3 backlog, item 11): a bearer token the browser capture
- * extension authenticates with. Deliberately not Laravel Sanctum — CLAUDE.md
- * asks not to add dependencies without approval — so this hand-rolls the
- * same well-established scheme Sanctum's own personal-access tokens use: a
+ * A bearer token for AffilStack's API surface. Originally built for the
+ * browser capture extension (Phase 3 backlog, item 11) and now the same
+ * foundation for the general-purpose API (routes/api.php: /v1/*) and the
+ * dashboard's "API Access" page — one token per purpose is unnecessary
+ * since every /v1/* endpoint already scopes its response to
+ * $request->user()'s own data (visibleOffers(), crmContacts(), etc.),
+ * exactly like the dashboard itself.
+ *
+ * $type disambiguates an ordinary account token ('user', the default —
+ * works for a user's own data, including a team seat's own scoped view)
+ * from an 'admin' token, which only a full admin can mint (Filament: API
+ * Tokens) and which alone unlocks /v1/admin/* — see EnsureAdminApiToken.
+ *
+ * Deliberately not Laravel Sanctum — CLAUDE.md asks not to add
+ * dependencies without approval — so this hand-rolls the same
+ * well-established scheme Sanctum's own personal-access tokens use: a
  * random plaintext token shown to the user exactly once at creation, with
  * only its SHA-256 hash ever persisted. See App\Http\Middleware\ApiTokenAuth
  * for the other half.
  */
-#[Fillable(['user_id', 'name', 'token_hash', 'last_used_at'])]
+#[Fillable(['user_id', 'type', 'name', 'token_hash', 'last_used_at'])]
 #[Hidden(['token_hash'])]
 class ApiToken extends Model
 {
@@ -37,15 +49,19 @@ class ApiToken extends Model
      * Creates a new token for $user and returns the ONE-TIME plaintext
      * alongside the persisted model — the caller must surface the plaintext
      * to the user immediately, since it can never be retrieved again.
+     * $type: 'admin' tokens are minted only from the Filament API Tokens
+     * resource (guarded there to full admins) — every other caller uses
+     * the default.
      *
      * @return array{token: ApiToken, plainText: string}
      */
-    public static function generate(User $user, string $name): array
+    public static function generate(User $user, string $name, string $type = 'user'): array
     {
         $plainText = 'aff_'.Str::random(40);
 
         $token = static::create([
             'user_id' => $user->id,
+            'type' => $type,
             'name' => $name,
             'token_hash' => hash('sha256', $plainText),
         ]);
@@ -56,5 +72,10 @@ class ApiToken extends Model
     public static function findByPlainText(string $plainText): ?self
     {
         return static::where('token_hash', hash('sha256', $plainText))->first();
+    }
+
+    public function isAdminToken(): bool
+    {
+        return $this->type === 'admin';
     }
 }

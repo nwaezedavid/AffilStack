@@ -262,6 +262,46 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     }
 
     /**
+     * This user's own connected sender for CRM nurture emails (task #1) —
+     * never team-shared, matching crmContacts() above. Null means CRM
+     * nurture sends still go out through AffilStack's own shared mailer —
+     * see CrmEmailService.
+     */
+    public function emailConnection(): HasOne
+    {
+        return $this->hasOne(EmailConnection::class);
+    }
+
+    /**
+     * This user's own connected third-party social accounts (task #3:
+     * LinkedIn; task #2: YouTube/TikTok/Instagram) — never team-shared.
+     */
+    public function socialConnections(): HasMany
+    {
+        return $this->hasMany(SocialConnection::class);
+    }
+
+    /**
+     * Task #3: this user's own LinkedIn "paste their reply, get an
+     * AI-drafted response" history — see LinkedInReplyAssistantService.
+     */
+    public function linkedinReplyDrafts(): HasMany
+    {
+        return $this->hasMany(LinkedinReplyDraft::class);
+    }
+
+    /**
+     * Task #7: this account's latest Intelligence Centre self-assessment —
+     * see IntelligenceCentreReport and IntelligenceCentreService. Owner-only,
+     * like CRM/earnings/referrals/billing — a team seat never has one of
+     * its own (see config('agency.seat_allowed_routes')).
+     */
+    public function intelligenceCentreReport(): HasOne
+    {
+        return $this->hasOne(IntelligenceCentreReport::class);
+    }
+
+    /**
      * Plan::contact_limit is 0 for "unlimited" (Pro/Agency) — the same
      * convention the pricing and billing pages already display, just never
      * enforced until the Google Maps lead finder made bulk imports possible.

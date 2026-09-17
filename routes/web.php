@@ -4,21 +4,27 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CreativeTaskPreviewController;
 use App\Http\Controllers\CrmEmailTrackingController;
+use App\Http\Controllers\Dashboard\ApiAccessController;
 use App\Http\Controllers\Dashboard\BlogController;
 use App\Http\Controllers\Dashboard\CompetitorAngleController;
 use App\Http\Controllers\Dashboard\ContentCalendarController;
 use App\Http\Controllers\Dashboard\CrmController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\EarningsController;
+use App\Http\Controllers\Dashboard\EmailConnectionController;
 use App\Http\Controllers\Dashboard\EmailNurtureController;
 use App\Http\Controllers\Dashboard\ExtensionController;
+use App\Http\Controllers\Dashboard\IntelligenceCentreController;
 use App\Http\Controllers\Dashboard\LeadFinderController;
 use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
+use App\Http\Controllers\Dashboard\LinkedInReplyAssistantController;
 use App\Http\Controllers\Dashboard\LocalizationController;
 use App\Http\Controllers\Dashboard\OfferController;
 use App\Http\Controllers\Dashboard\PinterestController;
 use App\Http\Controllers\Dashboard\ReferralController as DashboardReferralController;
+use App\Http\Controllers\Dashboard\SocialConnectionController;
+use App\Http\Controllers\Dashboard\SocialPublishController;
 use App\Http\Controllers\Dashboard\SupportChatController;
 use App\Http\Controllers\Dashboard\SupportTicketController;
 use App\Http\Controllers\Dashboard\SwipeFileController;
@@ -110,6 +116,11 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
     Route::post('/billing/checkout/{plan}', [BillingController::class, 'checkout'])->name('billing.checkout');
     Route::get('/billing/callback', [BillingController::class, 'callback'])->name('billing.callback');
 
+    // Task #7: the "Intelligence Centre" AI self-assessment dashboard — see
+    // IntelligenceCentreService. Owner-only, like billing/CRM/earnings.
+    Route::get('/intelligence-centre', [IntelligenceCentreController::class, 'index'])->name('intelligence-centre.index');
+    Route::post('/intelligence-centre', [IntelligenceCentreController::class, 'store'])->name('intelligence-centre.store');
+
     Route::get('/offers', [OfferController::class, 'index'])->name('offers.index');
     Route::get('/offers/create', [OfferController::class, 'create'])->name('offers.create');
     Route::post('/offers', [OfferController::class, 'store'])->name('offers.store');
@@ -124,8 +135,11 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
     Route::post('/offers/{offer}/linkedin/dm-sequence', [LinkedInController::class, 'dmSequence'])->name('offers.linkedin.dm');
     Route::post('/offers/{offer}/linkedin/post', [LinkedInController::class, 'post'])->name('offers.linkedin.post');
     Route::post('/offers/{offer}/linkedin/article', [LinkedInController::class, 'article'])->name('offers.linkedin.article');
+    Route::get('/offers/{offer}/linkedin/reply-assistant', [LinkedInReplyAssistantController::class, 'index'])->name('offers.linkedin.reply-assistant');
+    Route::post('/offers/{offer}/linkedin/reply-assistant', [LinkedInReplyAssistantController::class, 'store'])->name('offers.linkedin.reply-assistant.store');
     Route::post('/generations/{generation}/nurture-started', [ContentCalendarController::class, 'markSequenceStarted'])->name('generations.nurture-started');
     Route::post('/generations/{generation}/localize', [LocalizationController::class, 'store'])->name('generations.localize');
+    Route::get('/generations/{generation}/linkedin/export', [LinkedInController::class, 'export'])->name('generations.linkedin.export');
 
     Route::post('/offers/{offer}/youtube/script', [YouTubeController::class, 'script'])->name('offers.youtube.script');
     Route::post('/offers/{offer}/youtube/metadata', [YouTubeController::class, 'metadata'])->name('offers.youtube.metadata');
@@ -148,6 +162,26 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
     Route::patch('/crm/{contact}', [CrmController::class, 'update'])->name('crm.update');
     Route::delete('/crm/{contact}', [CrmController::class, 'destroy'])->name('crm.destroy');
     Route::get('/crm-export', [CrmController::class, 'export'])->name('crm.export');
+
+    // Task #1: connect Gmail/SMTP for CRM nurture sending. Owner-only,
+    // like the rest of CRM — see config('agency.seat_allowed_routes').
+    Route::get('/email-connections', [EmailConnectionController::class, 'index'])->name('email-connections.index');
+    Route::get('/email-connections/gmail/redirect', [EmailConnectionController::class, 'redirectToGoogle'])->name('email-connections.gmail.redirect');
+    Route::get('/email-connections/gmail/callback', [EmailConnectionController::class, 'handleGoogleCallback'])->name('email-connections.gmail.callback');
+    Route::post('/email-connections/smtp', [EmailConnectionController::class, 'storeSmtp'])->name('email-connections.smtp.store');
+    Route::delete('/email-connections', [EmailConnectionController::class, 'disconnect'])->name('email-connections.destroy');
+
+    // Task #3 (LinkedIn) + task #2 (YouTube/TikTok/Instagram): one
+    // "Connected Accounts" hub for every user-owned social OAuth
+    // connection — see SocialConnectionController.
+    Route::get('/social-connections', [SocialConnectionController::class, 'index'])->name('social-connections.index');
+    Route::get('/social-connections/{provider}/redirect', [SocialConnectionController::class, 'redirectToProvider'])->name('social-connections.redirect');
+    Route::get('/social-connections/{provider}/callback', [SocialConnectionController::class, 'callback'])->name('social-connections.callback');
+    Route::delete('/social-connections/{provider}', [SocialConnectionController::class, 'disconnect'])->name('social-connections.destroy');
+
+    // Task #2: "Publish to X" on a rendered ugc_video generation — see
+    // SocialPublishController and each SocialPublishProvider implementation.
+    Route::post('/generations/{generation}/publish/{provider}', [SocialPublishController::class, 'store'])->name('generations.publish');
 
     Route::get('/leads', [LeadFinderController::class, 'index'])->name('leads.index');
     Route::post('/leads/search', [LeadFinderController::class, 'search'])->name('leads.search');
@@ -183,6 +217,13 @@ Route::middleware(['auth', 'verified', 'restrict-agency-seats'])->group(function
     Route::patch('/extension/clips/{clip}', [ExtensionController::class, 'attachClip'])->name('extension.clips.attach');
     Route::delete('/extension/clips/{clip}', [ExtensionController::class, 'destroyClip'])->name('extension.clips.destroy');
     Route::get('/extension/download', [ExtensionController::class, 'download'])->name('extension.download');
+
+    // The general-purpose API's dashboard side (task #6) — deliberately
+    // available to team seats (both isolated and shared), unlike the
+    // extension above: see config('agency.seat_allowed_routes').
+    Route::get('/api-access', [ApiAccessController::class, 'index'])->name('api-access.index');
+    Route::post('/api-access/tokens', [ApiAccessController::class, 'createToken'])->name('api-access.tokens.store');
+    Route::delete('/api-access/tokens/{token}', [ApiAccessController::class, 'revokeToken'])->name('api-access.tokens.destroy');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
 
