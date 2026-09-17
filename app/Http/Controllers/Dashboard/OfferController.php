@@ -20,7 +20,7 @@ class OfferController extends Controller
 {
     public function index(): View
     {
-        $offers = auth()->user()->offers()->latest()->paginate(10);
+        $offers = auth()->user()->visibleOffers()->latest()->paginate(10);
 
         return view('dashboard.offers.index', compact('offers'));
     }

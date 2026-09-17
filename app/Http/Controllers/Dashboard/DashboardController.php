@@ -13,14 +13,19 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        // A team seat (item 10) has no offers of its own and no account-wide
-        // stats to show — its one assigned offer's page is its dashboard.
+        // A team seat on an isolated plan (agency model, item 10) has no
+        // offers of its own and no account-wide stats to show — its one
+        // assigned offer's page is its dashboard. A shared-plan (Business
+        // tier) seat has no single "home" offer — its home is the team's
+        // whole offer list instead.
         if ($user->isSeat()) {
-            return redirect()->route('offers.show', $user->seat_offer_id);
+            return $user->seat_offer_id
+                ? redirect()->route('offers.show', $user->seat_offer_id)
+                : redirect()->route('offers.index');
         }
 
-        $offers = $user->offers()->latest()->limit(5)->get();
-        $recentGenerations = $user->generations()->latest()->limit(8)->get();
+        $offers = $user->visibleOffers()->latest()->limit(5)->get();
+        $recentGenerations = $user->visibleGenerations()->latest()->limit(8)->get();
         $balance = $credits->balance($user);
         $subscription = $user->activeSubscription()->with('plan')->first();
         $contactCount = $user->crmContacts()->count();

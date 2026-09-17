@@ -53,6 +53,21 @@ class PlansSeeder extends Seeder
                 'sort_order' => 3,
             ],
             [
+                'name' => 'Business',
+                'slug' => 'business',
+                'description' => 'For an in-house team collaborating on one brand — every seat shares the whole offer list.',
+                'price_monthly_cents' => 19700,
+                'price_yearly_cents' => 197000,
+                'credits_per_month' => 3000,
+                'active_products_limit' => 0,
+                'contact_limit' => 0,
+                'team_seats' => 5,
+                'seat_mode' => 'shared',
+                'channels' => ['research', 'blog', 'linkedin', 'youtube', 'ugc', 'pinterest', 'google_maps', 'x', 'tiktok'],
+                'is_featured' => false,
+                'sort_order' => 4,
+            ],
+            [
                 'name' => 'Agency',
                 'slug' => 'agency',
                 'description' => 'For agencies managing client affiliate accounts.',
@@ -64,7 +79,7 @@ class PlansSeeder extends Seeder
                 'team_seats' => 10,
                 'channels' => ['research', 'blog', 'linkedin', 'youtube', 'ugc', 'pinterest', 'google_maps', 'x', 'tiktok'],
                 'is_featured' => false,
-                'sort_order' => 4,
+                'sort_order' => 5,
             ],
         ];
 

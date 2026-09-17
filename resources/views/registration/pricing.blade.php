@@ -9,7 +9,7 @@
             <p class="text-ink-600 mt-2">Pick a plan to create your account — payment happens once, your account is ready the moment it clears.</p>
         </div>
 
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             @foreach ($plans as $plan)
                 <div class="bg-surface border rounded-lg p-5 flex flex-col gap-3 {{ $plan->is_featured ? 'border-gold-500 ring-1 ring-gold-500' : 'border-line' }}">
                     @if ($plan->is_featured)
@@ -21,7 +21,12 @@
                     <ul class="text-xs text-ink-900 space-y-1 flex-1">
                         <li>{{ number_format($plan->credits_per_month) }} AI credits / month</li>
                         <li>{{ $plan->contact_limit === 0 ? 'Unlimited' : number_format($plan->contact_limit) }} CRM contacts</li>
-                        <li>{{ $plan->team_seats }} team seat{{ $plan->team_seats > 1 ? 's' : '' }}</li>
+                        <li>
+                            {{ $plan->team_seats }} team seat{{ $plan->team_seats > 1 ? 's' : '' }}
+                            @if ($plan->isSharedTeamPlan())
+                                — shared across your whole offer list
+                            @endif
+                        </li>
                     </ul>
                     <a href="{{ route('registration.form', $plan) }}" class="w-full text-center rounded-md bg-navy-900 text-white text-sm py-2 hover:bg-navy-800 transition">
                         Get started

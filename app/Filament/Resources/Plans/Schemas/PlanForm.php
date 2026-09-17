@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Plans\Schemas;
 
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -53,6 +54,16 @@ class PlanForm
                             ->label('CRM contact limit (0 = unlimited)')
                             ->required()->numeric(),
                         TextInput::make('team_seats')->required()->numeric()->default(1),
+                        Select::make('seat_mode')
+                            ->label('Team seat model')
+                            ->helperText('Isolated: each seat is scoped to one offer, draft-only (the original agency model). Shared: every seat sees and works every offer, with a per-seat member/manager role — the Business tier.')
+                            ->options([
+                                'isolated' => 'Isolated (agency — one offer per seat)',
+                                'shared' => 'Shared (business — whole team, one offer pool)',
+                            ])
+                            ->required()
+                            ->default('isolated')
+                            ->columnSpanFull(),
                         Toggle::make('is_featured')->label('Highlight as "most popular"'),
                         Toggle::make('is_active')->default(true),
                     ]),
@@ -68,6 +79,8 @@ class PlanForm
                                 'ugc' => 'UGC',
                                 'pinterest' => 'Pinterest',
                                 'google_maps' => 'Google Maps CRM',
+                                'x' => 'X (Twitter)',
+                                'tiktok' => 'TikTok',
                             ])
                             ->columns(4),
                         KeyValue::make('features')

@@ -10,7 +10,11 @@
         $remaining = $user->agencySeatsRemaining();
     @endphp
 
-    <p class="text-sm text-ink-600 max-w-lg mb-6">Give a VA their own login, scoped to exactly one product. They can generate content and plan the calendar for it — they can't publish, touch billing/CRM/earnings, or see anything outside that one offer. Every credit they use is billed to your account.</p>
+    @if ($sharedTeamPlan)
+        <p class="text-sm text-ink-600 max-w-lg mb-6">Give your team members their own logins with shared access to every one of your offers — not scoped to just one. A "Member" can generate content and plan the calendar; a "Manager" can also publish content and mark a LinkedIn sequence as started. No one but you can touch billing, CRM, earnings, or this Team page. Every credit they use is billed to your account.</p>
+    @else
+        <p class="text-sm text-ink-600 max-w-lg mb-6">Give a VA their own login, scoped to exactly one product. They can generate content and plan the calendar for it — they can't publish, touch billing/CRM/earnings, or see anything outside that one offer. Every credit they use is billed to your account.</p>
+    @endif
 
     <div class="bg-surface border border-line rounded-lg p-4 mb-6 flex items-center gap-3 flex-wrap">
         <span class="text-xs font-mono uppercase tracking-wide text-ink-400">Seats used</span>
@@ -23,7 +27,7 @@
     </div>
 
     @if ($remaining >= 1)
-        @if ($offers->isEmpty())
+        @if (! $sharedTeamPlan && $offers->isEmpty())
             <div class="bg-surface border border-dashed border-line rounded-lg p-8 text-center text-sm text-ink-600 mb-6">
                 Add an offer first — a seat has to be scoped to one of your products.
             </div>
@@ -34,12 +38,20 @@
                     @csrf
                     <input name="name" placeholder="Name" required class="rounded-md border border-line px-3 py-2 text-sm">
                     <input name="email" type="email" placeholder="Email" required class="rounded-md border border-line px-3 py-2 text-sm">
-                    <select name="offer_id" required class="rounded-md border border-line px-3 py-2 text-sm sm:col-span-2">
-                        <option value="">Scope to which product?</option>
-                        @foreach ($offers as $offer)
-                            <option value="{{ $offer->id }}">{{ $offer->product_name }}</option>
-                        @endforeach
-                    </select>
+                    @if ($sharedTeamPlan)
+                        <select name="seat_role" required class="rounded-md border border-line px-3 py-2 text-sm sm:col-span-2">
+                            <option value="">Role</option>
+                            <option value="member">Member — can draft, can't publish</option>
+                            <option value="manager">Manager — can also publish content</option>
+                        </select>
+                    @else
+                        <select name="offer_id" required class="rounded-md border border-line px-3 py-2 text-sm sm:col-span-2">
+                            <option value="">Scope to which product?</option>
+                            @foreach ($offers as $offer)
+                                <option value="{{ $offer->id }}">{{ $offer->product_name }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                     <button class="sm:col-span-2 rounded-md bg-navy-900 text-white text-sm py-2 hover:bg-navy-800 transition">Create seat</button>
                 </form>
             </details>
@@ -57,7 +69,7 @@
                     <tr>
                         <th class="text-left px-4 py-2.5">Name</th>
                         <th class="text-left px-4 py-2.5">Email</th>
-                        <th class="text-left px-4 py-2.5">Scoped to</th>
+                        <th class="text-left px-4 py-2.5">{{ $sharedTeamPlan ? 'Role' : 'Scoped to' }}</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -66,7 +78,15 @@
                         <tr>
                             <td class="px-4 py-3 font-medium text-ink-900">{{ $seat->name }}</td>
                             <td class="px-4 py-3 text-ink-600">{{ $seat->email }}</td>
-                            <td class="px-4 py-3 text-ink-900">{{ $seat->seatOffer?->product_name ?? 'Offer deleted' }}</td>
+                            <td class="px-4 py-3 text-ink-900">
+                                @if ($sharedTeamPlan)
+                                    <span class="text-xs rounded-full px-2 py-0.5 {{ $seat->seat_role === 'manager' ? 'bg-blue-100 text-blue-800' : 'bg-surface-muted text-ink-600' }}">
+                                        {{ ucfirst($seat->seat_role ?? 'member') }}
+                                    </span>
+                                @else
+                                    {{ $seat->seatOffer?->product_name ?? 'Offer deleted' }}
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-right">
                                 <form method="POST" action="{{ route('team.destroy', $seat) }}" onsubmit="return confirm('Remove this team member? They\'ll lose access immediately — their drafts stay under your account.')">
                                     @csrf @method('DELETE')

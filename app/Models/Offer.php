@@ -40,10 +40,12 @@ class Offer extends Model
 
     /**
      * Whether $user may view/generate content for this offer — its owner,
-     * or a team seat (item 10) specifically scoped to this one offer. Every
-     * controller that used to check `$offer->user_id === auth()->id()`
-     * routes through this instead, so seats work without each of those
-     * checks needing to know seats exist.
+     * a team seat (item 10) specifically scoped to this one offer
+     * ("isolated" plans, the original agency model), or any seat on a
+     * "shared" (Business tier) plan belonging to the same account (see
+     * User::hasSharedTeamAccess()). Every controller that used to check
+     * `$offer->user_id === auth()->id()` routes through this instead, so
+     * seats work without each of those checks needing to know seats exist.
      */
     public function isAccessibleBy(User $user): bool
     {
@@ -51,7 +53,11 @@ class Offer extends Model
             return true;
         }
 
-        return $user->isSeat() && $user->seat_offer_id === $this->id;
+        if (! $user->isSeat() || $user->agency_owner_id !== $this->user_id) {
+            return false;
+        }
+
+        return $user->hasSharedTeamAccess() || $user->seat_offer_id === $this->id;
     }
 
     public function generations(): HasMany

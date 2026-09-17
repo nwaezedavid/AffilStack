@@ -32,14 +32,22 @@
 
             <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
                 @php
-                    // A team seat (item 10) is scoped to one offer and has
-                    // no billing/CRM/earnings/referrals/support of its own —
-                    // see config('agency.seat_allowed_routes'), enforced by
+                    // A team seat (item 10) has no billing/CRM/earnings/
+                    // referrals/support of its own — see
+                    // config('agency.seat_allowed_routes'), enforced by
                     // RestrictAgencySeats. The nav mirrors that scope so a
-                    // seat never sees a link that would just 403.
+                    // seat never sees a link that would just 403. An
+                    // isolated-plan seat is scoped to its one offer; a
+                    // shared-plan (Business tier) seat instead gets the
+                    // whole team's offer list — see
+                    // User::hasSharedTeamAccess().
+                    $seatOfferItem = auth()->user()->isSeat() && auth()->user()->hasSharedTeamAccess()
+                        ? ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'Offers', 'icon' => '🔎']
+                        : ['name' => 'offers.show', 'params' => [auth()->user()->seat_offer_id], 'match' => 'offers.*', 'label' => 'My Product', 'icon' => '🔎'];
+
                     $items = auth()->user()->isSeat()
                         ? [
-                            ['name' => 'offers.show', 'params' => [auth()->user()->seat_offer_id], 'match' => 'offers.*', 'label' => 'My Product', 'icon' => '🔎'],
+                            $seatOfferItem,
                             ['name' => 'calendar.index', 'match' => 'calendar.*', 'label' => 'Content Calendar', 'icon' => '📅'],
                             ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => '🗂️'],
                         ]

@@ -9,6 +9,7 @@ use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -24,7 +25,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id'])]
+#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
@@ -155,6 +156,39 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     }
 
     /**
+     * Whether the account this user bills to (itself, or its agency owner
+     * for a seat) is on a "shared" (Business tier) plan — see
+     * Plan::isSharedTeamPlan() and the plans.seat_mode migration. True for
+     * both the owner and every seat on such a plan; always false for an
+     * "isolated" plan (every plan except Business, unchanged).
+     */
+    public function onSharedTeamPlan(): bool
+    {
+        return $this->billableUser()->activeSubscription?->plan?->isSharedTeamPlan() ?? false;
+    }
+
+    /**
+     * A seat (not the owner) on a shared plan — the one case where
+     * Offer::isAccessibleBy() grants access to every offer on the account
+     * rather than just one assigned via seat_offer_id.
+     */
+    public function hasSharedTeamAccess(): bool
+    {
+        return $this->isSeat() && $this->onSharedTeamPlan();
+    }
+
+    /**
+     * A shared-plan seat with the "manager" role — the only seat that can
+     * publish content or mark a DM sequence started (see
+     * ContentCalendarController); every other seat, on any plan, is
+     * draft-only, matching the original agency-seat backlog wording.
+     */
+    public function isTeamManager(): bool
+    {
+        return $this->hasSharedTeamAccess() && $this->seat_role === 'manager';
+    }
+
+    /**
      * The account that actually pays for this user's actions — itself
      * normally, or its agency owner for a team seat. Single choke point:
      * CreditManager, canUseChannel(), and the credits balance shown in the
@@ -187,9 +221,39 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return $this->hasMany(Offer::class);
     }
 
+    /**
+     * The offers this user should actually see and work: on a shared plan
+     * (Business tier), that's every offer on the billable account — the
+     * whole point of that tier being real team collaboration rather than
+     * agency-style one-offer-per-seat isolation. Otherwise (every other
+     * plan, and an isolated-plan seat, which still only reaches its one
+     * assigned offer via Offer::isAccessibleBy()) it's just this user's
+     * own offers, identical to calling offers() directly.
+     */
+    public function visibleOffers(): HasMany
+    {
+        return $this->onSharedTeamPlan() ? $this->billableUser()->offers() : $this->offers();
+    }
+
     public function generations(): HasMany
     {
         return $this->hasMany(Generation::class);
+    }
+
+    /**
+     * The generations this user's content calendar/dashboard should show —
+     * see visibleOffers() for the same isolated/shared distinction. On a
+     * shared plan this is every generation across the whole team's offers
+     * (so the owner and every manager/member see one shared calendar), not
+     * just what this particular login created.
+     */
+    public function visibleGenerations(): Builder
+    {
+        if (! $this->onSharedTeamPlan()) {
+            return $this->generations();
+        }
+
+        return Generation::query()->whereIn('offer_id', $this->billableUser()->offers()->pluck('id'));
     }
 
     public function crmContacts(): HasMany

@@ -37,12 +37,13 @@ class ContentCalendarController extends Controller
         ]);
 
         // Team seats (item 10) are "draft only, no publish" — they can plan
-        // and schedule, but only the account owner can mark something as
-        // actually published.
+        // and schedule, but only the account owner (or, on a shared/
+        // Business-tier plan, a "manager" seat — see User::isTeamManager())
+        // can mark something as actually published.
         abort_if(
-            auth()->user()->isSeat() && $validated['calendar_status'] === 'published',
+            auth()->user()->isSeat() && ! auth()->user()->isTeamManager() && $validated['calendar_status'] === 'published',
             403,
-            'Team members can\'t mark content as published — ask the account owner to do that.',
+            'Team members can\'t mark content as published — ask the account owner or a team manager to do that.',
         );
 
         if ($validated['calendar_status'] === 'published' && ! $generation->published_at) {
@@ -60,13 +61,14 @@ class ContentCalendarController extends Controller
      * to, since a DM sequence isn't a single dated publish the way a blog
      * post or a social caption is. Treated the same as "publish" for team
      * seats (item 10) — it's a real-world action, not a draft — so only the
-     * account owner can confirm it.
+     * account owner or a team manager (shared/Business-tier plan) can
+     * confirm it.
      */
     public function markSequenceStarted(Generation $generation): RedirectResponse
     {
         abort_unless($generation->isAccessibleBy(auth()->user()), 403);
         abort_unless($generation->module === 'linkedin_dm_sequence', 404);
-        abort_if(auth()->user()->isSeat(), 403, 'Team members can\'t mark a sequence as started — ask the account owner to do that.');
+        abort_if(auth()->user()->isSeat() && ! auth()->user()->isTeamManager(), 403, 'Team members can\'t mark a sequence as started — ask the account owner or a team manager to do that.');
 
         $generation->update(['published_at' => $generation->published_at ?? now()]);
 

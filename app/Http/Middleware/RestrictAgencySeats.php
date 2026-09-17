@@ -13,6 +13,11 @@ use Symfony\Component\HttpFoundation\Response;
  * coarse "which pages exist for a seat at all" gate. The finer "is this
  * specifically YOUR assigned offer" check still happens per-resource in
  * each controller via Offer::isAccessibleBy() / Generation::isAccessibleBy().
+ *
+ * A handful of additional routes (config('agency.shared_only_routes')) only
+ * make sense for a "shared" (Business tier) seat — browsing or adding to
+ * the whole team's offer list. An "isolated"-plan seat (the original agency
+ * model) never reaches them, since it's scoped to exactly one offer.
  */
 class RestrictAgencySeats
 {
@@ -25,6 +30,12 @@ class RestrictAgencySeats
         }
 
         $routeName = $request->route()?->getName();
+
+        if ($routeName && in_array($routeName, config('agency.shared_only_routes'), true)) {
+            abort_unless($user->hasSharedTeamAccess(), 403, 'This account is scoped to a single offer.');
+
+            return $next($request);
+        }
 
         abort_unless(
             $routeName && in_array($routeName, config('agency.seat_allowed_routes'), true),

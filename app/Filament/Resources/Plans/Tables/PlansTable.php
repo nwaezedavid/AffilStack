@@ -28,6 +28,12 @@ class PlansTable
                 TextColumn::make('credits_per_month')->numeric()->sortable(),
                 TextColumn::make('contact_limit')->numeric()->sortable(),
                 TextColumn::make('team_seats')->numeric()->sortable(),
+                TextColumn::make('seat_mode')
+                    ->badge()
+                    ->colors([
+                        'gray' => 'isolated',
+                        'success' => 'shared',
+                    ]),
                 IconColumn::make('is_featured')->boolean(),
                 IconColumn::make('is_active')->boolean(),
                 TextColumn::make('subscriptions_count')

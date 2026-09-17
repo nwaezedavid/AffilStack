@@ -34,8 +34,16 @@ class OfferResearchService
             throw new InsufficientCreditsException("Need {$cost} credits to run offer research.");
         }
 
+        // A shared-plan team seat (Business tier) creating a new offer
+        // attributes it to the account owner, not itself, so it's
+        // immediately visible to the rest of the team via
+        // Offer::isAccessibleBy()/User::visibleOffers() — the same
+        // billableUser() choke point every credit spend already resolves
+        // through. For every other user (including an isolated-plan
+        // seat, which can't reach this at all) billableUser() is just
+        // itself, so this is a no-op change.
         $offer = Offer::create([
-            'user_id' => $user->id,
+            'user_id' => $user->billableUser()->id,
             'product_name' => $productName,
             'product_url' => $productUrl,
             'affiliate_network' => $affiliateNetwork,

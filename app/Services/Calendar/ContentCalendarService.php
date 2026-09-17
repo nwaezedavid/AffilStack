@@ -26,7 +26,7 @@ class ContentCalendarService
      */
     public function entriesFor(User $user): Collection
     {
-        return $user->generations()
+        return $user->visibleGenerations()
             ->whereIn('module', config('calendar.publishable_modules'))
             ->with('offer')
             ->get()
@@ -53,7 +53,7 @@ class ContentCalendarService
     {
         $cutoff = now()->addDays($this->lookaheadDays);
 
-        return $user->generations()
+        return $user->visibleGenerations()
             ->where('module', 'blog_article')
             ->where('calendar_status', 'published')
             ->whereNotNull('published_at')
@@ -85,7 +85,7 @@ class ContentCalendarService
 
         $reminders = [];
 
-        $sequences = $user->generations()
+        $sequences = $user->visibleGenerations()
             ->where('module', 'linkedin_dm_sequence')
             ->where('status', 'completed')
             ->whereNotNull('published_at')
