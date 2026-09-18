@@ -13,7 +13,7 @@
             'name' => $siteName.' Learning Centre',
             'description' => 'Free video tutorials on how to use '.$siteName.'.',
             'url' => route('tutorials.index'),
-        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}
     </script>
 
     <div class="max-w-5xl mx-auto px-6 py-14">

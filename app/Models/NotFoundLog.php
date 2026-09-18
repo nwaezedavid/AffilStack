@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
  * A deduped, capped log of paths that 404'd on the public marketing site —
@@ -49,12 +50,24 @@ class NotFoundLog extends Model
             return;
         }
 
-        static::create([
-            'path' => $path,
-            'referer' => $referer,
-            'hits_count' => 1,
-            'first_seen_at' => now(),
-            'last_seen_at' => now(),
-        ]);
+        // The check-then-act above isn't atomic: two concurrent first-ever
+        // hits on the same brand-new path (a bot firing parallel requests,
+        // or a browser prefetch racing the real navigation) can both reach
+        // here having seen no existing row, and the `path` column's unique
+        // index then rejects the loser's insert. That's an expected race,
+        // not a real error — treat it exactly like "someone already logged
+        // this a moment ago" and increment instead of letting a 404 visitor
+        // see a 500.
+        try {
+            static::create([
+                'path' => $path,
+                'referer' => $referer,
+                'hits_count' => 1,
+                'first_seen_at' => now(),
+                'last_seen_at' => now(),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            static::where('path', $path)->first()?->increment('hits_count', 1, ['last_seen_at' => now()]);
+        }
     }
 }

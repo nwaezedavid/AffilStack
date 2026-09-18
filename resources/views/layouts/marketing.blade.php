@@ -24,13 +24,13 @@
     $gscVerification = \App\Models\SiteSetting::get('seo_gsc_verification');
     $metaPixelId = \App\Models\SiteSetting::get('seo_meta_pixel_id');
     $tiktokPixelId = \App\Models\SiteSetting::get('seo_tiktok_pixel_id');
-    $bingVerification = \App\Models\BingWebmasterSetting::current()->verification_code;
+    $bingVerification = \App\Models\BingWebmasterSetting::cachedVerificationCode();
     // Once a Tag Manager container is connected (Site > Site Analytics),
     // GTM is the single sitewide tracking snippet — GA4 is expected to be
     // configured as a tag INSIDE that container rather than injected twice.
     // The bare gtag.js snippet below is only the manual-entry fallback for
     // sites that haven't connected Tag Manager.
-    $gtmPublicId = \App\Models\GoogleSiteAnalyticsSetting::current()->credential('gtm_public_id');
+    $gtmPublicId = \App\Models\GoogleSiteAnalyticsSetting::cachedGtmPublicId();
 
     // Sitewide Organization + WebSite structured data (every page, not just
     // the homepage's own SoftwareApplication schema) — a Knowledge Panel
@@ -100,7 +100,7 @@
         <link rel="apple-touch-icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
     @endif
     <link rel="canonical" href="{{ url()->current() }}">
-    <script type="application/ld+json">{!! json_encode($organizationJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    <script type="application/ld+json">{!! json_encode($organizationJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.tracking-head')
     @stack('head')

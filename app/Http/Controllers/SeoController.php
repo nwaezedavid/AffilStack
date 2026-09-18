@@ -28,9 +28,27 @@ class SeoController extends Controller
             ['loc' => route('home'), 'priority' => '1.0'],
             ['loc' => route('registration.pricing'), 'priority' => '0.9'],
             ['loc' => route('tutorials.index'), 'priority' => '0.7'],
-            ['loc' => route('about'), 'priority' => '0.5'],
             ['loc' => route('help.index'), 'priority' => '0.5'],
         ];
+
+        // "about" gets its own hardcoded entry (rather than falling through
+        // to the SitePage loop below like every other static page) purely
+        // so it's never missing on a fresh install with no site_pages rows
+        // yet. That's the ONLY reason it's special-cased — once a real About
+        // SitePage row exists, it must respect is_published/no_index exactly
+        // like Terms/Privacy/etc. do, or toggling either one on the About
+        // page would silently do nothing in the sitemap (a real bug this
+        // fixes: it used to always appear regardless of both flags, which
+        // could list an unpublished About page as a "soft 404" in Search
+        // Console).
+        $aboutPage = SitePage::where('slug', 'about')->first();
+        if (! $aboutPage || ($aboutPage->is_published && ! $aboutPage->no_index)) {
+            $urls[] = array_filter([
+                'loc' => route('about'),
+                'priority' => '0.5',
+                'lastmod' => $aboutPage?->updated_at?->toAtomString(),
+            ]);
+        }
 
         // The affiliate landing page is its own acquisition channel (task:
         // "design the best landing page for the affiliate program") — worth

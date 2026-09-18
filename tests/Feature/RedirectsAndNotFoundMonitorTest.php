@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\NotFoundLogs\Pages\ListNotFoundLogs;
 use App\Filament\Resources\Redirects\Pages\CreateRedirect;
+use App\Filament\Resources\Redirects\Pages\EditRedirect;
 use App\Models\NotFoundLog;
 use App\Models\Redirect;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -150,6 +152,153 @@ class RedirectsAndNotFoundMonitorTest extends TestCase
 
         // The path now resolves via the redirect instead of 404ing again.
         $this->get('/old-campaign-link')->assertRedirect('/pricing');
+    }
+
+    /**
+     * Regression test for a real bug found in review: redirects.from_path/
+     * not_found_logs.path/referer are plain varchar(255) columns on the
+     * real (MySQL) production database — an unauthenticated visitor's
+     * request path has no length limit of its own, so without truncation
+     * this would 500 in production (invisible against the test suite's
+     * SQLite database, which never enforces column length at all).
+     */
+    public function test_an_extremely_long_request_path_is_truncated_rather_than_crashing(): void
+    {
+        $longPath = str_repeat('a', 500);
+
+        $response = $this->get('/'.$longPath);
+
+        $response->assertNotFound();
+
+        $log = NotFoundLog::first();
+        $this->assertNotNull($log);
+        $this->assertLessThanOrEqual(200, strlen($log->path));
+    }
+
+    public function test_an_extremely_long_referer_header_is_truncated_rather_than_crashing(): void
+    {
+        $response = $this->withHeaders(['referer' => 'https://example.com/'.str_repeat('b', 500)])
+            ->get('/some-dead-link');
+
+        $response->assertNotFound();
+
+        $log = NotFoundLog::first();
+        $this->assertNotNull($log);
+        $this->assertLessThanOrEqual(200, strlen((string) $log->referer));
+    }
+
+    /**
+     * Confirms the exception type NotFoundLog::record() catches to survive
+     * a genuine race (two concurrent first-ever hits on the same brand-new
+     * path both passing the "does it exist" check before either inserts)
+     * actually matches what this app's database driver throws for a
+     * unique-constraint violation — the real failure mode this guards
+     * against, verified directly since true concurrency can't be
+     * deterministically reproduced in a single-process test.
+     */
+    public function test_creating_two_not_found_logs_with_the_same_path_throws_the_exception_type_record_catches(): void
+    {
+        NotFoundLog::create(['path' => 'race-path', 'hits_count' => 1, 'first_seen_at' => now(), 'last_seen_at' => now()]);
+
+        $this->expectException(UniqueConstraintViolationException::class);
+
+        NotFoundLog::create(['path' => 'race-path', 'hits_count' => 1, 'first_seen_at' => now(), 'last_seen_at' => now()]);
+    }
+
+    public function test_admin_paths_are_never_redirect_checked_or_logged(): void
+    {
+        $response = $this->get('/admin/some-nonexistent-page');
+
+        $response->assertNotFound();
+        $this->assertSame(0, NotFoundLog::count());
+    }
+
+    public function test_a_redirect_cannot_point_at_itself(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(CreateRedirect::class)
+            ->fillForm(['from_path' => 'loop-page', 'to_path' => '/loop-page', 'status_code' => 301])
+            ->call('create')
+            ->assertHasFormErrors(['to_path']);
+
+        $this->assertSame(0, Redirect::count());
+    }
+
+    public function test_a_redirect_cannot_complete_a_multi_hop_cycle(): void
+    {
+        Redirect::create(['from_path' => 'page-b', 'to_path' => '/page-a', 'status_code' => 301]);
+
+        // page-a -> page-b -> page-a would loop forever.
+        Livewire::actingAs($this->admin)
+            ->test(CreateRedirect::class)
+            ->fillForm(['from_path' => 'page-a', 'to_path' => '/page-b', 'status_code' => 301])
+            ->call('create')
+            ->assertHasFormErrors(['to_path']);
+
+        $this->assertSame(1, Redirect::count());
+    }
+
+    public function test_a_non_cyclic_redirect_chain_is_allowed(): void
+    {
+        Redirect::create(['from_path' => 'page-b', 'to_path' => '/page-c', 'status_code' => 301]);
+
+        Livewire::actingAs($this->admin)
+            ->test(CreateRedirect::class)
+            ->fillForm(['from_path' => 'page-a', 'to_path' => '/page-b', 'status_code' => 301])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(2, Redirect::count());
+    }
+
+    public function test_editing_a_redirect_to_keep_the_same_to_path_is_not_flagged_as_its_own_cycle(): void
+    {
+        $redirect = Redirect::create(['from_path' => 'page-a', 'to_path' => '/pricing', 'status_code' => 301]);
+
+        Livewire::actingAs($this->admin)
+            ->test(EditRedirect::class, ['record' => $redirect->getRouteKey()])
+            ->fillForm(['status_code' => 302])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(302, $redirect->fresh()->status_code);
+    }
+
+    public function test_a_redirect_pointing_to_an_external_url_is_never_flagged_as_a_cycle(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(CreateRedirect::class)
+            ->fillForm(['from_path' => 'old-affiliate-page', 'to_path' => 'https://external-site.example/offer', 'status_code' => 301])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(1, Redirect::count());
+    }
+
+    public function test_turning_a_404_into_a_redirect_is_blocked_when_it_would_create_a_cycle(): void
+    {
+        Redirect::create(['from_path' => 'old-campaign-link', 'to_path' => '/dead-end', 'status_code' => 301]);
+        // Deleting the redirect for the log's own path so the "existing
+        // redirect" branch isn't hit — this exercises the fresh-create path.
+        Redirect::where('from_path', 'old-campaign-link')->delete();
+
+        Redirect::create(['from_path' => 'dead-end', 'to_path' => '/old-campaign-link', 'status_code' => 301]);
+
+        $log = NotFoundLog::create([
+            'path' => 'old-campaign-link',
+            'hits_count' => 1,
+            'first_seen_at' => now(),
+            'last_seen_at' => now(),
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(ListNotFoundLogs::class)
+            ->callTableAction('createRedirect', $log, data: ['to_path' => '/dead-end', 'status_code' => 301]);
+
+        // The would-be cyclic redirect (old-campaign-link -> dead-end,
+        // completing dead-end -> old-campaign-link -> dead-end) must never
+        // have been written.
+        $this->assertSame(0, Redirect::where('from_path', 'old-campaign-link')->count());
     }
 
     public function test_a_non_admin_cannot_access_the_redirects_or_404_monitor_pages(): void

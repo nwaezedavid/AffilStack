@@ -17,7 +17,7 @@
         ]))->all(),
     ];
 ?>
-<script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+<script type="application/ld+json">{!! json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
 <nav aria-label="Breadcrumb" class="text-xs text-ink-400 mb-4">
     @foreach ($trail as $i => $item)
         @if (! $loop->first)

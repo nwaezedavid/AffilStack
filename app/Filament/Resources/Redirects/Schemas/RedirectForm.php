@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\Redirects\Schemas;
 
+use App\Models\Redirect;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
 
 class RedirectForm
 {
@@ -26,7 +29,14 @@ class RedirectForm
                     ->label('To')
                     ->required()
                     ->maxLength(255)
-                    ->helperText('Where visitors land instead — a relative path (e.g. "/new-page") or a full URL.'),
+                    ->helperText('Where visitors land instead — a relative path (e.g. "/new-page") or a full URL.')
+                    ->rule(function (Get $get, ?Model $record) {
+                        return function (string $attribute, $value, \Closure $fail) use ($get, $record) {
+                            if (Redirect::wouldCreateCycle((string) $get('from_path'), (string) $value, $record?->id)) {
+                                $fail('This would send visitors in a redirect loop — check where this path (or one further down the chain) already redirects to.');
+                            }
+                        };
+                    }),
                 Select::make('status_code')
                     ->label('Redirect type')
                     ->options([

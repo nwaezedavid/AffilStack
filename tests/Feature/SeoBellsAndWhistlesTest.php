@@ -106,6 +106,54 @@ class SeoBellsAndWhistlesTest extends TestCase
         $response->assertDontSee('/thank-you', false);
     }
 
+    /**
+     * Regression test for a real bug found in review: the sitemap used to
+     * hardcode an About entry unconditionally so it's never missing on a
+     * fresh install with no site_pages rows yet — but once a real About
+     * SitePage row exists, it kept appearing regardless of that row's own
+     * is_published/no_index flags, unlike every other static page. An
+     * admin unpublishing or no-indexing the real About page used to have
+     * no effect on the sitemap at all.
+     */
+    public function test_unpublishing_the_real_about_page_removes_it_from_the_sitemap(): void
+    {
+        SitePage::create(['slug' => 'about', 'title' => 'About', 'content' => 'Body', 'is_published' => false]);
+
+        $response = $this->get('/sitemap.xml');
+
+        $response->assertOk();
+        $response->assertDontSee(url('/about'), false);
+    }
+
+    public function test_no_indexing_the_real_about_page_removes_it_from_the_sitemap(): void
+    {
+        SitePage::create(['slug' => 'about', 'title' => 'About', 'content' => 'Body', 'is_published' => true, 'no_index' => true]);
+
+        $response = $this->get('/sitemap.xml');
+
+        $response->assertOk();
+        $response->assertDontSee(url('/about'), false);
+    }
+
+    public function test_a_published_about_page_still_appears_in_the_sitemap_with_its_own_lastmod(): void
+    {
+        $page = SitePage::create(['slug' => 'about', 'title' => 'About', 'content' => 'Body', 'is_published' => true]);
+
+        $response = $this->get('/sitemap.xml');
+
+        $response->assertOk();
+        $response->assertSee(url('/about'), false);
+        $response->assertSee('<lastmod>'.$page->updated_at->toAtomString().'</lastmod>', false);
+    }
+
+    public function test_the_about_page_still_appears_in_the_sitemap_on_a_fresh_install_with_no_about_row_yet(): void
+    {
+        $response = $this->get('/sitemap.xml');
+
+        $response->assertOk();
+        $response->assertSee(url('/about'), false);
+    }
+
     public function test_a_published_page_appears_in_the_sitemap_with_a_lastmod_date(): void
     {
         $page = SitePage::create(['slug' => 'cookie-policy', 'title' => 'Cookies', 'content' => 'Body', 'is_published' => true]);
@@ -281,5 +329,64 @@ class SeoBellsAndWhistlesTest extends TestCase
         $page->refresh();
         $this->assertSame('About Us — The Real Story', $page->seo_title);
         $this->assertTrue($page->no_index);
+    }
+
+    /**
+     * Regression test for a real stored-XSS bug found in review: every
+     * json_encode(...) feeding a `<script type="application/ld+json">` tag
+     * was rendered with {!! !!} (raw, unescaped) and only
+     * JSON_UNESCAPED_SLASHES — so a page title (or any other value that
+     * ends up in a JSON-LD graph) containing a literal "</script>" would
+     * close the JSON-LD tag early and let an attacker-controlled
+     * "<script>" that followed execute as real JavaScript. JSON_HEX_TAG
+     * converts every angle bracket to its \u escape, so the string can never
+     * contain a byte sequence that looks like a tag to the HTML parser,
+     * whatever it contains. Breadcrumbs render an admin-controlled
+     * SitePage title into JSON-LD, so this exercises the real code path
+     * rather than a synthetic one.
+     */
+    public function test_a_page_title_containing_a_script_closing_tag_can_never_break_out_of_the_json_ld_block(): void
+    {
+        $maliciousTitle = 'Terms</script><script>alert(document.cookie)</script>';
+
+        SitePage::create(['slug' => 'terms', 'title' => $maliciousTitle, 'content' => 'Body', 'is_published' => true]);
+
+        $response = $this->get('/terms');
+
+        $response->assertOk();
+        $response->assertDontSee('</script><script>alert', false);
+        // JSON_HEX_TAG escapes every angle bracket to its \u form (slashes
+        // are left alone here since JSON_UNESCAPED_SLASHES is also set, for
+        // readable URLs elsewhere in the same graph), so the safe encoded
+        // form never contains a literal "<" or ">".
+        $needle = '\\u003C/script\\u003E\\u003Cscript\\u003Ealert(document.cookie)\\u003C/script\\u003E';
+        $response->assertSee($needle, false);
+    }
+
+    /**
+     * Regression test for a real bug found in review: the Meta/TikTok pixel
+     * IDs used to be interpolated into inline <script> JS via
+     * {{ json_encode(...) }} (or manually single-quoted {{ }} for GTM),
+     * which runs Blade's e()/htmlspecialchars on the ALREADY-JSON-encoded
+     * string — turning its own `"` delimiters into `&quot;`. The browser
+     * never HTML-decodes text inside a <script> block, so the pixel's own
+     * init call became invalid JavaScript and silently never fired (no
+     * tracking, no error visible to anyone testing the page by eye).
+     *
+     * @json() (Illuminate\Support\Js::from()) is Htmlable and safe to
+     * print raw inside a script tag, which is what actually fixes it. This
+     * asserts the exact valid-JS call renders, and that Blade's HTML-entity
+     * escaping never touches it.
+     */
+    public function test_pixel_ids_render_as_valid_unescaped_javascript_string_literals(): void
+    {
+        SiteSetting::set('seo_meta_pixel_id', '123456789012345');
+        SiteSetting::set('seo_tiktok_pixel_id', 'CXXXXXXXXXXXXXXXXXXX');
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee("fbq('init', \"123456789012345\")", false);
+        $response->assertSee('ttq.load("CXXXXXXXXXXXXXXXXXXX")', false);
     }
 }

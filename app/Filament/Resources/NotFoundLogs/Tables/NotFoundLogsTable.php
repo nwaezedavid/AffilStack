@@ -44,6 +44,18 @@ class NotFoundLogsTable
                             ->required(),
                     ])
                     ->action(function (NotFoundLog $record, array $data): void {
+                        $existingId = Redirect::where('from_path', $record->path)->value('id');
+
+                        if (Redirect::wouldCreateCycle($record->path, $data['to_path'], $existingId)) {
+                            Notification::make()
+                                ->title('Could not create redirect')
+                                ->body('This would send visitors in a redirect loop — check where this path (or one further down the chain) already redirects to.')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
                         Redirect::updateOrCreate(
                             ['from_path' => $record->path],
                             ['to_path' => $data['to_path'], 'status_code' => $data['status_code']]

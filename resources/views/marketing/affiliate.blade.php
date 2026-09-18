@@ -35,7 +35,7 @@
                     'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Once your approved commission balance reaches $'.$minimumPayout.', you can request a payout via '.$payoutMethods.' from your affiliate dashboard.'],
                 ],
             ],
-        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}
     </script>
 
     <section class="max-w-5xl mx-auto px-6 pt-16 pb-12 text-center">

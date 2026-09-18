@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\BrandSettings;
+use App\Models\BingWebmasterSetting;
 use App\Models\FaqItem;
+use App\Models\GoogleSiteAnalyticsSetting;
 use App\Models\HomepageFeature;
 use App\Models\Plan;
 use App\Models\SitePage;
@@ -109,6 +111,36 @@ class PublicContentCachingTest extends TestCase
 
         HomepageFeature::create(['title' => 'Feature 2', 'description' => 'Desc', 'media_type' => 'none', 'is_active' => true, 'sort_order' => 2]);
         $this->assertCount(2, HomepageFeature::previewAwareActiveList());
+    }
+
+    /**
+     * Regression test for a real bug found in review: unlike SiteSetting,
+     * GoogleSiteAnalyticsSetting::current()/BingWebmasterSetting::current()
+     * were plain uncached queries (firstOrCreate), but the marketing AND
+     * dashboard layouts read them on every single page's <head> — meaning
+     * every visitor's every page view cost two extra, entirely avoidable
+     * database queries sitewide. cachedGtmPublicId()/cachedVerificationCode()
+     * fix that; this asserts a page view no longer touches those tables at
+     * all once the cache is warm, and that saving a new value is reflected
+     * without a stale cache surviving the update.
+     */
+    public function test_google_tag_manager_and_bing_verification_are_cached_across_page_views(): void
+    {
+        GoogleSiteAnalyticsSetting::current()->update(['credentials' => ['gtm_public_id' => 'GTM-ABC123']]);
+        BingWebmasterSetting::current()->update(['verification_code' => 'BING-CODE-1']);
+
+        $this->get('/')->assertSee('GTM-ABC123', false);
+
+        DB::enableQueryLog();
+        $this->get('/')->assertSee('BING-CODE-1', false);
+        $queries = collect(DB::getQueryLog())->pluck('query')->implode(' ');
+        DB::disableQueryLog();
+
+        $this->assertStringNotContainsString('google_site_analytics_settings', $queries);
+        $this->assertStringNotContainsString('bing_webmaster_settings', $queries);
+
+        GoogleSiteAnalyticsSetting::current()->update(['credentials' => ['gtm_public_id' => 'GTM-NEW-456']]);
+        $this->get('/')->assertSee('GTM-NEW-456', false)->assertDontSee('GTM-ABC123', false);
     }
 
     public function test_cache_public_page_sets_cache_control_on_a_plain_visit(): void

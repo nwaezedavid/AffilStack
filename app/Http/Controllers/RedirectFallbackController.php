@@ -6,6 +6,7 @@ use App\Models\NotFoundLog;
 use App\Models\Redirect;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -24,11 +25,26 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  */
 class RedirectFallbackController extends Controller
 {
-    protected const EXCLUDED_PREFIXES = ['afs-login', 'api', 'webhooks'];
+    protected const EXCLUDED_PREFIXES = ['afs-login', 'admin', 'api', 'webhooks'];
+
+    /**
+     * redirects.from_path/not_found_logs.path/referer are plain varchar(255)
+     * columns (SQLite, used in tests, has no length limit and silently
+     * accepts anything — MySQL, used in production, does not). An
+     * unauthenticated visitor's request path is untrusted input with no
+     * upper bound of its own (a scanner or a malformed link can easily
+     * exceed 255 characters), so it's truncated once, here, before it ever
+     * reaches a database column. Capped well under 255 (not right at it) to
+     * leave room for Redirect::forPath()'s own cache-key prefix
+     * ("redirect:" plus the cache store's own key prefix) — the derived
+     * cache key must fit the "cache" table's own varchar(255) "key" column
+     * too, not just the redirects/not_found_logs tables.
+     */
+    protected const MAX_STORED_LENGTH = 200;
 
     public function handle(Request $request): RedirectResponse
     {
-        $path = trim($request->path(), '/');
+        $path = Str::limit(trim($request->path(), '/'), self::MAX_STORED_LENGTH, '');
 
         if ($path === '/' || $this->isExcluded($path)) {
             throw new NotFoundHttpException;
@@ -40,7 +56,8 @@ class RedirectFallbackController extends Controller
             return redirect($redirect->to_path, $redirect->status_code);
         }
 
-        NotFoundLog::record($path, $request->headers->get('referer'));
+        $referer = $request->headers->get('referer');
+        NotFoundLog::record($path, $referer ? Str::limit($referer, self::MAX_STORED_LENGTH, '') : null);
 
         throw new NotFoundHttpException;
     }

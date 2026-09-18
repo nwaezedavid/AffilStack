@@ -24,7 +24,7 @@
     $gaId = \App\Models\SiteSetting::get('seo_ga_id');
     $metaPixelId = \App\Models\SiteSetting::get('seo_meta_pixel_id');
     $tiktokPixelId = \App\Models\SiteSetting::get('seo_tiktok_pixel_id');
-    $gtmPublicId = \App\Models\GoogleSiteAnalyticsSetting::current()->credential('gtm_public_id');
+    $gtmPublicId = \App\Models\GoogleSiteAnalyticsSetting::cachedGtmPublicId();
 ?>
 <!DOCTYPE html>
 <html lang="en">

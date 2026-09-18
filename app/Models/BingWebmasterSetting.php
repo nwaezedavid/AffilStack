@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Single-row (id=1) admin configuration for Bing Webmaster Tools — see
@@ -43,5 +44,25 @@ class BingWebmasterSetting extends Model
     public function isConfigured(): bool
     {
         return filled($this->credential('api_key'));
+    }
+
+    /**
+     * Audit item #7 (caching/performance) — this is read from the marketing
+     * layout's <head> on every single public page view sitewide, so (unlike
+     * current()'s admin-only callers) it must never cost a query. Cached the
+     * same way SiteSetting::get() is, busted from booted() below.
+     */
+    public static function cachedVerificationCode(): ?string
+    {
+        return Cache::rememberForever(
+            'bing_webmaster:verification_code',
+            fn () => static::current()->verification_code
+        );
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Cache::forget('bing_webmaster:verification_code'));
+        static::deleted(fn () => Cache::forget('bing_webmaster:verification_code'));
     }
 }

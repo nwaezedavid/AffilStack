@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Single-row (id=1) admin configuration for the "Connect with Google" site
@@ -68,5 +69,25 @@ class GoogleSiteAnalyticsSetting extends Model
     public function hasTagManager(): bool
     {
         return filled($this->credential('gtm_public_id'));
+    }
+
+    /**
+     * Audit item #7 (caching/performance) — this is read from the marketing
+     * AND dashboard layouts' <head> on every single page view sitewide, so
+     * (unlike current()'s admin-only callers) it must never cost a query.
+     * Cached the same way SiteSetting::get() is, busted from booted() below.
+     */
+    public static function cachedGtmPublicId(): ?string
+    {
+        return Cache::rememberForever(
+            'google_site_analytics:gtm_public_id',
+            fn () => static::current()->credential('gtm_public_id')
+        );
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Cache::forget('google_site_analytics:gtm_public_id'));
+        static::deleted(fn () => Cache::forget('google_site_analytics:gtm_public_id'));
     }
 }
