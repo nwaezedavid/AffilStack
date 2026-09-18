@@ -12,6 +12,13 @@
     </IfModule>
 </FilesMatch>
 
+# Static files (built CSS/JS, robots.txt, images) are served by Apache
+# directly and never reach App\Http\Middleware\SecurityHeaders, so the one
+# header HawkScan flagged as missing on them is set here instead.
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
