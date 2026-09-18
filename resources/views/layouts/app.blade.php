@@ -2,13 +2,32 @@
     $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
     $logo = \App\Models\SiteSetting::get('logo_rectangular_path');
     $favicon = \App\Models\SiteSetting::get('logo_square_path');
+
+    // "I believe they will need a separate dashboard, different from the
+    // users who are actual paid members of the platform" — an
+    // affiliate-only account (User::isAffiliateOnly()) shares this same
+    // shell and every one of its routes (they resolve correctly on the
+    // affiliate subdomain too, since none of them carry a Route::domain()
+    // constraint — Laravel builds route() URLs from the current request's
+    // host), but renders with a distinctly-branded "Partner Portal" theme
+    // instead of the customer navy sidebar, so the two account types never
+    // look interchangeable even though they're the same User model and the
+    // same session.
+    $isAffiliatePortal = auth()->user()->isAffiliateOnly();
+    $sidebarBg = $isAffiliatePortal ? 'bg-emerald-950' : 'bg-navy-900';
+    $sidebarBorder = $isAffiliatePortal ? 'border-emerald-800' : 'border-white/10';
+    $sidebarHover = $isAffiliatePortal ? 'hover:bg-emerald-900/60' : 'hover:bg-white/5';
+    $sidebarActive = $isAffiliatePortal ? 'bg-emerald-900 text-white' : 'bg-white/10 text-white';
+    $sidebarMuted = $isAffiliatePortal ? 'text-emerald-100/70' : 'text-navy-100/70';
+    $sidebarText = $isAffiliatePortal ? 'text-emerald-100/80' : 'text-navy-100/80';
+    $portalTitle = $isAffiliatePortal ? 'Partner Portal' : $siteName;
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Dashboard') · {{ $siteName }}</title>
+    <title>@yield('title', 'Dashboard') · {{ $isAffiliatePortal ? $siteName.' Partner Portal' : $siteName }}</title>
     @if ($favicon)
         <link rel="icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
         <link rel="apple-touch-icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
@@ -17,18 +36,26 @@
     @stack('head')
 </head>
 <body class="bg-surface-muted text-ink-900 antialiased">
+    @if ($isAffiliatePortal)
+        <div class="bg-emerald-950 text-emerald-100 text-xs text-center py-1.5 px-4">
+            🤝 {{ $siteName }} Affiliate Partner Portal — this account earns commission, it doesn't have platform access.
+        </div>
+    @endif
     <div class="min-h-screen flex">
         {{-- Sidebar --}}
-        <aside class="w-64 shrink-0 bg-navy-900 text-white flex flex-col">
-            <div class="px-5 py-5 border-b border-white/10">
+        <aside class="w-64 shrink-0 {{ $sidebarBg }} text-white flex flex-col">
+            <div class="px-5 py-5 border-b {{ $sidebarBorder }}">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-display font-semibold text-lg">
-                    @if ($logo)
+                    @if ($logo && ! $isAffiliatePortal)
                         <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($logo) }}" alt="{{ $siteName }}" class="h-8 w-auto">
                     @else
-                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-gold-400 text-sm">{{ \Illuminate\Support\Str::of($siteName)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->implode('') }}</span>
-                        {{ $siteName }}
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-gold-400 text-sm">{{ $isAffiliatePortal ? '🤝' : \Illuminate\Support\Str::of($siteName)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->implode('') }}</span>
+                        {{ $portalTitle }}
                     @endif
                 </a>
+                @if ($isAffiliatePortal)
+                    <p class="text-[11px] text-emerald-100/60 mt-1">Powered by {{ $siteName }}</p>
+                @endif
             </div>
 
             <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
@@ -80,19 +107,29 @@
                             ['name' => 'api-access.index', 'match' => 'api-access.*', 'label' => 'API Access', 'icon' => '🔌'],
                             ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => '💬'],
                             ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => '💳'],
+                            ['name' => 'credit-topups.index', 'match' => 'credit-topups.*', 'label' => 'Buy Credits', 'icon' => '⚡'],
                         ]);
                 @endphp
                 @foreach ($items as $item)
                     <a href="{{ route($item['name'], $item['params'] ?? []) }}"
-                       class="flex items-center gap-3 rounded-md px-3 py-2 transition {{ request()->routeIs($item['match']) ? 'bg-white/10 text-white' : 'text-navy-100/80 hover:bg-white/5 hover:text-white' }}">
+                       class="flex items-center gap-3 rounded-md px-3 py-2 transition {{ request()->routeIs($item['match']) ? $sidebarActive : $sidebarText.' '.$sidebarHover.' hover:text-white' }}">
                         <span aria-hidden="true">{{ $item['icon'] }}</span>
                         <span>{{ $item['label'] }}</span>
                     </a>
                 @endforeach
             </nav>
 
-            <div class="px-3 py-4 border-t border-white/10 space-y-3">
-                @unless (auth()->user()->isAffiliateOnly())
+            @if ($isAffiliatePortal)
+                <div class="mx-3 mb-4 rounded-md bg-emerald-900/50 border border-emerald-800 px-3 py-2.5 text-xs">
+                    <div class="flex items-center justify-between {{ $sidebarMuted }}">
+                        <span>Commission rate</span>
+                        <span class="font-mono text-gold-400 font-semibold">{{ number_format(config('referrals.commission_rate') * 100) }}%</span>
+                    </div>
+                </div>
+            @endif
+
+            <div class="px-3 py-4 border-t {{ $sidebarBorder }} space-y-3">
+                @unless ($isAffiliatePortal)
                     <div class="rounded-md bg-white/5 px-3 py-2.5 text-xs">
                         <div class="flex items-center justify-between text-navy-100/70">
                             <span>Credits{{ auth()->user()->isSeat() ? ' (team)' : '' }}</span>
@@ -100,12 +137,12 @@
                         </div>
                     </div>
                 @endunless
-                <a href="{{ route('profile') }}" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-navy-100/80 hover:bg-white/5 hover:text-white">
+                <a href="{{ route('profile') }}" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm {{ $sidebarText }} {{ $sidebarHover }} hover:text-white">
                     <span aria-hidden="true">⚙️</span> Profile & Security
                 </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-navy-100/80 hover:bg-white/5 hover:text-white">
+                    <button type="submit" class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm {{ $sidebarText }} {{ $sidebarHover }} hover:text-white">
                         <span aria-hidden="true">↩</span> Sign out
                     </button>
                 </form>
@@ -115,7 +152,12 @@
         {{-- Main --}}
         <div class="flex-1 min-w-0">
             <header class="bg-surface border-b border-line px-6 py-4 flex items-center justify-between">
-                <h1 class="font-display font-semibold text-lg text-ink-900">@yield('title', 'Overview')</h1>
+                <div>
+                    <h1 class="font-display font-semibold text-lg text-ink-900">@yield('title', 'Overview')</h1>
+                    @if ($isAffiliatePortal)
+                        <p class="text-xs text-emerald-700">Affiliate Partner Portal</p>
+                    @endif
+                </div>
                 <div class="flex items-center gap-4">
                     <div id="notif-bell" class="relative">
                         <button type="button" id="notif-toggle" class="relative flex items-center justify-center h-9 w-9 rounded-md text-ink-600 hover:bg-surface-muted transition" aria-label="Notifications">

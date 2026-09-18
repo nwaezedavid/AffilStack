@@ -12,6 +12,8 @@
     $heroThumbUrl = $heroMediaType === 'youtube' ? \App\Models\HomepageFeature::youtubeThumbnailUrlFrom($heroYoutubeUrl) : null;
 
     $features = \App\Models\HomepageFeature::previewAwareActiveList();
+    $brandLogos = \App\Models\BrandLogo::activePublicList();
+    $testimonials = \App\Models\Testimonial::published();
 
     // Falls back to a real (not placeholder) description of the product
     // when the admin hasn't added any Homepage Features yet — an empty
@@ -45,6 +47,23 @@
             'url' => route('registration.pricing'),
         ],
     ];
+
+    // Real, admin-entered ratings only — never fabricated — and only once
+    // the same 3-testimonial minimum that gates the visible section has
+    // been met, so this never claims social proof the page itself doesn't
+    // show. Google's rich-result eligibility for AggregateRating also
+    // requires the rated ratings to be visible on the page, which they are
+    // in the Testimonials section below.
+    $ratedTestimonials = $testimonials->filter(fn ($t) => $t->rating);
+    if ($ratedTestimonials->isNotEmpty()) {
+        $jsonLd['aggregateRating'] = [
+            '@type' => 'AggregateRating',
+            'ratingValue' => round($ratedTestimonials->avg('rating'), 1),
+            'reviewCount' => $ratedTestimonials->count(),
+            'bestRating' => 5,
+            'worstRating' => 1,
+        ];
+    }
 ?>
 
 @section('title', $siteName.' — The all-in-one platform for affiliate marketers')
@@ -124,6 +143,45 @@
             </div>
         </div>
     </section>
+
+    {{-- Brand logos marquee — "that design that popular websites use to
+         show brands they've worked with (it's constantly moving in a
+         loop)". Admin-managed, unlimited list (Content → Brand Logos). The
+         list is duplicated once in the DOM so the CSS animation can loop
+         seamlessly from the duplicate back to the original with no visible
+         jump/reset. --}}
+    @if ($brandLogos->isNotEmpty())
+        <section class="border-y border-line bg-surface-muted py-8" aria-label="Brands we've worked with">
+            <p class="text-center text-xs uppercase tracking-wide text-ink-400 font-mono mb-5">Trusted by marketers promoting</p>
+            <div class="marquee-mask overflow-hidden">
+                <div class="marquee-track flex items-center gap-12">
+                    @foreach ($brandLogos->concat($brandLogos) as $logo)
+                        @php $img = '<img src="'.e($logo->logoUrl()).'" alt="'.e($logo->name).'" class="h-8 w-auto object-contain grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition" loading="lazy">'; @endphp
+                        @if ($logo->url)
+                            <a href="{{ $logo->url }}" target="_blank" rel="noopener sponsored" class="shrink-0">{!! $img !!}</a>
+                        @else
+                            <span class="shrink-0">{!! $img !!}</span>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+        </section>
+
+        @push('head')
+            <style>
+                .marquee-mask { mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); }
+                .marquee-track { width: max-content; animation: marquee-scroll 32s linear infinite; }
+                .marquee-mask:hover .marquee-track { animation-play-state: paused; }
+                @keyframes marquee-scroll {
+                    from { transform: translateX(0); }
+                    to { transform: translateX(-50%); }
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .marquee-track { animation: none; }
+                }
+            </style>
+        @endpush
+    @endif
 
     {{-- Feature grid --}}
     <section class="max-w-5xl mx-auto px-6 pb-20">
@@ -207,6 +265,9 @@
                     <p class="text-ink-600">Every click and sale is tracked automatically, with your leads saved in one built-in CRM.</p>
                 </div>
             </div>
+            <p class="text-center text-sm text-ink-600 mt-10">
+                Want a closer look? <a href="{{ route('tutorials.index') }}" class="text-brand-600 underline font-medium">Watch free tutorials in our Learning Centre →</a>
+            </p>
         </div>
     </section>
 
@@ -260,6 +321,41 @@
             </div>
         </div>
     </section>
+
+    {{-- Testimonials — "will appear as soon as I have a minimum of 3
+         updated in the admin dashboard area" (Testimonial::published()
+         enforces that threshold, so this section is either fully populated
+         or entirely absent, never a sparse one- or two-quote showing). --}}
+    @if ($testimonials->isNotEmpty())
+        <section class="max-w-5xl mx-auto px-6 py-20">
+            <div class="text-center max-w-2xl mx-auto mb-10">
+                <h2 class="font-display font-semibold text-2xl sm:text-3xl text-navy-900 text-wrap-balance">What affiliates are saying</h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                @foreach ($testimonials as $testimonial)
+                    <figure class="border border-line rounded-lg bg-surface p-6 flex flex-col gap-4">
+                        @if ($testimonial->rating)
+                            <div class="text-gold-500 text-sm" aria-hidden="true">{{ str_repeat('★', $testimonial->rating).str_repeat('☆', 5 - $testimonial->rating) }}</div>
+                        @endif
+                        <blockquote class="text-ink-900 flex-1">&ldquo;{{ $testimonial->quote }}&rdquo;</blockquote>
+                        <figcaption class="flex items-center gap-3">
+                            @if ($testimonial->avatarUrl())
+                                <img src="{{ $testimonial->avatarUrl() }}" alt="{{ $testimonial->author_name }}" class="h-10 w-10 rounded-full object-cover">
+                            @else
+                                <span class="h-10 w-10 rounded-full bg-navy-900 text-white flex items-center justify-center text-sm font-semibold" aria-hidden="true">{{ strtoupper(substr($testimonial->author_name, 0, 1)) }}</span>
+                            @endif
+                            <div>
+                                <div class="font-semibold text-navy-900">{{ $testimonial->author_name }}</div>
+                                @if ($testimonial->author_role)
+                                    <div class="text-xs text-ink-400">{{ $testimonial->author_role }}</div>
+                                @endif
+                            </div>
+                        </figcaption>
+                    </figure>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     {{-- Final CTA --}}
     <section class="max-w-5xl mx-auto px-6 pb-20 text-center">

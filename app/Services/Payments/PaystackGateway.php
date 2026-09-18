@@ -112,6 +112,41 @@ class PaystackGateway implements PaymentGateway
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    public function initiateOneTimeCheckout(User $user, int $amountCents, string $currency, string $description, array $meta): array
+    {
+        $txRef = 'affilstack_topup_'.Str::uuid();
+        // $amountCents arrives in the package's own currency (USD, same as
+        // every CreditPackage price) — converted to NGN kobo exactly like
+        // checkout() does for a plan, since Paystack always settles
+        // Nigerian cards in naira regardless of what's being purchased.
+        $amountKobo = (int) round(($amountCents / 100) * $this->exchangeRate() * 100);
+
+        $response = Http::withToken($this->secretKey())
+            ->baseUrl($this->baseUrl())
+            ->post('/transaction/initialize', [
+                'email' => $user->email,
+                'amount' => $amountKobo,
+                'currency' => 'NGN',
+                'reference' => $txRef,
+                'callback_url' => route('billing.callback', ['gateway' => $this->key()]),
+                'metadata' => array_merge($meta, ['tx_ref' => $txRef]),
+            ]);
+
+        if ($response->failed() || data_get($response->json(), 'status') !== true) {
+            throw new RuntimeException('Paystack one-time checkout initiation failed: '.$response->body());
+        }
+
+        return [
+            'link' => (string) data_get($response->json(), 'data.authorization_url'),
+            'tx_ref' => $txRef,
+            'amount_cents' => $amountKobo,
+            'currency' => 'NGN',
+        ];
+    }
+
     public function resolveFromCallback(Request $request): ?array
     {
         $reference = $request->query('reference') ?: $request->query('trxref');

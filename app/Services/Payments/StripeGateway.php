@@ -137,6 +137,51 @@ class StripeGateway implements PaymentGateway
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    public function initiateOneTimeCheckout(User $user, int $amountCents, string $currency, string $description, array $meta): array
+    {
+        $txRef = 'affilstack_topup_'.Str::uuid();
+        $meta = array_merge($meta, ['tx_ref' => $txRef]);
+
+        $response = $this->client()->post('/checkout/sessions', [
+            // No 'recurring' block on the price_data below — that's what
+            // makes this a one-time Stripe charge instead of a subscription
+            // (the only genuine code-path difference across all 4
+            // gateways; see class docblock and PaymentGateway::
+            // initiateOneTimeCheckout()'s docblock for why the other 3
+            // gateways don't need one).
+            'mode' => 'payment',
+            'customer_email' => $user->email,
+            'success_url' => route('billing.callback', ['gateway' => $this->key()]).'&session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => route('billing.index'),
+            'client_reference_id' => $txRef,
+            'metadata' => $meta,
+            'line_items' => [[
+                'quantity' => 1,
+                'price_data' => [
+                    'currency' => strtolower($currency),
+                    'unit_amount' => $amountCents,
+                    'product_data' => [
+                        'name' => 'AffilStack — '.$description,
+                    ],
+                ],
+            ]],
+        ]);
+
+        if ($response->failed() || ! $response->json('id')) {
+            throw new RuntimeException('Stripe one-time checkout session creation failed: '.$response->body());
+        }
+
+        return [
+            'link' => (string) $response->json('url'),
+            'tx_ref' => $txRef,
+            'amount_cents' => $amountCents,
+            'currency' => strtoupper($currency),
+        ];
+    }
+
     public function resolveFromCallback(Request $request): ?array
     {
         $sessionId = $request->query('session_id');

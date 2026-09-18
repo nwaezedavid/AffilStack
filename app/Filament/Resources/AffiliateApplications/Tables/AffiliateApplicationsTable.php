@@ -27,6 +27,15 @@ class AffiliateApplicationsTable
                     ->label('How they\'ll promote')
                     ->limit(80)
                     ->wrap(),
+                TextColumn::make('audience_size')
+                    ->label('Audience')
+                    ->formatStateUsing(fn (?string $state) => $state ? (AffiliateApplication::audienceSizeOptions()[$state] ?? $state) : '—')
+                    ->badge()
+                    ->color('gray'),
+                TextColumn::make('experience_level')
+                    ->label('Experience')
+                    ->formatStateUsing(fn (?string $state) => $state ? (AffiliateApplication::experienceLevelOptions()[$state] ?? $state) : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
                     ->badge()
                     ->colors([
@@ -43,6 +52,8 @@ class AffiliateApplicationsTable
                     'approved' => 'Approved',
                     'rejected' => 'Rejected',
                 ]),
+                SelectFilter::make('audience_size')->label('Audience')->options(AffiliateApplication::audienceSizeOptions()),
+                SelectFilter::make('experience_level')->label('Experience')->options(AffiliateApplication::experienceLevelOptions()),
             ])
             ->recordActions([
                 Action::make('viewMessage')

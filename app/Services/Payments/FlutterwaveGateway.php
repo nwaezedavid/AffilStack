@@ -113,6 +113,49 @@ class FlutterwaveGateway implements PaymentGateway
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    public function initiateOneTimeCheckout(User $user, int $amountCents, string $currency, string $description, array $meta): array
+    {
+        $txRef = 'affilstack_topup_'.Str::uuid();
+        $amount = $amountCents / 100;
+
+        $response = Http::withToken($this->secretKey())
+            ->baseUrl($this->baseUrl())
+            ->post('/payments', [
+                'tx_ref' => $txRef,
+                'amount' => $amount,
+                'currency' => $currency,
+                'redirect_url' => route('billing.callback', ['gateway' => $this->key()]),
+                'customer' => [
+                    'email' => $user->email,
+                    'name' => $user->name,
+                ],
+                'customizations' => [
+                    'title' => 'AffilStack',
+                    'description' => $description,
+                ],
+                // Flutterwave's Standard Checkout endpoint is already a
+                // one-time payment link under the hood regardless of what
+                // it's for — "subscription" only exists on AffilStack's own
+                // side (the Subscription model) — so this is the same /payments
+                // call as checkout() above, just without a Plan behind it.
+                'meta' => array_merge($meta, ['tx_ref' => $txRef]),
+            ]);
+
+        if ($response->failed() || data_get($response->json(), 'status') !== 'success') {
+            throw new RuntimeException('Flutterwave one-time checkout initiation failed: '.$response->body());
+        }
+
+        return [
+            'link' => (string) data_get($response->json(), 'data.link'),
+            'tx_ref' => $txRef,
+            'amount_cents' => $amountCents,
+            'currency' => $currency,
+        ];
+    }
+
     public function resolveFromCallback(Request $request): ?array
     {
         $txRef = $request->query('tx_ref');

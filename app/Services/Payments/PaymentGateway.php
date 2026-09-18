@@ -52,6 +52,23 @@ interface PaymentGateway
     public function initiateCheckout(User $user, Plan $plan, string $billingCycle, ?int $overrideAmountCents = null): array;
 
     /**
+     * A single, non-recurring charge with no Plan behind it — the credit
+     * top-up purchase flow (CreditTopupController). Unlike
+     * initiateCheckout(), $amountCents/$currency ARE what gets charged, not
+     * a plan price the gateway might convert; the caller (a CreditPackage)
+     * has already decided both. $meta round-trips through the gateway back
+     * to PaymentProcessor exactly like initiateCheckout()'s does, and must
+     * include whatever that gateway's resolveFromCallback()/
+     * resolveFromWebhook() already surfaces as the result's 'meta' key — at
+     * minimum 'tx_ref' is added automatically by each implementation, same
+     * as the plan-checkout methods.
+     *
+     * @param  array<string, mixed>  $meta
+     * @return array{link: string, tx_ref: string, amount_cents: int, currency: string}
+     */
+    public function initiateOneTimeCheckout(User $user, int $amountCents, string $currency, string $description, array $meta): array;
+
+    /**
      * Resolve the browser's return-from-checkout redirect into a normalized
      * result, or null if the request doesn't look like this gateway's
      * redirect at all (shouldn't normally happen — routes are gateway-

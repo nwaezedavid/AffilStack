@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AffiliateApplication;
+use App\Models\Plan;
 use App\Services\Referrals\AffiliateApplicationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use InvalidArgumentException;
 
@@ -19,7 +22,18 @@ class AffiliateController extends Controller
 {
     public function show(): View
     {
-        return view('marketing.affiliate');
+        return view('marketing.affiliate', [
+            // Drives the earnings calculator with real, current plan
+            // prices rather than hard-coded numbers that would drift out
+            // of sync with PlanResource edits.
+            'calculatorPlans' => Plan::activePublicList()->map(fn (Plan $plan) => [
+                'name' => $plan->name,
+                'priceMonthly' => $plan->priceMonthly(),
+                'isFeatured' => $plan->is_featured,
+            ])->values(),
+            'audienceSizeOptions' => AffiliateApplication::audienceSizeOptions(),
+            'experienceLevelOptions' => AffiliateApplication::experienceLevelOptions(),
+        ]);
     }
 
     public function apply(Request $request, AffiliateApplicationService $applications): RedirectResponse
@@ -28,7 +42,10 @@ class AffiliateController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
+            'website_url' => ['nullable', 'string', 'url', 'max:255'],
             'promotion_channels' => ['required', 'string', 'max:2000'],
+            'audience_size' => ['required', 'string', Rule::in(array_keys(AffiliateApplication::audienceSizeOptions()))],
+            'experience_level' => ['required', 'string', Rule::in(array_keys(AffiliateApplication::experienceLevelOptions()))],
             'message' => ['nullable', 'string', 'max:2000'],
         ]);
 

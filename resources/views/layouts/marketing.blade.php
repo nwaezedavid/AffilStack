@@ -30,12 +30,20 @@
         <meta name="google-site-verification" content="{{ $gscVerification }}">
     @endif
     <meta property="og:site_name" content="{{ $siteName }}">
+    <meta property="og:type" content="website">
     <meta property="og:title" content="@yield('title', $siteName)">
     @if ($metaDescription)
         <meta property="og:description" content="{{ $metaDescription }}">
     @endif
     @if ($ogImage)
         <meta property="og:image" content="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($ogImage) }}">
+        <meta name="twitter:card" content="summary_large_image">
+    @else
+        <meta name="twitter:card" content="summary">
+    @endif
+    <meta name="twitter:title" content="@yield('title', $siteName)">
+    @if ($metaDescription)
+        <meta name="twitter:description" content="{{ $metaDescription }}">
     @endif
     @if ($favicon)
         <link rel="icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
@@ -72,12 +80,15 @@
                 @foreach ($menuItems as $item)
                     <a href="{{ $item['url'] ?? '#' }}" class="text-ink-600 hover:text-ink-900">{{ $item['label'] ?? '' }}</a>
                 @endforeach
+                <a href="{{ route('affiliate.landing') }}" class="text-ink-600 hover:text-ink-900">Affiliate Program</a>
                 @if ($blogUrl)
                     <a href="{{ $blogUrl }}" class="text-ink-600 hover:text-ink-900">Blog</a>
                 @endif
+                <a href="{{ route('tutorials.index') }}" class="text-ink-600 hover:text-ink-900">Learning Centre</a>
                 <a href="{{ route('registration.pricing') }}" class="text-ink-600 hover:text-ink-900">Pricing</a>
                 <a href="{{ route('help.index') }}" class="text-ink-600 hover:text-ink-900">Help</a>
                 <a href="{{ route('login') }}" class="text-ink-600 hover:text-ink-900">Sign in</a>
+                <a href="{{ route('registration.pricing') }}" class="rounded-md bg-navy-900 text-white px-4 py-2 text-sm font-medium hover:bg-navy-800 transition">Get started</a>
             </div>
         </div>
     </header>
@@ -100,6 +111,7 @@
             <a href="{{ route('about') }}" class="hover:text-ink-600">About</a>
             <a href="{{ route('contact.show') }}" class="hover:text-ink-600">Contact</a>
             <a href="{{ route('help.index') }}" class="hover:text-ink-600">Help</a>
+            <a href="{{ route('tutorials.index') }}" class="hover:text-ink-600">Learning Centre</a>
             <a href="{{ route('terms') }}" class="hover:text-ink-600">Terms</a>
             <a href="{{ route('privacy') }}" class="hover:text-ink-600">Privacy</a>
             <a href="{{ route('refund-policy') }}" class="hover:text-ink-600">Refunds</a>

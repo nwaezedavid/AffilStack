@@ -16,12 +16,41 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * account this creates once approved.
  */
 #[Fillable([
-    'name', 'email', 'phone', 'promotion_channels', 'message', 'status', 'rejection_reason',
+    'name', 'email', 'phone', 'website_url', 'promotion_channels', 'audience_size',
+    'experience_level', 'message', 'status', 'rejection_reason',
     'applied_at', 'reviewed_at', 'reviewed_by_id', 'approved_user_id',
     'set_password_token', 'set_password_expires_at',
 ])]
 class AffiliateApplication extends Model
 {
+    /**
+     * Options for the audience_size field — landing-page select and the
+     * Filament table/filter both read from this single source of truth.
+     *
+     * @return array<string, string>
+     */
+    public static function audienceSizeOptions(): array
+    {
+        return [
+            'under_1k' => 'Under 1,000',
+            '1k_10k' => '1,000 – 10,000',
+            '10k_100k' => '10,000 – 100,000',
+            'over_100k' => '100,000+',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function experienceLevelOptions(): array
+    {
+        return [
+            'new' => 'New to affiliate marketing',
+            'some_experience' => 'Some experience',
+            'experienced' => 'Experienced affiliate marketer',
+        ];
+    }
+
     protected function casts(): array
     {
         return [

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'user_id', 'subscription_id', 'pending_signup_id', 'type', 'gateway', 'gateway_tx_id', 'gateway_reference', 'tx_ref',
+    'user_id', 'subscription_id', 'pending_signup_id', 'credit_package_id', 'type', 'gateway', 'gateway_tx_id', 'gateway_reference', 'tx_ref',
     'amount_cents', 'currency', 'status', 'raw_payload', 'processed_at',
 ])]
 class PaymentTransaction extends Model
@@ -33,6 +33,11 @@ class PaymentTransaction extends Model
     public function pendingSignup(): BelongsTo
     {
         return $this->belongsTo(PendingSignup::class);
+    }
+
+    public function creditPackage(): BelongsTo
+    {
+        return $this->belongsTo(CreditPackage::class);
     }
 
     public function amount(): float

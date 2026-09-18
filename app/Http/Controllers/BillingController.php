@@ -185,6 +185,14 @@ class BillingController extends Controller
         $transaction = $processor->process($gatewayKey, $result);
 
         if ($transaction && $transaction->status === 'successful') {
+            if ($transaction->type === 'credit_topup') {
+                $credits = $transaction->creditPackage?->credits;
+
+                return redirect()->route('billing.index')->with('success', $credits
+                    ? number_format($credits).' credits have been added to your account.'
+                    : 'Your credit top-up has been added to your account.');
+            }
+
             return redirect()->route('dashboard')->with('success', 'Your plan is now active. Welcome to AffilStack.');
         }
 

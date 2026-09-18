@@ -51,7 +51,10 @@ class AffiliateApplicationTest extends TestCase
             'name' => 'Jamie Rivera',
             'email' => 'jamie@example.com',
             'phone' => '555-1234',
+            'website_url' => 'https://jamierivera.example.com',
             'promotion_channels' => 'YouTube channel with 50k subscribers',
+            'audience_size' => '10k_100k',
+            'experience_level' => 'experienced',
             'message' => 'Excited to promote this!',
         ]);
 
@@ -73,6 +76,8 @@ class AffiliateApplicationTest extends TestCase
             'name' => 'Existing Person',
             'email' => 'existing@example.com',
             'promotion_channels' => 'Blog',
+            'audience_size' => 'under_1k',
+            'experience_level' => 'new',
         ]);
 
         $response->assertRedirect()->assertSessionHas('error');
@@ -93,6 +98,8 @@ class AffiliateApplicationTest extends TestCase
             'name' => 'Jamie Rivera',
             'email' => 'jamie@example.com',
             'promotion_channels' => 'YouTube again',
+            'audience_size' => 'under_1k',
+            'experience_level' => 'new',
         ]);
 
         $response->assertRedirect()->assertSessionHas('error');
@@ -267,6 +274,36 @@ class AffiliateApplicationTest extends TestCase
         $user->assignRole('user');
 
         $this->actingAs($user)->get(route('offers.index'))->assertSuccessful();
+    }
+
+    /**
+     * "I believe they will need a separate dashboard, different from the
+     * users who are actual paid members" — the affiliate-only account
+     * shares the exact same routes and layout file as a paying customer,
+     * but renders a distinctly-branded "Partner Portal" shell instead of
+     * the customer dashboard, so the two are never visually interchangeable.
+     */
+    public function test_an_affiliate_only_account_sees_the_distinct_partner_portal_branding(): void
+    {
+        $affiliate = User::factory()->create(['is_affiliate_only' => true]);
+        $affiliate->assignRole('user');
+
+        $response = $this->actingAs($affiliate)->get(route('referrals.index'));
+
+        $response->assertSuccessful();
+        $response->assertSee('Partner Portal');
+        $response->assertDontSee('Credits', false);
+    }
+
+    public function test_a_paying_customer_does_not_see_the_partner_portal_branding(): void
+    {
+        $customer = User::factory()->create(['is_affiliate_only' => false]);
+        $customer->assignRole('user');
+
+        $response = $this->actingAs($customer)->get(route('dashboard'));
+
+        $response->assertSuccessful();
+        $response->assertDontSee('Partner Portal');
     }
 
     public function test_an_admin_can_approve_and_reject_applications_from_the_filament_table(): void

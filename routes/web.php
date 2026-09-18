@@ -6,6 +6,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CheckoutCountryController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CreativeTaskPreviewController;
+use App\Http\Controllers\CreditTopupController;
 use App\Http\Controllers\CrmEmailTrackingController;
 use App\Http\Controllers\Dashboard\ApiAccessController;
 use App\Http\Controllers\Dashboard\BlogController;
@@ -50,6 +51,7 @@ use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\TutorialController;
 use Illuminate\Support\Facades\Route;
 
 // Audit item #7 (caching/performance) — every page in this group has no
@@ -61,6 +63,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('cache-public-page')->group(function () {
     Route::view('/', 'marketing.home')->name('home');
     Route::get('/help', [HelpController::class, 'index'])->name('help.index');
+    Route::get('/learn', [TutorialController::class, 'index'])->name('tutorials.index');
 
     // Static, admin-editable pages — content lives in the site_pages table
     // (Filament: Content > Site Pages) so legal copy can be updated without
@@ -172,6 +175,15 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::delete('/billing/scheduled-change', [BillingController::class, 'cancelScheduledChange'])->name('billing.cancel-scheduled-change');
     Route::get('/billing/callback', [BillingController::class, 'callback'])->name('billing.callback');
     Route::post('/billing/refund', [BillingController::class, 'requestRefund'])->name('billing.request-refund');
+
+    // "Users should be able to buy more credit tokens if their monthly
+    // allocation finishes" — a one-time purchase, entirely separate from
+    // the plan-checkout flow above. Reuses billing.callback for the actual
+    // payment confirmation (see BillingController::callback() and
+    // PaymentProcessor::process()'s 'credit_topup' branch) — only the
+    // checkout-initiation step needed a new route/controller.
+    Route::get('/credits/top-up', [CreditTopupController::class, 'index'])->name('credit-topups.index');
+    Route::post('/credits/top-up/{package}/checkout', [CreditTopupController::class, 'checkout'])->name('credit-topups.checkout');
 
     // Saved payment methods (audit item #2) — captured passively, see
     // PaymentMethodRecorder; these two actions are all a user can do here.

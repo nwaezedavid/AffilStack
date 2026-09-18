@@ -7,6 +7,7 @@
         <div class="bg-surface border border-line rounded-lg p-5">
             <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Credits remaining</div>
             <div class="text-2xl font-display font-semibold text-navy-900">{{ number_format($balance) }}</div>
+            <a href="{{ route('credit-topups.index') }}" class="text-xs text-brand-600 hover:text-brand-700 font-medium">Buy more credits &rarr;</a>
         </div>
         <div class="bg-surface border border-line rounded-lg p-5">
             <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Current plan</div>

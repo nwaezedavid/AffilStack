@@ -162,6 +162,56 @@ class PayPalGateway implements PaymentGateway
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    public function initiateOneTimeCheckout(User $user, int $amountCents, string $currency, string $description, array $meta): array
+    {
+        $txRef = 'affilstack_topup_'.Str::uuid();
+        $amount = $amountCents / 100;
+        $currency = strtoupper($currency);
+
+        // The Orders API call below is already identical in shape to
+        // checkout()'s — PayPal has no separate "subscription" primitive
+        // here at all, "intent: CAPTURE" is a one-time charge either way —
+        // so nothing about this request is actually gateway-specific to
+        // top-ups beyond the metadata/description.
+        $response = $this->client()->post('/v2/checkout/orders', [
+            'intent' => 'CAPTURE',
+            'purchase_units' => [[
+                'reference_id' => $txRef,
+                'custom_id' => json_encode(array_merge($meta, ['tx_ref' => $txRef])),
+                'description' => 'AffilStack — '.$description,
+                'amount' => [
+                    'currency_code' => $currency,
+                    'value' => number_format($amount, 2, '.', ''),
+                ],
+            ]],
+            'application_context' => [
+                'brand_name' => 'AffilStack',
+                'return_url' => route('billing.callback', ['gateway' => $this->key()]),
+                'cancel_url' => route('billing.index'),
+            ],
+        ]);
+
+        if ($response->failed()) {
+            throw new RuntimeException('PayPal one-time order creation failed: '.$response->body());
+        }
+
+        $approveLink = collect($response->json('links', []))->firstWhere('rel', 'approve');
+
+        if (! $approveLink) {
+            throw new RuntimeException('PayPal one-time order creation did not return an approval link: '.$response->body());
+        }
+
+        return [
+            'link' => (string) $approveLink['href'],
+            'tx_ref' => $txRef,
+            'amount_cents' => $amountCents,
+            'currency' => $currency,
+        ];
+    }
+
     public function resolveFromCallback(Request $request): ?array
     {
         $orderId = $request->query('token');

@@ -88,7 +88,40 @@ class PaymentProcessor
             $this->activateSubscription($transaction, $gateway, $result);
         }
 
+        if ($transaction->type === 'credit_topup') {
+            $this->grantCreditTopup($transaction, $gateway, $result);
+        }
+
         return $transaction;
+    }
+
+    /**
+     * "Users should be able to buy more credit tokens if their monthly
+     * allocation finishes" — the credit_package_id column IS the purchase
+     * record (see its migration), so there's nothing to look up in $result
+     * beyond recording the payment method; the credit amount comes straight
+     * off the package the checkout controller already attached.
+     *
+     * @param  array<string, mixed>  $result
+     */
+    protected function grantCreditTopup(PaymentTransaction $transaction, string $gateway, array $result): void
+    {
+        $package = $transaction->creditPackage;
+
+        if (! $package || ! $transaction->user_id) {
+            Log::error('Credit top-up payment succeeded but package or user could not be resolved', ['gateway' => $gateway, 'tx_ref' => $transaction->tx_ref]);
+
+            return;
+        }
+
+        $this->paymentMethods->record($transaction->user, $gateway, $result);
+
+        $this->credits->grant(
+            $transaction->user,
+            $package->credits,
+            'credit_topup_purchase',
+            $transaction
+        );
     }
 
     /**
