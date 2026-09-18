@@ -11,14 +11,24 @@ use Illuminate\Support\Facades\Cache;
  * and body the admin can edit from Filament without a code deploy. Looked
  * up by slug — see PageController.
  */
-#[Fillable(['slug', 'title', 'meta_description', 'content', 'is_published'])]
+#[Fillable(['slug', 'title', 'seo_title', 'meta_description', 'og_image_path', 'focus_keyword', 'content', 'is_published', 'no_index'])]
 class SitePage extends Model
 {
     protected function casts(): array
     {
         return [
             'is_published' => 'boolean',
+            'no_index' => 'boolean',
         ];
+    }
+
+    /**
+     * The <title>/OG title to actually render — falls back to the on-page
+     * H1 (`title`) when an admin hasn't written a separate SEO title.
+     */
+    public function displayTitle(): string
+    {
+        return $this->seo_title ?: $this->title;
     }
 
     /**

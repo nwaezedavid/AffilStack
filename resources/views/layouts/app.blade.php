@@ -21,6 +21,10 @@
     $sidebarMuted = $isAffiliatePortal ? 'text-emerald-100/70' : 'text-navy-100/70';
     $sidebarText = $isAffiliatePortal ? 'text-emerald-100/80' : 'text-navy-100/80';
     $portalTitle = $isAffiliatePortal ? 'Partner Portal' : $siteName;
+    $gaId = \App\Models\SiteSetting::get('seo_ga_id');
+    $metaPixelId = \App\Models\SiteSetting::get('seo_meta_pixel_id');
+    $tiktokPixelId = \App\Models\SiteSetting::get('seo_tiktok_pixel_id');
+    $gtmPublicId = \App\Models\GoogleSiteAnalyticsSetting::current()->credential('gtm_public_id');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -33,9 +37,11 @@
         <link rel="apple-touch-icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
     @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.tracking-head')
     @stack('head')
 </head>
 <body class="bg-surface-muted text-ink-900 antialiased">
+    @include('partials.tracking-body')
     @if ($isAffiliatePortal)
         <div class="bg-emerald-950 text-emerald-100 text-xs text-center py-1.5 px-4">
             🤝 {{ $siteName }} Affiliate Partner Portal — this account earns commission, it doesn't have platform access.

@@ -3,13 +3,16 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\ConnectionsHealth;
+use App\Models\BingWebmasterSetting;
 use App\Models\BrainAgentSetting;
 use App\Models\GoogleOauthSetting;
+use App\Models\GoogleSiteAnalyticsSetting;
 use App\Models\HeyGenSetting;
 use App\Models\InstagramSetting;
 use App\Models\LinkedInOauthSetting;
 use App\Models\PartnerStackSetting;
 use App\Models\PaymentGatewaySetting;
+use App\Models\SiteSetting;
 use App\Models\TikTokSetting;
 use App\Models\User;
 use App\Services\AI\AIProvider;
@@ -50,6 +53,73 @@ class ConnectionsHealthTest extends TestCase
         InstagramSetting::current();
         HeyGenSetting::current();
         BrainAgentSetting::current();
+        BingWebmasterSetting::current();
+        GoogleSiteAnalyticsSetting::current();
+    }
+
+    /**
+     * Task: "enhance the Analytics and SEO... have my AI agent assist in
+     * making sure each connection is successful" — the 6 new Analytics &
+     * SEO items must show up here the same way every other integration
+     * does, not as a second, disconnected status screen.
+     */
+    public function test_the_six_new_analytics_and_seo_items_appear_unconfigured_by_default(): void
+    {
+        $items = app(SettingsHealthChecker::class)->items();
+
+        foreach (['google_analytics', 'search_console', 'tag_manager', 'bing_webmaster', 'meta_pixel', 'tiktok_pixel'] as $key) {
+            $item = collect($items)->firstWhere('key', $key);
+            $this->assertNotNull($item, "{$key} should be present in the health check inventory.");
+            $this->assertSame('Analytics & SEO', $item['group']);
+            $this->assertFalse($item['is_configured']);
+        }
+    }
+
+    public function test_google_analytics_and_tag_manager_report_configured_once_provisioned(): void
+    {
+        GoogleSiteAnalyticsSetting::current()->update([
+            'is_enabled' => true,
+            'credentials' => ['ga_measurement_id' => 'G-ABC123', 'gtm_public_id' => 'GTM-XYZ'],
+        ]);
+
+        $items = app(SettingsHealthChecker::class)->items();
+
+        $this->assertTrue(collect($items)->firstWhere('key', 'google_analytics')['is_configured']);
+        $this->assertTrue(collect($items)->firstWhere('key', 'tag_manager')['is_configured']);
+    }
+
+    public function test_meta_and_tiktok_pixels_report_configured_once_a_pixel_id_is_saved(): void
+    {
+        SiteSetting::set('seo_meta_pixel_id', '123456789012345');
+        SiteSetting::set('seo_tiktok_pixel_id', 'CXXXXXXXXXXXXXXXXXXX');
+
+        $items = app(SettingsHealthChecker::class)->items();
+
+        $this->assertTrue(collect($items)->firstWhere('key', 'meta_pixel')['is_configured']);
+        $this->assertTrue(collect($items)->firstWhere('key', 'tiktok_pixel')['is_configured']);
+    }
+
+    public function test_running_live_checks_verifies_bing_and_persists_the_result(): void
+    {
+        BingWebmasterSetting::current()->update(['credentials' => ['api_key' => 'a-bing-key']]);
+        Http::fake(['ssl.bing.com/*' => Http::response(['d' => []])]);
+
+        app(SettingsHealthChecker::class)->runLiveChecks();
+
+        $bing = BingWebmasterSetting::current();
+        $this->assertSame('failed', $bing->verification_status);
+        $this->assertNotNull($bing->verified_at);
+    }
+
+    public function test_running_live_checks_only_re_verifies_search_console_once_google_is_actually_connected(): void
+    {
+        Http::fake(fn () => Http::response([], 401));
+
+        // Not connected yet — no Search Console call should be attempted,
+        // and no verification status should be written.
+        app(SettingsHealthChecker::class)->runLiveChecks();
+
+        $this->assertNull(GoogleSiteAnalyticsSetting::current()->verification_status);
     }
 
     public function test_an_unconfigured_item_reports_not_configured_and_never_checked(): void

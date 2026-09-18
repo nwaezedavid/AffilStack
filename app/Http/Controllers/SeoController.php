@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SitePage;
 use App\Models\SiteSetting;
 use Illuminate\Http\Response;
 
@@ -43,6 +44,16 @@ class SeoController extends Controller
 
         if ($blogUrl = SiteSetting::get('seo_blog_url')) {
             $urls[] = ['loc' => rtrim($blogUrl, '/'), 'priority' => '0.8'];
+        }
+
+        // Static admin-editable pages (Terms, Privacy, etc.) — see
+        // PageController/SitePage. "about" is excluded here — it's already
+        // hardcoded above with its own priority so it's never missing from
+        // the sitemap even on a fresh install with no site_pages rows yet.
+        // A no_index page is deliberately kept out of search results, so it
+        // has no business being listed here either.
+        foreach (SitePage::where('is_published', true)->where('no_index', false)->where('slug', '!=', 'about')->get() as $page) {
+            $urls[] = ['loc' => url("/{$page->slug}"), 'priority' => '0.4', 'lastmod' => $page->updated_at->toAtomString()];
         }
 
         $xml = view('sitemap', compact('urls'))->render();

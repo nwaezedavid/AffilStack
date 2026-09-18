@@ -1,10 +1,21 @@
 @extends('layouts.marketing')
 
-@section('title', $page->title.' — '.\App\Models\SiteSetting::get('site_name', 'AffilStack'))
+@section('title', $page->displayTitle().' — '.\App\Models\SiteSetting::get('site_name', 'AffilStack'))
 @section('meta_description', $page->meta_description ?: '')
+@if ($page->og_image_path)
+    @section('og_image', \Illuminate\Support\Facades\Storage::disk('public')->url($page->og_image_path))
+@endif
+@if ($page->no_index)
+    @section('robots', 'noindex, follow')
+@endif
 
 @section('content')
     <article class="max-w-3xl mx-auto px-6 py-16">
+        <x-breadcrumbs :trail="[
+            ['label' => 'Home', 'url' => route('home')],
+            ['label' => $page->title, 'url' => null],
+        ]" />
+
         <h1 class="font-display font-semibold text-3xl sm:text-4xl text-navy-900 text-wrap-balance">{{ $page->title }}</h1>
         <p class="text-xs text-ink-400 mt-2">Last updated {{ $page->updated_at->format('F j, Y') }}</p>
 

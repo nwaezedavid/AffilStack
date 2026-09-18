@@ -4,6 +4,27 @@
 
 @section('meta_description', 'Answers to common questions about AffilStack — offer research, LinkedIn content, blog articles, billing, and your account.')
 
+<?php
+    // FAQPage rich-result eligibility just needs every question/answer
+    // pair actually visible on the page, which the <details> list below
+    // already is — same "only claim what's genuinely on the page" rule
+    // the homepage's AggregateRating already follows.
+    $faqJsonLd = [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => $groups->flatten()->map(fn ($item) => [
+            '@type' => 'Question',
+            'name' => $item->question,
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => $item->answer],
+        ])->values()->all(),
+    ];
+?>
+@if (! empty($faqJsonLd['mainEntity']))
+    @push('head')
+        <script type="application/ld+json">{!! json_encode($faqJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    @endpush
+@endif
+
 @section('content')
     <div class="max-w-3xl mx-auto px-6 py-14">
         <h1 class="font-display text-3xl font-semibold text-navy-900 mb-2">Help & FAQ</h1>

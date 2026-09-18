@@ -2,15 +2,20 @@
 
 namespace App\Services\Settings;
 
+use App\Models\BingWebmasterSetting;
 use App\Models\BrainAgentSetting;
 use App\Models\GoogleOauthSetting;
+use App\Models\GoogleSiteAnalyticsSetting;
 use App\Models\HeyGenSetting;
 use App\Models\InstagramSetting;
 use App\Models\LinkedInOauthSetting;
 use App\Models\PartnerStackSetting;
 use App\Models\PaymentGatewaySetting;
+use App\Models\SiteSetting;
 use App\Models\TikTokSetting;
 use App\Services\AI\AnthropicClient;
+use App\Services\Analytics\BingWebmasterClient;
+use App\Services\Analytics\GoogleSiteAnalyticsService;
 use App\Services\Auth\GoogleOAuthService;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Referrals\PartnerStackClient;
@@ -69,6 +74,12 @@ class SettingsHealthChecker
             $this->heyGenItem(),
             $this->anthropicItem(),
             $this->metaMcpItem(),
+            $this->googleAnalyticsItem(),
+            $this->searchConsoleItem(),
+            $this->tagManagerItem(),
+            $this->bingItem(),
+            $this->metaPixelItem(),
+            $this->tiktokPixelItem(),
         ];
     }
 
@@ -138,6 +149,24 @@ class SettingsHealthChecker
                 'meta_mcp_verified_at' => now(),
                 'meta_mcp_verification_status' => $mcpResult['success'] ? 'success' : 'failed',
                 'meta_mcp_verification_message' => $mcpResult['message'],
+            ]);
+        }
+
+        $bing = BingWebmasterSetting::current();
+        $bingResult = (new BingWebmasterClient((string) $bing->credential('api_key')))->verifySite(rtrim(url('/'), '/'));
+        $bing->update([
+            'verified_at' => now(),
+            'verification_status' => $bingResult['success'] ? 'success' : 'failed',
+            'verification_message' => $bingResult['message'],
+        ]);
+
+        $siteAnalytics = GoogleSiteAnalyticsSetting::current();
+        if ($siteAnalytics->isConnected()) {
+            $gscResult = app(GoogleSiteAnalyticsService::class)->verifySearchConsole();
+            $siteAnalytics->update([
+                'verified_at' => now(),
+                'verification_status' => $gscResult['success'] ? 'success' : 'failed',
+                'verification_message' => $gscResult['message'],
             ]);
         }
 
@@ -359,6 +388,148 @@ class SettingsHealthChecker
             'message' => $settings->meta_mcp_verification_message,
             'live_checkable' => true,
             'frontend_hint' => 'Approve & launch a drafted campaign from the Brain dashboard.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function googleAnalyticsItem(): array
+    {
+        $settings = GoogleSiteAnalyticsSetting::current();
+
+        return [
+            'key' => 'google_analytics',
+            'label' => 'Google Analytics 4',
+            'group' => 'Analytics & SEO',
+            'what_it_does' => 'Tracks visitor behavior sitewide.',
+            'settings_url' => route('filament.admin.pages.google-site-analytics-settings'),
+            'is_enabled' => $settings->is_enabled,
+            'is_configured' => $settings->hasGa4(),
+            'checked_at' => null,
+            'success' => $settings->hasGa4() ? true : null,
+            'message' => $settings->hasGa4()
+                ? "Measurement ID {$settings->credential('ga_measurement_id')} — tracking is live."
+                : 'Connect with Google, then create the GA4 property from Site > Site Analytics.',
+            'live_checkable' => false,
+            'frontend_hint' => 'View Realtime reports in Google Analytics while browsing the site yourself.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function searchConsoleItem(): array
+    {
+        $settings = GoogleSiteAnalyticsSetting::current();
+
+        return [
+            'key' => 'search_console',
+            'label' => 'Google Search Console',
+            'group' => 'Analytics & SEO',
+            'what_it_does' => 'Confirms Google indexes this site and submits the sitemap.',
+            'settings_url' => route('filament.admin.pages.google-site-analytics-settings'),
+            'is_enabled' => $settings->is_enabled,
+            'is_configured' => $settings->hasSearchConsole(),
+            'checked_at' => $settings->verified_at,
+            'success' => $this->tristate($settings->verification_status),
+            'message' => $settings->verification_message,
+            'live_checkable' => $settings->isConnected(),
+            'frontend_hint' => 'Check the Coverage report in Search Console once the site has been live a few days.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function tagManagerItem(): array
+    {
+        $settings = GoogleSiteAnalyticsSetting::current();
+
+        return [
+            'key' => 'tag_manager',
+            'label' => 'Google Tag Manager',
+            'group' => 'Analytics & SEO',
+            'what_it_does' => 'Single container for every tracking tag sitewide (takes over from the bare GA4 snippet once set up).',
+            'settings_url' => route('filament.admin.pages.google-site-analytics-settings'),
+            'is_enabled' => $settings->is_enabled,
+            'is_configured' => $settings->hasTagManager(),
+            'checked_at' => null,
+            'success' => $settings->hasTagManager() ? true : null,
+            'message' => $settings->hasTagManager()
+                ? "Container {$settings->credential('gtm_public_id')} is injected sitewide."
+                : 'Connect with Google, then create the container from Site > Site Analytics.',
+            'live_checkable' => false,
+            'frontend_hint' => 'Use Tag Manager\'s own Preview mode against the live site.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function bingItem(): array
+    {
+        $settings = BingWebmasterSetting::current();
+
+        return [
+            'key' => 'bing_webmaster',
+            'label' => 'Bing Webmaster Tools',
+            'group' => 'Analytics & SEO',
+            'what_it_does' => 'Confirms Bing indexes this site and submits the sitemap.',
+            'settings_url' => route('filament.admin.pages.bing-webmaster-settings'),
+            'is_enabled' => $settings->is_enabled,
+            'is_configured' => $settings->isConfigured(),
+            'checked_at' => $settings->verified_at,
+            'success' => $this->tristate($settings->verification_status),
+            'message' => $settings->verification_message,
+            'live_checkable' => true,
+            'frontend_hint' => 'Check the Site Explorer report in Bing Webmaster Tools once the site has been live a few days.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function metaPixelItem(): array
+    {
+        $pixelId = SiteSetting::get('seo_meta_pixel_id');
+
+        return [
+            'key' => 'meta_pixel',
+            'label' => 'Meta Pixel',
+            'group' => 'Analytics & SEO',
+            'what_it_does' => 'Tracks page views for Meta/Facebook/Instagram ad campaigns.',
+            'settings_url' => route('filament.admin.pages.seo-settings'),
+            'is_enabled' => filled($pixelId),
+            'is_configured' => filled($pixelId),
+            'checked_at' => null,
+            'success' => null,
+            'message' => filled($pixelId) ? "Pixel {$pixelId} is injected sitewide." : 'Not configured yet.',
+            'live_checkable' => false,
+            'frontend_hint' => 'Use Meta Events Manager\'s "Test events" tool against the live site.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function tiktokPixelItem(): array
+    {
+        $pixelId = SiteSetting::get('seo_tiktok_pixel_id');
+
+        return [
+            'key' => 'tiktok_pixel',
+            'label' => 'TikTok Pixel',
+            'group' => 'Analytics & SEO',
+            'what_it_does' => 'Tracks page views for TikTok ad campaigns.',
+            'settings_url' => route('filament.admin.pages.seo-settings'),
+            'is_enabled' => filled($pixelId),
+            'is_configured' => filled($pixelId),
+            'checked_at' => null,
+            'success' => null,
+            'message' => filled($pixelId) ? "Pixel {$pixelId} is injected sitewide." : 'Not configured yet.',
+            'live_checkable' => false,
+            'frontend_hint' => 'Use TikTok Events Manager\'s diagnostics tool against the live site.',
         ];
     }
 }

@@ -49,8 +49,15 @@ class SeoSettings extends Page
             'seo_og_image_path' => SiteSetting::get('seo_og_image_path'),
             'seo_ga_id' => SiteSetting::get('seo_ga_id'),
             'seo_gsc_verification' => SiteSetting::get('seo_gsc_verification'),
+            'seo_meta_pixel_id' => SiteSetting::get('seo_meta_pixel_id'),
+            'seo_tiktok_pixel_id' => SiteSetting::get('seo_tiktok_pixel_id'),
             'seo_blog_url' => SiteSetting::get('seo_blog_url'),
             'seo_robots_txt' => SiteSetting::get('seo_robots_txt', "User-agent: *\nAllow: /\n\nSitemap: ".url('/sitemap.xml')),
+            'seo_social_facebook' => SiteSetting::get('seo_social_facebook'),
+            'seo_social_twitter' => SiteSetting::get('seo_social_twitter'),
+            'seo_social_linkedin' => SiteSetting::get('seo_social_linkedin'),
+            'seo_social_instagram' => SiteSetting::get('seo_social_instagram'),
+            'seo_social_youtube' => SiteSetting::get('seo_social_youtube'),
         ]);
     }
 
@@ -85,14 +92,50 @@ class SeoSettings extends Page
                     ]),
 
                 Section::make('Verification & analytics')
+                    ->description('For a real Google connection that auto-creates the property and verifies Search Console for you, use Site > Site Analytics instead — these fields are the manual fallback and stay in sync with it either way.')
                     ->columns(2)
                     ->components([
                         TextInput::make('seo_ga_id')
                             ->label('Google Analytics measurement ID')
-                            ->placeholder('G-XXXXXXXXXX'),
+                            ->placeholder('G-XXXXXXXXXX')
+                            ->helperText('Only used when no Tag Manager container is connected under Site > Site Analytics — GTM takes over sitewide tracking once set up.'),
                         TextInput::make('seo_gsc_verification')
                             ->label('Google Search Console verification code')
                             ->helperText('The "content" value from Google\'s HTML tag verification method — paste just the code, not the full tag.'),
+                    ]),
+
+                Section::make('Ad conversion pixels')
+                    ->description('Base tracking code only (page views) — configure conversion events from each platform\'s own ads manager.')
+                    ->columns(2)
+                    ->components([
+                        TextInput::make('seo_meta_pixel_id')
+                            ->label('Meta Pixel ID')
+                            // Deliberately NOT ->numeric(): Filament's numeric
+                            // state cast round-trips the value through
+                            // floatval(), which silently corrupts a real
+                            // 15-16 digit pixel ID into scientific notation
+                            // (e.g. "123456789012345" -> "1.2345E+14"). This
+                            // is an opaque identifier, not a value to do math
+                            // on — validate its shape with a plain regex rule
+                            // instead.
+                            ->rule('regex:/^\d{5,20}$/')
+                            ->placeholder('123456789012345')
+                            ->helperText('From Meta Events Manager > Data Sources > your pixel > Settings.'),
+                        TextInput::make('seo_tiktok_pixel_id')
+                            ->label('TikTok Pixel ID')
+                            ->placeholder('CXXXXXXXXXXXXXXXXXXX')
+                            ->helperText('From TikTok Events Manager > your pixel > Details.'),
+                    ]),
+
+                Section::make('Social profiles')
+                    ->description('Feeds the sitewide Organization schema (sameAs) so search engines connect this site to your real profiles — a Knowledge Panel prerequisite.')
+                    ->columns(2)
+                    ->components([
+                        TextInput::make('seo_social_facebook')->label('Facebook URL')->url(),
+                        TextInput::make('seo_social_twitter')->label('X / Twitter URL')->url(),
+                        TextInput::make('seo_social_linkedin')->label('LinkedIn URL')->url(),
+                        TextInput::make('seo_social_instagram')->label('Instagram URL')->url(),
+                        TextInput::make('seo_social_youtube')->label('YouTube URL')->url(),
                     ]),
 
                 Section::make('robots.txt')

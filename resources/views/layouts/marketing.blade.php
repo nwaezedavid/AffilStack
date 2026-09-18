@@ -13,9 +13,53 @@
     $menuItems = is_array($menuItemsRaw) ? $menuItemsRaw : (json_decode((string) $menuItemsRaw, true) ?: []);
     $blogUrl = \App\Models\SiteSetting::get('seo_blog_url');
     $metaDescription = trim(($__env->yieldContent('meta_description')) ?: \App\Models\SiteSetting::get('seo_meta_description', ''));
-    $ogImage = \App\Models\SiteSetting::get('seo_og_image_path');
+    // A per-page @section('og_image', ...) (see marketing/page.blade.php)
+    // already resolves to a full URL; the sitewide default is a bare
+    // storage path that still needs wrapping — never both at once, since a
+    // duplicate og:image tag's precedence varies by crawler.
+    $ogImageOverride = trim($__env->yieldContent('og_image') ?: '');
+    $ogImage = $ogImageOverride ?: (($path = \App\Models\SiteSetting::get('seo_og_image_path')) ? \Illuminate\Support\Facades\Storage::disk('public')->url($path) : null);
+    $robotsDirective = trim($__env->yieldContent('robots') ?: '');
     $gaId = \App\Models\SiteSetting::get('seo_ga_id');
     $gscVerification = \App\Models\SiteSetting::get('seo_gsc_verification');
+    $metaPixelId = \App\Models\SiteSetting::get('seo_meta_pixel_id');
+    $tiktokPixelId = \App\Models\SiteSetting::get('seo_tiktok_pixel_id');
+    $bingVerification = \App\Models\BingWebmasterSetting::current()->verification_code;
+    // Once a Tag Manager container is connected (Site > Site Analytics),
+    // GTM is the single sitewide tracking snippet — GA4 is expected to be
+    // configured as a tag INSIDE that container rather than injected twice.
+    // The bare gtag.js snippet below is only the manual-entry fallback for
+    // sites that haven't connected Tag Manager.
+    $gtmPublicId = \App\Models\GoogleSiteAnalyticsSetting::current()->credential('gtm_public_id');
+
+    // Sitewide Organization + WebSite structured data (every page, not just
+    // the homepage's own SoftwareApplication schema) — a Knowledge Panel
+    // prerequisite. sameAs only includes profiles an admin actually filled
+    // in under Site > SEO, never a fabricated/empty link.
+    $sameAs = array_values(array_filter([
+        \App\Models\SiteSetting::get('seo_social_facebook'),
+        \App\Models\SiteSetting::get('seo_social_twitter'),
+        \App\Models\SiteSetting::get('seo_social_linkedin'),
+        \App\Models\SiteSetting::get('seo_social_instagram'),
+        \App\Models\SiteSetting::get('seo_social_youtube'),
+    ]));
+    $organizationJsonLd = array_filter([
+        '@context' => 'https://schema.org',
+        '@graph' => [
+            array_filter([
+                '@type' => 'Organization',
+                'name' => $siteName,
+                'url' => route('home'),
+                'logo' => $logo ? \Illuminate\Support\Facades\Storage::disk('public')->url($logo) : null,
+                'sameAs' => $sameAs ?: null,
+            ]),
+            [
+                '@type' => 'WebSite',
+                'name' => $siteName,
+                'url' => route('home'),
+            ],
+        ],
+    ]);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -29,6 +73,12 @@
     @if ($gscVerification)
         <meta name="google-site-verification" content="{{ $gscVerification }}">
     @endif
+    @if ($bingVerification)
+        <meta name="msvalidate.01" content="{{ $bingVerification }}">
+    @endif
+    @if ($robotsDirective)
+        <meta name="robots" content="{{ $robotsDirective }}">
+    @endif
     <meta property="og:site_name" content="{{ $siteName }}">
     <meta property="og:type" content="website">
     <meta property="og:title" content="@yield('title', $siteName)">
@@ -36,7 +86,7 @@
         <meta property="og:description" content="{{ $metaDescription }}">
     @endif
     @if ($ogImage)
-        <meta property="og:image" content="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($ogImage) }}">
+        <meta property="og:image" content="{{ $ogImage }}">
         <meta name="twitter:card" content="summary_large_image">
     @else
         <meta name="twitter:card" content="summary">
@@ -50,19 +100,13 @@
         <link rel="apple-touch-icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
     @endif
     <link rel="canonical" href="{{ url()->current() }}">
+    <script type="application/ld+json">{!! json_encode($organizationJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @if ($gaId)
-        <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', @json($gaId));
-        </script>
-    @endif
+    @include('partials.tracking-head')
     @stack('head')
 </head>
 <body class="bg-surface text-ink-900 antialiased">
+    @include('partials.tracking-body')
     @if ($announcement)
         <div class="bg-navy-900 text-white text-xs text-center py-2 px-4">{{ $announcement }}</div>
     @endif

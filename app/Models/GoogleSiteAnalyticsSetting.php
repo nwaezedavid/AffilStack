@@ -1,0 +1,72 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Model;
+
+/**
+ * Single-row (id=1) admin configuration for the "Connect with Google" site
+ * analytics feature: one OAuth grant (reusing GoogleOauthSetting's client
+ * id/secret, same pattern as GmailOAuthService/YouTubePublishingService)
+ * requesting Analytics + Search Console + Tag Manager scopes together, then
+ * auto-provisioning a GA4 property, a verified Search Console site, and a
+ * GTM container — see GoogleSiteAnalyticsService for the actual API calls.
+ *
+ * credentials holds both the OAuth tokens (access_token/refresh_token/
+ * expires_at) and every resource id this connection has provisioned
+ * (ga_account, ga_property, ga_measurement_id, gsc_site_url,
+ * gtm_account_id, gtm_container_id, gtm_public_id) — all encrypted at
+ * rest, same shape as every other *Setting model in this app.
+ */
+#[Fillable(['is_enabled', 'credentials', 'connected_email', 'connected_at', 'verified_at', 'verification_status', 'verification_message'])]
+class GoogleSiteAnalyticsSetting extends Model
+{
+    protected function casts(): array
+    {
+        return [
+            'is_enabled' => 'boolean',
+            'credentials' => 'encrypted:array',
+            'connected_at' => 'datetime',
+            'verified_at' => 'datetime',
+        ];
+    }
+
+    public static function current(): self
+    {
+        return static::query()->firstOrCreate(['id' => 1], ['is_enabled' => false]);
+    }
+
+    public function credential(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->credentials, $key, $default);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function credentialsArray(): array
+    {
+        return $this->credentials ?? [];
+    }
+
+    public function isConnected(): bool
+    {
+        return filled($this->credential('refresh_token'));
+    }
+
+    public function hasGa4(): bool
+    {
+        return filled($this->credential('ga_measurement_id'));
+    }
+
+    public function hasSearchConsole(): bool
+    {
+        return filled($this->credential('gsc_site_url')) && filled($this->credential('gsc_verified_at'));
+    }
+
+    public function hasTagManager(): bool
+    {
+        return filled($this->credential('gtm_public_id'));
+    }
+}

@@ -39,6 +39,7 @@ use App\Http\Controllers\Dashboard\XController;
 use App\Http\Controllers\Dashboard\YouTubeController;
 use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\GoogleSiteAnalyticsController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\NotificationController;
@@ -47,6 +48,7 @@ use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\PayPalWebhookController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RedirectFallbackController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SeoController;
@@ -167,6 +169,11 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->
 // group above since it has nothing to do with a user's own account. See
 // CreativeTaskPreviewController — nothing here writes to the database.
 Route::middleware('auth')->get('/admin-preview/creative-tasks/{agentTask}', [CreativeTaskPreviewController::class, 'show'])->name('creative-tasks.preview');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/admin/google-site-analytics/connect', [GoogleSiteAnalyticsController::class, 'redirect'])->name('google-site-analytics.connect');
+    Route::get('/admin/google-site-analytics/callback', [GoogleSiteAnalyticsController::class, 'callback'])->name('google-site-analytics.callback');
+});
 
 Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats', 'restrict-affiliate-only'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -334,3 +341,9 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::post('/support/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('support.reply');
     Route::post('/support/{ticket}/rate', [SupportTicketController::class, 'rate'])->name('support.rate');
 });
+
+// RankMath-style redirects manager + 404 monitor (see Redirect/NotFoundLog).
+// Must stay the LAST route registered: Route::fallback() only ever fires
+// once every route above has already failed to match, and it deliberately
+// skips the admin panel/API/webhook paths inside the controller itself.
+Route::fallback([RedirectFallbackController::class, 'handle']);

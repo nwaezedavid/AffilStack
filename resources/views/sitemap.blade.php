@@ -4,6 +4,9 @@
     <url>
         <loc>{{ $url['loc'] }}</loc>
         <priority>{{ $url['priority'] }}</priority>
+        @if ($url['lastmod'] ?? null)
+            <lastmod>{{ $url['lastmod'] }}</lastmod>
+        @endif
     </url>
 @endforeach
 </urlset>
