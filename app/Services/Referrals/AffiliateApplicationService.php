@@ -47,7 +47,7 @@ class AffiliateApplicationService
             'applied_at' => now(),
         ]);
 
-        $supportEmail = SiteSetting::get('support_email') ?: config('mail.from.address');
+        $supportEmail = SiteSetting::get('support_email', 'support@affilstack.com');
 
         if ($supportEmail) {
             Notification::route('mail', $supportEmail)->notify(new AffiliateApplicationReceived($application));

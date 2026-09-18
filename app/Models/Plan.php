@@ -100,4 +100,28 @@ class Plan extends Model
     {
         return $this->price_yearly_cents / 100;
     }
+
+    /**
+     * Human-readable labels for every value the `channels` array can hold
+     * — the single source of truth for both the admin Plan form's
+     * checkbox list and the public pricing page's "everything included"
+     * breakdown, so the two can never drift into showing different names
+     * for the same channel key.
+     *
+     * @return array<string, string>
+     */
+    public static function channelLabels(): array
+    {
+        return [
+            'research' => 'Offer research',
+            'blog' => 'Blog / Medium articles',
+            'linkedin' => 'LinkedIn',
+            'youtube' => 'YouTube',
+            'ugc' => 'UGC',
+            'pinterest' => 'Pinterest',
+            'google_maps' => 'Google Maps CRM',
+            'x' => 'X (Twitter)',
+            'tiktok' => 'TikTok',
+        ];
+    }
 }

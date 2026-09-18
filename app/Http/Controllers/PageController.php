@@ -30,6 +30,16 @@ class PageController extends Controller
         // Audit item #7 (caching/performance) — see SitePage::published().
         $page = SitePage::published($slug);
 
+        // /about is a permanent, structural page like /pricing or /contact
+        // now (task #161) — its real content lives in the about_* SiteSetting
+        // fields (Site > About Page), not this row's rich-text body. The
+        // SitePage row still supplies SEO title/description/OG image when
+        // an admin has set them, but its own is_published state never
+        // 404s/redirects the page the way it does for a generic admin page.
+        if ($slug === 'about') {
+            return view('marketing.about', ['page' => $page]);
+        }
+
         if (! $page) {
             return $this->responder->respond($request, $slug);
         }

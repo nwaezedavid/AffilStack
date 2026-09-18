@@ -57,7 +57,7 @@ class BrandSettings extends Page
                 return is_array($menuItemsRaw) ? $menuItemsRaw : (json_decode((string) $menuItemsRaw, true) ?: []);
             })(SiteSetting::get('menu_items', '[]')),
             'header_announcement' => SiteSetting::get('header_announcement'),
-            'support_email' => SiteSetting::get('support_email', config('mail.from.address')),
+            'support_email' => SiteSetting::get('support_email', 'support@affilstack.com'),
             'footer_text' => SiteSetting::get('footer_text', '© '.date('Y').' AffilStack.'),
             'hero_headline' => SiteSetting::get('hero_headline'),
             'hero_subheadline' => SiteSetting::get('hero_subheadline'),

@@ -163,6 +163,7 @@
             <a href="{{ route('refund-policy') }}" class="hover:text-ink-600">Refunds</a>
             <a href="{{ route('cookie-policy') }}" class="hover:text-ink-600">Cookies</a>
         </div>
+        <x-social-links class="justify-center mb-4" />
         {{ $footerText }}
     </footer>
 </body>

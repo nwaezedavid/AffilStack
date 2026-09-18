@@ -128,7 +128,7 @@ class SeoSettings extends Page
                     ]),
 
                 Section::make('Social profiles')
-                    ->description('Feeds the sitewide Organization schema (sameAs) so search engines connect this site to your real profiles — a Knowledge Panel prerequisite.')
+                    ->description('Feeds the sitewide Organization schema (sameAs) for search engines, and also populates the social icons shown in the site footer and on the Contact page — one set of links, used everywhere.')
                     ->columns(2)
                     ->components([
                         TextInput::make('seo_social_facebook')->label('Facebook URL')->url(),

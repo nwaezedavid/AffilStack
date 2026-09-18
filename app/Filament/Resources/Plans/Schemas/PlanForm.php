@@ -83,17 +83,7 @@ class PlanForm
                 Section::make('Access')
                     ->components([
                         CheckboxList::make('channels')
-                            ->options([
-                                'research' => 'Offer research',
-                                'blog' => 'Blog / Medium articles',
-                                'linkedin' => 'LinkedIn',
-                                'youtube' => 'YouTube',
-                                'ugc' => 'UGC',
-                                'pinterest' => 'Pinterest',
-                                'google_maps' => 'Google Maps CRM',
-                                'x' => 'X (Twitter)',
-                                'tiktok' => 'TikTok',
-                            ])
+                            ->options(Plan::channelLabels())
                             ->columns(4),
                         KeyValue::make('features')
                             ->label('Extra feature flags (optional)')

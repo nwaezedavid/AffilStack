@@ -359,12 +359,17 @@ class RedirectsAndNotFoundMonitorTest extends TestCase
 
     public function test_unpublishing_an_existing_site_page_still_goes_through_the_redirect_and_404_monitor_safety_net(): void
     {
-        $page = SitePage::create(['slug' => 'about', 'title' => 'About', 'content' => 'Hello', 'is_published' => true]);
+        // 'terms' rather than 'about' — /about became a permanent,
+        // always-rendered structural page (task #161, like /pricing or
+        // /contact) whose content lives in about_* SiteSetting fields, not
+        // this row, so unpublishing its SitePage row no longer 404s it.
+        // See PageController::show()'s 'about' special case.
+        $page = SitePage::create(['slug' => 'terms', 'title' => 'Terms', 'content' => 'Hello', 'is_published' => true]);
         $page->update(['is_published' => false]);
 
-        $response = $this->get('/about');
+        $response = $this->get('/terms');
 
         $response->assertNotFound();
-        $this->assertSame(1, NotFoundLog::where('path', 'about')->count());
+        $this->assertSame(1, NotFoundLog::where('path', 'terms')->count());
     }
 }
