@@ -102,9 +102,10 @@ class Redirect extends Model
      * component (so a redirect chain can still be followed through one);
      * a full URL on any other host returns null, since it leaves this
      * app's own redirect table entirely and can never contribute to a
-     * cycle within it.
+     * cycle within it. Public: SiteLinkHealthChecker reuses this exact
+     * same-host-vs-offsite distinction when following a chain of its own.
      */
-    protected static function normalizeInternalPath(string $path): ?string
+    public static function normalizeInternalPath(string $path): ?string
     {
         $path = trim($path);
 

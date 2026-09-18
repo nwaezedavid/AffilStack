@@ -7,6 +7,7 @@ use App\Filament\Resources\Redirects\Pages\CreateRedirect;
 use App\Filament\Resources\Redirects\Pages\EditRedirect;
 use App\Models\NotFoundLog;
 use App\Models\Redirect;
+use App\Models\SitePage;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -309,5 +310,61 @@ class RedirectsAndNotFoundMonitorTest extends TestCase
         Livewire::actingAs($user)
             ->test(CreateRedirect::class)
             ->assertForbidden();
+    }
+
+    /**
+     * Regression test for a real routing bug found in review: only five
+     * SitePage slugs (about/terms/privacy/refund-policy/cookie-policy) had
+     * their own dedicated route — the Filament "Site Pages" form has always
+     * accepted any free-text slug ("The page URL, e.g. 'about' for
+     * /about"), so an admin creating a sixth page had no live URL to reach
+     * it at all; it fell straight through to the generic 404 fallback. The
+     * new catch-all /{slug} route (PageController::show) fixes this.
+     */
+    public function test_an_admin_created_page_with_a_novel_slug_is_publicly_reachable(): void
+    {
+        SitePage::create([
+            'slug' => 'shipping-policy',
+            'title' => 'Shipping Policy',
+            'content' => 'We ship worldwide.',
+            'is_published' => true,
+        ]);
+
+        $response = $this->get('/shipping-policy');
+
+        $response->assertOk();
+        $response->assertSee('We ship worldwide.', false);
+    }
+
+    /**
+     * The generic /{slug} route matches almost any single-segment path, so
+     * a slug with no published page behind it must fall through to the
+     * exact same redirect/404-monitor safety net as a path that matched no
+     * route at all — not a bare framework 404 that bypasses both.
+     */
+    public function test_an_unknown_slug_still_goes_through_the_redirect_and_404_monitor_safety_net(): void
+    {
+        $response = $this->get('/does-not-exist-anywhere');
+
+        $response->assertNotFound();
+        $this->assertSame(1, NotFoundLog::where('path', 'does-not-exist-anywhere')->count());
+    }
+
+    public function test_a_redirect_for_a_single_segment_path_still_wins_over_the_generic_slug_route(): void
+    {
+        Redirect::create(['from_path' => 'old-single-page', 'to_path' => '/pricing', 'status_code' => 301]);
+
+        $this->get('/old-single-page')->assertRedirect('/pricing')->assertStatus(301);
+    }
+
+    public function test_unpublishing_an_existing_site_page_still_goes_through_the_redirect_and_404_monitor_safety_net(): void
+    {
+        $page = SitePage::create(['slug' => 'about', 'title' => 'About', 'content' => 'Hello', 'is_published' => true]);
+        $page->update(['is_published' => false]);
+
+        $response = $this->get('/about');
+
+        $response->assertNotFound();
+        $this->assertSame(1, NotFoundLog::where('path', 'about')->count());
     }
 }

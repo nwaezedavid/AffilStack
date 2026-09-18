@@ -342,6 +342,20 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::post('/support/{ticket}/rate', [SupportTicketController::class, 'rate'])->name('support.rate');
 });
 
+// Any admin-created SitePage whose slug isn't one of the five dedicated
+// routes above (About/Terms/Privacy/Refund Policy/Cookie Policy) lands
+// here — the Filament "Site Pages" form accepts any free-text slug, so
+// without this a brand-new page would have no live URL at all. Registered
+// this late (right before the final fallback, after every other
+// single-segment route in this file) so it can never shadow a real route
+// like /help, /pricing, or /dashboard — Laravel matches routes in
+// registration order and those all come first. The slug constraint keeps
+// it from swallowing anything that isn't actually slug-shaped.
+Route::middleware('cache-public-page')
+    ->get('/{slug}', [PageController::class, 'show'])
+    ->where('slug', '[a-z0-9-]+')
+    ->name('page.show');
+
 // RankMath-style redirects manager + 404 monitor (see Redirect/NotFoundLog).
 // Must stay the LAST route registered: Route::fallback() only ever fires
 // once every route above has already failed to match, and it deliberately

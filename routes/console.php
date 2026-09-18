@@ -95,6 +95,14 @@ ScheduleMonitoring::track(
     'integrations:check-funding-health',
 );
 
+// The active half of the 404 monitor — see SiteLinkHealthChecker. Every
+// hour rather than daily since it's cheap (in-process requests, no real
+// network calls) and a dead link is worth catching quickly.
+ScheduleMonitoring::track(
+    Schedule::command('seo:check-links')->hourly()->withoutOverlapping(),
+    'seo:check-links',
+);
+
 // Self-maintenance: keep the run-history table itself from growing forever.
 Schedule::call(fn () => ScheduledTaskRun::where('created_at', '<', now()->subDays(30))->delete())
     ->daily()
