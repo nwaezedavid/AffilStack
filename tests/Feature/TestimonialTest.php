@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Testimonials\Pages\ListTestimonials;
 use App\Filament\Resources\Testimonials\TestimonialResource;
 use App\Models\Testimonial;
 use App\Models\User;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -101,5 +103,121 @@ class TestimonialTest extends TestCase
 
         $subAccount->syncPermissions(['department.content']);
         $this->assertTrue(TestimonialResource::canAccess());
+    }
+
+    /**
+     * "I want users to be able to submit their review from their dashboard
+     * and it will then appear in the admin dashboard area where I can
+     * review, edit and approve it." See TestimonialController for the
+     * dashboard side of this.
+     */
+    public function test_a_customer_can_submit_a_testimonial_from_their_dashboard(): void
+    {
+        $user = User::factory()->create(['name' => 'Alex Customer']);
+        $user->assignRole('user');
+
+        $response = $this->actingAs($user)->post(route('testimonial.update'), [
+            'author_name' => 'Alex C.',
+            'author_role' => 'Affiliate marketer',
+            'quote' => 'AffilStack changed how I run my whole business.',
+            'rating' => 5,
+        ]);
+
+        $response->assertRedirect()->assertSessionHas('success');
+
+        $testimonial = Testimonial::where('user_id', $user->id)->first();
+        $this->assertNotNull($testimonial);
+        $this->assertTrue($testimonial->isPending());
+        $this->assertFalse($testimonial->is_published);
+        $this->assertSame('Alex C.', $testimonial->author_name);
+    }
+
+    public function test_a_pending_submission_never_counts_toward_the_homepage_even_at_the_minimum(): void
+    {
+        Testimonial::factory()->count(2)->create(['is_published' => true]);
+        Testimonial::factory()->pending()->create(['author_name' => 'Awaiting Review']);
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertDontSee('What affiliates are saying');
+        $response->assertDontSee('Awaiting Review');
+    }
+
+    public function test_resubmitting_sends_an_already_approved_testimonial_back_to_pending(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('user');
+
+        $existing = Testimonial::factory()->create([
+            'user_id' => $user->id,
+            'quote' => 'Original quote.',
+            'status' => Testimonial::STATUS_APPROVED,
+            'is_published' => true,
+        ]);
+
+        $this->actingAs($user)->post(route('testimonial.update'), [
+            'author_name' => $existing->author_name,
+            'quote' => 'An updated, different quote.',
+            'rating' => 4,
+        ]);
+
+        $existing->refresh();
+        $this->assertTrue($existing->isPending());
+        $this->assertFalse($existing->is_published);
+        $this->assertSame('An updated, different quote.', $existing->quote);
+
+        // Still only one row for this user — an update, not a duplicate.
+        $this->assertSame(1, Testimonial::where('user_id', $user->id)->count());
+    }
+
+    public function test_an_affiliate_only_account_cannot_submit_a_testimonial(): void
+    {
+        $affiliate = User::factory()->create(['is_affiliate_only' => true]);
+        $affiliate->assignRole('user');
+
+        $this->actingAs($affiliate)->get(route('testimonial.edit'))->assertForbidden();
+    }
+
+    public function test_an_admin_can_approve_a_pending_testimonial_from_the_table(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $pending = Testimonial::factory()->pending()->create();
+
+        Livewire::actingAs($admin)
+            ->test(ListTestimonials::class)
+            ->callTableAction('approve', $pending);
+
+        $pending->refresh();
+        $this->assertTrue($pending->status === Testimonial::STATUS_APPROVED);
+        $this->assertTrue($pending->is_published);
+    }
+
+    public function test_an_admin_can_decline_a_pending_testimonial_from_the_table(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $pending = Testimonial::factory()->pending()->create();
+
+        Livewire::actingAs($admin)
+            ->test(ListTestimonials::class)
+            ->callTableAction('decline', $pending);
+
+        $pending->refresh();
+        $this->assertSame(Testimonial::STATUS_DECLINED, $pending->status);
+        $this->assertFalse($pending->is_published);
+    }
+
+    public function test_the_navigation_badge_reflects_the_pending_count(): void
+    {
+        $this->assertNull(TestimonialResource::getNavigationBadge());
+
+        Testimonial::factory()->pending()->create();
+        Testimonial::factory()->pending()->create();
+
+        $this->assertSame('2', TestimonialResource::getNavigationBadge());
     }
 }

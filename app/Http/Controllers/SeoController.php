@@ -26,15 +26,20 @@ class SeoController extends Controller
         $urls = [
             ['loc' => route('home'), 'priority' => '1.0'],
             ['loc' => route('registration.pricing'), 'priority' => '0.9'],
-            // The affiliate landing page is its own acquisition channel
-            // (task: "design the best landing page for the affiliate
-            // program") — worth the same priority tier as pricing since
-            // both are conversion entry points, not just informational.
-            ['loc' => route('affiliate.landing'), 'priority' => '0.9'],
             ['loc' => route('tutorials.index'), 'priority' => '0.7'],
             ['loc' => route('about'), 'priority' => '0.5'],
             ['loc' => route('help.index'), 'priority' => '0.5'],
         ];
+
+        // The affiliate landing page is its own acquisition channel (task:
+        // "design the best landing page for the affiliate program") — worth
+        // the same priority tier as pricing since both are conversion entry
+        // points, not just informational. Dropped from the sitemap entirely
+        // while an admin has turned the in-house program off (Filament:
+        // Billing > Affiliate Program) — see AffiliateController::show().
+        if (SiteSetting::flag('affiliate_program_enabled')) {
+            $urls[] = ['loc' => route('affiliate.landing'), 'priority' => '0.9'];
+        }
 
         if ($blogUrl = SiteSetting::get('seo_blog_url')) {
             $urls[] = ['loc' => rtrim($blogUrl, '/'), 'priority' => '0.8'];

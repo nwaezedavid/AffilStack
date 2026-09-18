@@ -32,6 +32,25 @@ class SiteSetting extends Model
     }
 
     /**
+     * Convenience for a boolean-style setting. The underlying store is a
+     * plain string column (see the migration), so a Filament Toggle's
+     * boolean state must be written as '1'/'0' rather than a real bool —
+     * see setFlag(). Reading tolerates either shape (a real bool from a
+     * Tony preview override, or the '1'/'0' string this normally reads
+     * back as) since (bool) casts both correctly ('0' is falsy, '1' and
+     * true are truthy).
+     */
+    public static function flag(string $key, bool $default = true): bool
+    {
+        return (bool) static::get($key, $default ? '1' : '0');
+    }
+
+    public static function setFlag(string $key, bool $value): void
+    {
+        static::set($key, $value ? '1' : '0');
+    }
+
+    /**
      * Lets a pending Tony (the Creative Agent) branding task preview
      * exactly how the real public templates would render with its
      * proposed values — every SiteSetting::get() call made inside

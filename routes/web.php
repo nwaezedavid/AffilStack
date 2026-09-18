@@ -51,6 +51,7 @@ use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\TutorialController;
 use Illuminate\Support\Facades\Route;
 
@@ -184,6 +185,12 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     // checkout-initiation step needed a new route/controller.
     Route::get('/credits/top-up', [CreditTopupController::class, 'index'])->name('credit-topups.index');
     Route::post('/credits/top-up/{package}/checkout', [CreditTopupController::class, 'checkout'])->name('credit-topups.checkout');
+
+    // "I want users to be able to submit their review from their dashboard"
+    // — one testimonial per account; see TestimonialController for why a
+    // re-submission always goes back to pending review.
+    Route::get('/my-review', [TestimonialController::class, 'edit'])->name('testimonial.edit');
+    Route::post('/my-review', [TestimonialController::class, 'update'])->name('testimonial.update');
 
     // Saved payment methods (audit item #2) — captured passively, see
     // PaymentMethodRecorder; these two actions are all a user can do here.

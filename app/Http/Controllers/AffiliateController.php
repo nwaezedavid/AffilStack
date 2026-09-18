@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AffiliateApplication;
 use App\Models\Plan;
+use App\Models\SiteSetting;
 use App\Services\Referrals\AffiliateApplicationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,8 +21,12 @@ use InvalidArgumentException;
  */
 class AffiliateController extends Controller
 {
-    public function show(): View
+    public function show(): View|RedirectResponse
     {
+        if (! SiteSetting::flag('affiliate_program_enabled')) {
+            return redirect()->route('home')->with('error', 'Our affiliate program isn\'t accepting new applications right now.');
+        }
+
         return view('marketing.affiliate', [
             // Drives the earnings calculator with real, current plan
             // prices rather than hard-coded numbers that would drift out

@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\AffiliateProgramSettings;
 use App\Filament\Resources\AffiliateApplications\AffiliateApplicationResource;
 use App\Filament\Resources\AffiliateApplications\Pages\ListAffiliateApplications;
 use App\Models\AffiliateApplication;
+use App\Models\SiteSetting;
 use App\Models\User;
 use App\Notifications\AffiliateApplicationApproved;
 use App\Notifications\AffiliateApplicationReceived;
@@ -351,5 +353,95 @@ class AffiliateApplicationTest extends TestCase
 
         $subAccount->syncPermissions(['department.billing']);
         $this->assertTrue(AffiliateApplicationResource::canAccess());
+    }
+
+    /**
+     * "If for any reason in the future I decided to discontinue the
+     * in-house affiliate program and switch to external network like
+     * Partnerstack, I should be able to toggle the feature off from my
+     * dashboard and remove it from the menu." See
+     * AffiliateProgramSettings/SiteSetting::flag('affiliate_program_enabled').
+     */
+    public function test_the_menu_link_is_hidden_once_the_program_is_turned_off(): void
+    {
+        $this->get('/')->assertSee('Affiliate Program');
+
+        SiteSetting::setFlag('affiliate_program_enabled', false);
+
+        $this->get('/')->assertDontSee('Affiliate Program');
+    }
+
+    public function test_the_public_landing_page_redirects_home_once_turned_off(): void
+    {
+        SiteSetting::setFlag('affiliate_program_enabled', false);
+
+        $this->get(route('affiliate.landing'))
+            ->assertRedirect(route('home'))
+            ->assertSessionHas('error');
+    }
+
+    public function test_a_direct_post_to_apply_is_rejected_once_turned_off(): void
+    {
+        SiteSetting::setFlag('affiliate_program_enabled', false);
+
+        $response = $this->post(route('affiliate.apply'), [
+            'name' => 'Jamie Rivera',
+            'email' => 'jamie@example.com',
+            'promotion_channels' => 'YouTube',
+            'audience_size' => 'under_1k',
+            'experience_level' => 'new',
+        ]);
+
+        $response->assertRedirect()->assertSessionHas('error');
+        $this->assertSame(0, AffiliateApplication::where('email', 'jamie@example.com')->count());
+    }
+
+    public function test_the_sitemap_drops_the_landing_page_once_turned_off(): void
+    {
+        SiteSetting::setFlag('affiliate_program_enabled', false);
+
+        $this->get('/sitemap.xml')->assertDontSee(route('affiliate.landing'), false);
+    }
+
+    public function test_an_already_approved_affiliate_keeps_full_portal_access_once_the_program_is_turned_off(): void
+    {
+        SiteSetting::setFlag('affiliate_program_enabled', false);
+
+        $affiliate = User::factory()->create(['is_affiliate_only' => true]);
+        $affiliate->assignRole('user');
+
+        $this->actingAs($affiliate)->get(route('referrals.index'))->assertSuccessful();
+    }
+
+    public function test_an_admin_can_toggle_the_affiliate_program_from_the_settings_page(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(AffiliateProgramSettings::class)
+            ->fillForm(['affiliate_program_enabled' => false])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertFalse(SiteSetting::flag('affiliate_program_enabled'));
+
+        Livewire::actingAs($this->admin)
+            ->test(AffiliateProgramSettings::class)
+            ->fillForm(['affiliate_program_enabled' => true])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertTrue(SiteSetting::flag('affiliate_program_enabled'));
+    }
+
+    public function test_a_department_scoped_sub_account_without_billing_access_cannot_reach_the_settings_page(): void
+    {
+        $subAccount = User::factory()->create();
+        $subAccount->assignRole('admin_sub');
+        $subAccount->syncPermissions([]);
+
+        $this->actingAs($subAccount);
+        $this->assertFalse(AffiliateProgramSettings::canAccess());
+
+        $subAccount->syncPermissions(['department.billing']);
+        $this->assertTrue(AffiliateProgramSettings::canAccess());
     }
 }

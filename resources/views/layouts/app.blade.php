@@ -108,6 +108,7 @@
                             ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => '💬'],
                             ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => '💳'],
                             ['name' => 'credit-topups.index', 'match' => 'credit-topups.*', 'label' => 'Buy Credits', 'icon' => '⚡'],
+                            ['name' => 'testimonial.edit', 'match' => 'testimonial.*', 'label' => 'Share a Review', 'icon' => '⭐'],
                         ]);
                 @endphp
                 @foreach ($items as $item)

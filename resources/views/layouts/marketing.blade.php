@@ -80,7 +80,9 @@
                 @foreach ($menuItems as $item)
                     <a href="{{ $item['url'] ?? '#' }}" class="text-ink-600 hover:text-ink-900">{{ $item['label'] ?? '' }}</a>
                 @endforeach
-                <a href="{{ route('affiliate.landing') }}" class="text-ink-600 hover:text-ink-900">Affiliate Program</a>
+                @if (\App\Models\SiteSetting::flag('affiliate_program_enabled'))
+                    <a href="{{ route('affiliate.landing') }}" class="text-ink-600 hover:text-ink-900">Affiliate Program</a>
+                @endif
                 @if ($blogUrl)
                     <a href="{{ $blogUrl }}" class="text-ink-600 hover:text-ink-900">Blog</a>
                 @endif

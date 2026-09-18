@@ -29,6 +29,10 @@ class AffiliateApplicationService
      */
     public function submit(array $data): AffiliateApplication
     {
+        if (! SiteSetting::flag('affiliate_program_enabled')) {
+            throw new InvalidArgumentException('Our affiliate program isn\'t accepting new applications right now.');
+        }
+
         if (User::where('email', $data['email'])->exists()) {
             throw new InvalidArgumentException('An account with this email already exists — you\'re already an affiliate automatically. Just log in to find your referral link.');
         }

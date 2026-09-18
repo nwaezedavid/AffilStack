@@ -27,13 +27,16 @@ class ListTestimonials extends ListRecords
     public function getSubheading(): string|Htmlable|null
     {
         $publishedCount = Testimonial::where('is_published', true)->count();
+        $pendingCount = Testimonial::where('status', Testimonial::STATUS_PENDING)->count();
 
-        if ($publishedCount >= Testimonial::MINIMUM_TO_DISPLAY) {
-            return "Showing on the homepage — {$publishedCount} published.";
+        $status = $publishedCount >= Testimonial::MINIMUM_TO_DISPLAY
+            ? "Showing on the homepage — {$publishedCount} published."
+            : 'Hidden from the homepage until '.(Testimonial::MINIMUM_TO_DISPLAY - $publishedCount).' more testimonial(s) are published (minimum '.Testimonial::MINIMUM_TO_DISPLAY.').';
+
+        if ($pendingCount > 0) {
+            $status .= " {$pendingCount} customer submission(s) awaiting your review.";
         }
 
-        $remaining = Testimonial::MINIMUM_TO_DISPLAY - $publishedCount;
-
-        return "Hidden from the homepage until {$remaining} more testimonial(s) are published (minimum ".Testimonial::MINIMUM_TO_DISPLAY.').';
+        return $status;
     }
 }

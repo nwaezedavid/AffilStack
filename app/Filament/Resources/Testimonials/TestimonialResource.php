@@ -34,6 +34,23 @@ class TestimonialResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'author_name';
 
+    /**
+     * Surfaces a customer's submitted-but-unreviewed testimonials right on
+     * the sidebar, so "review, edit and approve it" doesn't depend on
+     * remembering to check.
+     */
+    public static function getNavigationBadge(): ?string
+    {
+        $pending = Testimonial::where('status', Testimonial::STATUS_PENDING)->count();
+
+        return $pending > 0 ? (string) $pending : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
     public static function form(Schema $schema): Schema
     {
         return TestimonialForm::configure($schema);
