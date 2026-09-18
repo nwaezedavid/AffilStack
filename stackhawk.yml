@@ -1,0 +1,46 @@
+app:
+  applicationId: ${APP_ID:2c70ae35-9ef8-4368-8c9b-508e733b429c}
+  env: ${APP_ENV:Development}
+  host: ${APP_HOST:http://127.0.0.1:8000}
+
+  # CSRF token field name Laravel embeds in every form (@csrf directive).
+  antiCsrfParam: _token
+
+  authentication:
+    usernamePassword:
+      type: FORM
+      # loginPagePath is fetched first so HawkScan can scrape the _token
+      # value (antiCsrfParam, above) out of the login form before POSTing.
+      loginPagePath: /login
+      loginPath: /login
+      usernameField: email
+      passwordField: password
+      scanUsername: jane@affilstack.demo
+      scanPassword: password
+    cookieAuthorization:
+      cookieNames:
+        - affilstack-session
+    # Laravel's `auth` web middleware redirects an unauthenticated request
+    # to /login (302) rather than returning 401/403, so a lost session is
+    # detected by the redirect itself.
+    loggedInIndicator: ".*Sign out.*"
+    loggedOutIndicator: ".*Location:.*/login.*"
+    testPath:
+      path: /dashboard
+      type: HEADER
+      success: ".*200.*"
+
+  # Scanning as a non-privileged demo customer (jane@affilstack.demo), not
+  # an admin — see references/auth-config.md's "Profiles and scan user":
+  # an admin session risks the scanner's own write-endpoint fuzzing
+  # breaking its own login mid-scan.
+
+tags:
+  - name: git_origin
+    value: github.com/nwaezedavid/AffilStack
+  - name: _STACKHAWK_AGENT
+    value: ${HAWK_AGENT:none}
+  - name: _STACKHAWK_GIT_COMMIT_SHA
+    value: ${COMMIT_SHA:none}
+  - name: _STACKHAWK_GIT_BRANCH
+    value: ${BRANCH_NAME:none}
