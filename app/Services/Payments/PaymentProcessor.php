@@ -26,6 +26,7 @@ class PaymentProcessor
         protected CreditManager $credits,
         protected ReferralService $referrals,
         protected SamAgentService $sam,
+        protected PaymentMethodRecorder $paymentMethods,
     ) {}
 
     /**
@@ -117,6 +118,9 @@ class PaymentProcessor
                     'email' => $pending->email,
                     'google_id' => $pending->google_id,
                     'password' => $pending->password, // already hashed at signup time
+                    // Audit item #8 — carried over from the signup form's
+                    // required checkbox, not re-derived here.
+                    'refund_policy_accepted_at' => $pending->refund_policy_accepted_at,
                 ]);
                 $user->assignRole('user');
                 $pending->update(['status' => 'completed']);
@@ -179,6 +183,8 @@ class PaymentProcessor
         );
 
         $transaction->update(['subscription_id' => $subscription->id]);
+
+        $this->paymentMethods->record($transaction->user, $gateway, $result);
 
         $this->credits->grant(
             $transaction->user,

@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\AffiliateController;
+use App\Http\Controllers\AffiliateSetPasswordController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\CheckoutCountryController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CreativeTaskPreviewController;
 use App\Http\Controllers\CrmEmailTrackingController;
@@ -39,6 +42,9 @@ use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\PayPalWebhookController;
+use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\RegistrationController;
@@ -46,19 +52,33 @@ use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'marketing.home')->name('home');
-Route::get('/help', [HelpController::class, 'index'])->name('help.index');
+// Audit item #7 (caching/performance) — every page in this group has no
+// per-visitor content and no form to CSRF-protect, so a browser/CDN is
+// allowed to reuse a response for a few minutes instead of hitting Laravel
+// on every visit. See CachePublicPage — it still backs off automatically
+// whenever a flash message is present. /contact is deliberately kept out
+// of this group; it has a form.
+Route::middleware('cache-public-page')->group(function () {
+    Route::view('/', 'marketing.home')->name('home');
+    Route::get('/help', [HelpController::class, 'index'])->name('help.index');
+
+    // Static, admin-editable pages — content lives in the site_pages table
+    // (Filament: Content > Site Pages) so legal copy can be updated without
+    // a code deploy.
+    Route::get('/about', [PageController::class, 'show'])->defaults('slug', 'about')->name('about');
+    Route::get('/terms', [PageController::class, 'show'])->defaults('slug', 'terms')->name('terms');
+    Route::get('/privacy', [PageController::class, 'show'])->defaults('slug', 'privacy')->name('privacy');
+    Route::get('/refund-policy', [PageController::class, 'show'])->defaults('slug', 'refund-policy')->name('refund-policy');
+    Route::get('/cookie-policy', [PageController::class, 'show'])->defaults('slug', 'cookie-policy')->name('cookie-policy');
+});
+
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 
-// Static, admin-editable pages — content lives in the site_pages table
-// (Filament: Content > Site Pages) so legal copy can be updated without a
-// code deploy.
-Route::get('/about', [PageController::class, 'show'])->defaults('slug', 'about')->name('about');
-Route::get('/terms', [PageController::class, 'show'])->defaults('slug', 'terms')->name('terms');
-Route::get('/privacy', [PageController::class, 'show'])->defaults('slug', 'privacy')->name('privacy');
-Route::get('/refund-policy', [PageController::class, 'show'])->defaults('slug', 'refund-policy')->name('refund-policy');
-Route::get('/cookie-policy', [PageController::class, 'show'])->defaults('slug', 'cookie-policy')->name('cookie-policy');
+// Manual override for CheckoutCountryResolver's auto-detected country —
+// public, no auth needed: it's used from the pre-signup pricing/signup
+// pages as much as from the logged-in billing page.
+Route::post('/checkout-country', [CheckoutCountryController::class, 'update'])->name('checkout.country.update');
 
 Route::get('/contact', [ContactController::class, 'show'])->name('contact.show');
 Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
@@ -81,20 +101,55 @@ Route::get('/crm/unsubscribe/{token}', [CrmController::class, 'unsubscribe'])->n
 
 Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->name('webhooks.flutterwave');
 Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
+Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])->name('webhooks.paystack');
+Route::post('/webhooks/paypal', [PayPalWebhookController::class, 'handle'])->name('webhooks.paypal');
 
-// The only door into an account: pick a plan, pay, get created. No open
-// registration exists anywhere in this app — see RegistrationController.
+// The only door into a CUSTOMER account: pick a plan, pay, get created. No
+// open registration exists anywhere in this app — see RegistrationController.
+// (The one other way an account gets created is an approved affiliate
+// application — see AffiliateApplicationService::approve() — and that one
+// still requires manual admin review, never self-service.)
 //
 // /get-started/callback MUST be registered before /get-started/{plan} —
 // both are GET requests under the same prefix, and Laravel matches routes
 // in registration order, so a wildcard registered first would swallow
 // "callback" as a {plan} route-model-binding lookup and 404 on every real
 // payment redirect. (Caught by tests/Feature/PaymentSignupFlowTest.)
-Route::get('/pricing', [RegistrationController::class, 'pricing'])->name('registration.pricing');
+// Audit item #7 (caching/performance) — see the cache-public-page group
+// above; applied individually here since this route sits in its own
+// ordering-sensitive block (see the comment above).
+Route::middleware('cache-public-page')->get('/pricing', [RegistrationController::class, 'pricing'])->name('registration.pricing');
 Route::get('/get-started/callback', [RegistrationController::class, 'callback'])->name('registration.callback');
 Route::get('/get-started/{plan}', [RegistrationController::class, 'showForm'])->name('registration.form');
 Route::post('/get-started/{plan}', [RegistrationController::class, 'store'])->name('registration.store');
 Route::post('/get-started/{plan}/google', [GoogleAuthController::class, 'redirectForSignup'])->name('registration.google');
+
+// The affiliate program's own public landing page — "anyone can sign-up to
+// become an affiliate without first becoming a user of the platform".
+// Served from a real subdomain when AFFILIATE_SUBDOMAIN is set (e.g.
+// affiliate.affilstack.com), otherwise from a plain /affiliate prefix on
+// the main domain so the feature works without real DNS in local
+// dev/testing — same route names either way. See AffiliateController /
+// config('referrals.landing_subdomain').
+if ($affiliateSubdomain = config('referrals.landing_subdomain')) {
+    Route::domain($affiliateSubdomain)->group(function () {
+        Route::get('/', [AffiliateController::class, 'show'])->name('affiliate.landing');
+        Route::post('/', [AffiliateController::class, 'apply'])->middleware('throttle:5,1')->name('affiliate.apply');
+    });
+} else {
+    Route::prefix('affiliate')->group(function () {
+        Route::get('/', [AffiliateController::class, 'show'])->name('affiliate.landing');
+        Route::post('/', [AffiliateController::class, 'apply'])->middleware('throttle:5,1')->name('affiliate.apply');
+    });
+}
+
+// A single-use link an approved applicant gets by email — deliberately
+// kept on the main domain (never the affiliate subdomain above), since
+// that's also where they'll actually log in and use /referrals afterward.
+// See AffiliateSetPasswordController for why this isn't Laravel's
+// signed-URL helper.
+Route::get('/affiliate/set-password/{application}', [AffiliateSetPasswordController::class, 'show'])->name('affiliate.set-password.show');
+Route::post('/affiliate/set-password/{application}', [AffiliateSetPasswordController::class, 'store'])->middleware('throttle:10,1')->name('affiliate.set-password.store');
 
 // "Continue with Google" — one callback for both the login page and the
 // signup form; see GoogleAuthController for how it tells them apart.
@@ -109,12 +164,19 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->
 // CreativeTaskPreviewController — nothing here writes to the database.
 Route::middleware('auth')->get('/admin-preview/creative-tasks/{agentTask}', [CreativeTaskPreviewController::class, 'show'])->name('creative-tasks.preview');
 
-Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats'])->group(function () {
+Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats', 'restrict-affiliate-only'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
     Route::post('/billing/checkout/{plan}', [BillingController::class, 'checkout'])->name('billing.checkout');
+    Route::delete('/billing/scheduled-change', [BillingController::class, 'cancelScheduledChange'])->name('billing.cancel-scheduled-change');
     Route::get('/billing/callback', [BillingController::class, 'callback'])->name('billing.callback');
+    Route::post('/billing/refund', [BillingController::class, 'requestRefund'])->name('billing.request-refund');
+
+    // Saved payment methods (audit item #2) — captured passively, see
+    // PaymentMethodRecorder; these two actions are all a user can do here.
+    Route::patch('/billing/payment-methods/{paymentMethod}/default', [PaymentMethodController::class, 'setDefault'])->name('payment-methods.set-default');
+    Route::delete('/billing/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy'])->name('payment-methods.destroy');
 
     // Task #7: the "Intelligence Centre" AI self-assessment dashboard — see
     // IntelligenceCentreService. Owner-only, like billing/CRM/earnings.

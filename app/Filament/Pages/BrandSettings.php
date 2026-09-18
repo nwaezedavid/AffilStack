@@ -43,12 +43,19 @@ class BrandSettings extends Page
     {
         $this->form->fill([
             'site_name' => SiteSetting::get('site_name', 'AffilStack'),
-            'logo' => SiteSetting::get('logo_path'),
-            'favicon' => SiteSetting::get('favicon_path'),
+            'logo_rectangular' => SiteSetting::get('logo_rectangular_path'),
+            'logo_square' => SiteSetting::get('logo_square_path'),
             'color_primary' => SiteSetting::get('color_primary', '#2452D9'),
             'color_navy' => SiteSetting::get('color_navy', '#0B1E3D'),
             'color_gold' => SiteSetting::get('color_gold', '#C9A24A'),
-            'menu_items' => SiteSetting::get('menu_items', []),
+            // SiteSetting::get() is backed by Cache::rememberForever(), so
+            // whichever caller first populates the cache for a given key
+            // "locks in" the shape of the default it passed. The marketing
+            // layout reads this same key with an array default, so this has
+            // to tolerate either shape rather than assuming a string.
+            'menu_items' => (function ($menuItemsRaw) {
+                return is_array($menuItemsRaw) ? $menuItemsRaw : (json_decode((string) $menuItemsRaw, true) ?: []);
+            })(SiteSetting::get('menu_items', '[]')),
             'header_announcement' => SiteSetting::get('header_announcement'),
             'support_email' => SiteSetting::get('support_email', config('mail.from.address')),
             'footer_text' => SiteSetting::get('footer_text', '© '.date('Y').' AffilStack.'),
@@ -77,16 +84,18 @@ class BrandSettings extends Page
                             ->label('Header announcement (optional)')
                             ->columnSpanFull()
                             ->helperText('A one-line banner shown at the top of every public page. Leave blank to hide it.'),
-                        FileUpload::make('logo')
+                        FileUpload::make('logo_rectangular')
+                            ->label('Logo (rectangular)')
                             ->image()
                             ->disk('public')
                             ->directory('branding')
-                            ->helperText('Shown in the site header. SVG or PNG with a transparent background works best.'),
-                        FileUpload::make('favicon')
+                            ->helperText('Wide/horizontal logo — used in the site header, the sign-in/sign-up pages, and the dashboard sidebar. SVG or PNG with a transparent background works best.'),
+                        FileUpload::make('logo_square')
+                            ->label('Logo (square / icon)')
                             ->image()
                             ->disk('public')
                             ->directory('branding')
-                            ->helperText('Browser tab icon. Square PNG or ICO, at least 32x32.'),
+                            ->helperText('Square or circular mark — used as the browser tab icon (favicon), the home-screen icon on mobile, and anywhere else a square logo fits better than the wide one. PNG, at least 512×512.'),
                     ]),
 
                 Section::make('Brand colors')
@@ -154,19 +163,25 @@ class BrandSettings extends Page
         $data = $this->form->getState();
 
         foreach ([
-            'site_name', 'logo', 'favicon', 'color_primary', 'color_navy',
+            'site_name', 'logo_rectangular', 'logo_square', 'color_primary', 'color_navy',
             'color_gold', 'menu_items', 'header_announcement', 'support_email',
             'footer_text', 'hero_headline', 'hero_subheadline', 'hero_media_type',
             'hero_image', 'hero_youtube_url',
         ] as $key) {
             $settingKey = match ($key) {
-                'logo' => 'logo_path',
-                'favicon' => 'favicon_path',
+                'logo_rectangular' => 'logo_rectangular_path',
+                'logo_square' => 'logo_square_path',
                 'hero_image' => 'hero_image_path',
                 default => $key,
             };
 
-            SiteSetting::set($settingKey, $data[$key] ?? null);
+            // menu_items is the only array-valued field here — SiteSetting
+            // is a plain string key-value store (see its docblock), so this
+            // is the one key that needs to round-trip through JSON rather
+            // than being handed to it raw.
+            $value = $key === 'menu_items' ? json_encode($data[$key] ?? []) : ($data[$key] ?? null);
+
+            SiteSetting::set($settingKey, $value);
         }
 
         Notification::make()->title('Site settings saved')->success()->send();

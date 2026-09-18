@@ -30,4 +30,32 @@ return [
         'paypal' => 'PayPal',
         'bank_transfer' => 'Bank transfer',
     ],
+
+    // The affiliate program's own landing page — "anyone can sign-up to
+    // become an affiliate without first becoming a user of the platform".
+    // When AFFILIATE_SUBDOMAIN is set, affiliate.landing/affiliate.apply
+    // are served from that subdomain (e.g. affiliate.affilstack.com);
+    // otherwise they fall back to a plain /affiliate prefix on the main
+    // domain so the feature works without real DNS in local dev — same
+    // route names either way, so nothing else needs to know which mode is
+    // active. See routes/web.php and AffiliateController.
+    'landing_subdomain' => env('AFFILIATE_SUBDOMAIN'),
+
+    // Route names an affiliate-only account (User::isAffiliateOnly()) may
+    // reach — everything else is off-limits, the exact same pattern as
+    // config('agency.seat_allowed_routes')/RestrictAgencySeats. "dashboard"
+    // stays in this list only so DashboardController can redirect it to
+    // referrals.index, exactly like it already does for a team seat. See
+    // App\Http\Middleware\RestrictAffiliateOnlyAccounts.
+    'affiliate_only_allowed_routes' => [
+        'dashboard',
+        'referrals.index',
+        'referrals.payout-method',
+        'referrals.payout',
+        'profile',
+        'profile.destroy',
+        'notifications.poll',
+        'notifications.read-all',
+        'logout',
+    ],
 ];

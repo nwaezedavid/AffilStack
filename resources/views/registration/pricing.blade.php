@@ -35,6 +35,6 @@
             @endforeach
         </div>
 
-        <p class="text-xs text-ink-400 mt-6 text-center">Payments are processed securely by Stripe or Flutterwave. Every plan comes with a 14-day money-back guarantee — email support if it's not for you.</p>
+        <p class="text-xs text-ink-400 mt-6 text-center">Payments are processed securely — the payment methods available depend on your country. See our <a href="{{ route('refund-policy') }}" class="underline hover:text-ink-600">refund policy</a> before you buy.</p>
     </div>
 @endsection

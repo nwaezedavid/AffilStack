@@ -1,7 +1,7 @@
 <?php
     $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
-    $logo = \App\Models\SiteSetting::get('logo_path');
-    $favicon = \App\Models\SiteSetting::get('favicon_path');
+    $logo = \App\Models\SiteSetting::get('logo_rectangular_path');
+    $favicon = \App\Models\SiteSetting::get('logo_square_path');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -11,6 +11,7 @@
     <title>@yield('title', 'Dashboard') · {{ $siteName }}</title>
     @if ($favicon)
         <link rel="icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
+        <link rel="apple-touch-icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
     @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
@@ -53,6 +54,14 @@
                             ['name' => 'social-connections.index', 'match' => 'social-connections.*', 'label' => 'Connected Accounts', 'icon' => '🔗'],
                             ['name' => 'api-access.index', 'match' => 'api-access.*', 'label' => 'API Access', 'icon' => '🔌'],
                         ]
+                        : (auth()->user()->isAffiliateOnly()
+                        // An affiliate-only account (see
+                        // RestrictAffiliateOnlyAccounts) has nothing else on
+                        // this account to link to — every other item here
+                        // would just 403.
+                        ? [
+                            ['name' => 'referrals.index', 'match' => 'referrals.index', 'label' => 'Referrals', 'icon' => '🤝'],
+                        ]
                         : [
                             ['name' => 'dashboard', 'match' => 'dashboard', 'label' => 'Overview', 'icon' => '🏠'],
                             ['name' => 'intelligence-centre.index', 'match' => 'intelligence-centre.*', 'label' => 'Intelligence Centre', 'icon' => '🧠'],
@@ -71,7 +80,7 @@
                             ['name' => 'api-access.index', 'match' => 'api-access.*', 'label' => 'API Access', 'icon' => '🔌'],
                             ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => '💬'],
                             ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => '💳'],
-                        ];
+                        ]);
                 @endphp
                 @foreach ($items as $item)
                     <a href="{{ route($item['name'], $item['params'] ?? []) }}"
@@ -83,12 +92,14 @@
             </nav>
 
             <div class="px-3 py-4 border-t border-white/10 space-y-3">
-                <div class="rounded-md bg-white/5 px-3 py-2.5 text-xs">
-                    <div class="flex items-center justify-between text-navy-100/70">
-                        <span>Credits{{ auth()->user()->isSeat() ? ' (team)' : '' }}</span>
-                        <span class="font-mono text-gold-400 font-semibold">{{ number_format(auth()->user()->billableUser()->credits_balance) }}</span>
+                @unless (auth()->user()->isAffiliateOnly())
+                    <div class="rounded-md bg-white/5 px-3 py-2.5 text-xs">
+                        <div class="flex items-center justify-between text-navy-100/70">
+                            <span>Credits{{ auth()->user()->isSeat() ? ' (team)' : '' }}</span>
+                            <span class="font-mono text-gold-400 font-semibold">{{ number_format(auth()->user()->billableUser()->credits_balance) }}</span>
+                        </div>
                     </div>
-                </div>
+                @endunless
                 <a href="{{ route('profile') }}" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-navy-100/80 hover:bg-white/5 hover:text-white">
                     <span aria-hidden="true">⚙️</span> Profile & Security
                 </a>

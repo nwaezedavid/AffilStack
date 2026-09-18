@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Plans\Schemas;
 
+use App\Models\Plan;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -9,6 +10,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class PlanForm
@@ -29,6 +31,7 @@ class PlanForm
                             ->step(0.01)
                             ->prefix('$')
                             ->required()
+                            ->live(onBlur: true)
                             ->formatStateUsing(fn ($state) => $state !== null ? $state / 100 : null)
                             ->dehydrateStateUsing(fn ($state) => (int) round(((float) $state) * 100)),
                         TextInput::make('price_yearly_cents')
@@ -37,6 +40,15 @@ class PlanForm
                             ->step(0.01)
                             ->prefix('$')
                             ->required()
+                            ->helperText(function (Get $get) {
+                                if (! is_numeric($get('price_monthly_cents'))) {
+                                    return 'Item #2: annual billing should be exactly 15% off — set the monthly price first for a suggestion.';
+                                }
+
+                                $suggested = Plan::yearlyPriceCentsFor((int) round(((float) $get('price_monthly_cents')) * 100)) / 100;
+
+                                return '15% off 12 months of the monthly price above would be $'.number_format($suggested, 2).'/yr.';
+                            })
                             ->formatStateUsing(fn ($state) => $state !== null ? $state / 100 : null)
                             ->dehydrateStateUsing(fn ($state) => (int) round(((float) $state) * 100)),
                         TextInput::make('currency')->required()->default('USD')->maxLength(3),

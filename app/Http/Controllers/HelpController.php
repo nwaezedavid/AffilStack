@@ -9,10 +9,8 @@ class HelpController extends Controller
 {
     public function index(): View
     {
-        $groups = FaqItem::where('is_published', true)
-            ->orderBy('sort_order')
-            ->get()
-            ->groupBy('category');
+        // Audit item #7 (caching/performance) — see FaqItem::publishedGrouped().
+        $groups = FaqItem::publishedGrouped();
 
         return view('marketing.help', compact('groups'));
     }

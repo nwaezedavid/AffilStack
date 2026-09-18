@@ -51,6 +51,27 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'paystack' => [
+        'base_url' => env('PAYSTACK_BASE_URL', 'https://api.paystack.co'),
+        'public_key' => env('PAYSTACK_PUBLIC_KEY'),
+        'secret_key' => env('PAYSTACK_SECRET_KEY'),
+        // Admin-settable USD->NGN rate used to convert a plan's USD price
+        // into the kobo amount charged — Paystack has no native USD support
+        // for Nigerian cards, so this must be kept current from the admin
+        // Payment Gateways page rather than a live FX API this app doesn't
+        // otherwise depend on.
+        'usd_to_ngn_rate' => env('PAYSTACK_USD_TO_NGN_RATE', 1600),
+    ],
+
+    'paypal' => [
+        'base_url' => env('PAYPAL_BASE_URL', 'https://api-m.paypal.com'),
+        'client_id' => env('PAYPAL_CLIENT_ID'),
+        'client_secret' => env('PAYPAL_CLIENT_SECRET'),
+        // From the PayPal Developer Dashboard app's Webhooks tab — needed to
+        // call /v1/notifications/verify-webhook-signature.
+        'webhook_id' => env('PAYPAL_WEBHOOK_ID'),
+    ],
+
     'google_places' => [
         'api_key' => env('GOOGLE_PLACES_API_KEY'),
     ],

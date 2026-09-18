@@ -91,7 +91,12 @@ class CreativeTaskExecutor
         $fields = $this->fields($task);
 
         foreach ($fields as $key => $value) {
-            SiteSetting::set($key, $value);
+            // menu_items is the only array-valued branding field —
+            // SiteSetting is a plain string key-value store (see its
+            // docblock), so it needs to round-trip through JSON rather
+            // than being handed the raw array. See BrandSettings::save()
+            // for the same rule on the admin-authored side of this field.
+            SiteSetting::set($key, $key === 'menu_items' && is_array($value) ? json_encode($value) : $value);
         }
 
         return $fields === []

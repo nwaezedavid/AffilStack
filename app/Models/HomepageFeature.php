@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * A feature card on the public homepage. Admin-managed (Filament, "Content"
@@ -36,8 +37,33 @@ class HomepageFeature extends Model
      */
     public static function previewAwareActiveList(): Collection
     {
-        return static::$previewOverride
-            ?? static::query()->where('is_active', true)->orderBy('sort_order')->get();
+        // Audit item #7 (caching/performance) — the homepage is the
+        // highest-traffic page on the site and this query ran on every
+        // single load; cached indefinitely, busted from booted() below.
+        // Never cached during a Tony preview — that branch always returns
+        // the request-scoped override untouched.
+        //
+        // Caches plain attribute arrays, never the Eloquent models — see
+        // Plan::activePublicList() for why: a persistent cache store can
+        // hand back an unusable __PHP_Incomplete_Class for a serialized
+        // Model on the next request, where raw arrays always round-trip
+        // safely.
+        if (static::$previewOverride !== null) {
+            return static::$previewOverride;
+        }
+
+        $rows = Cache::rememberForever('homepage_features:active_list', function () {
+            return static::query()->where('is_active', true)->orderBy('sort_order')->get()
+                ->map(fn (self $feature) => $feature->getAttributes())->all();
+        });
+
+        return static::hydrate($rows);
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Cache::forget('homepage_features:active_list'));
+        static::deleted(fn () => Cache::forget('homepage_features:active_list'));
     }
 
     /**

@@ -64,23 +64,24 @@ class FlutterwaveGateway implements PaymentGateway
         ]);
     }
 
-    public function initiateCheckout(User $user, Plan $plan, string $billingCycle): array
+    public function initiateCheckout(User $user, Plan $plan, string $billingCycle, ?int $overrideAmountCents = null): array
     {
         return $this->checkout($user->email, $user->name, $plan, $billingCycle, route('billing.callback', ['gateway' => $this->key()]), [
             'user_id' => $user->id,
             'plan_id' => $plan->id,
             'billing_cycle' => $billingCycle,
-        ]);
+        ], $overrideAmountCents);
     }
 
     /**
      * @param  array<string, mixed>  $meta
-     * @return array{link: string, tx_ref: string}
+     * @return array{link: string, tx_ref: string, amount_cents: int, currency: string}
      */
-    protected function checkout(string $email, string $name, Plan $plan, string $billingCycle, string $redirectUrl, array $meta): array
+    protected function checkout(string $email, string $name, Plan $plan, string $billingCycle, string $redirectUrl, array $meta, ?int $overrideAmountCents = null): array
     {
         $txRef = 'affilstack_'.$plan->slug.'_'.$billingCycle.'_'.Str::uuid();
-        $amount = $billingCycle === 'yearly' ? $plan->priceYearly() : $plan->priceMonthly();
+        $amountCents = $overrideAmountCents ?? ($billingCycle === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents);
+        $amount = $amountCents / 100;
 
         $response = Http::withToken($this->secretKey())
             ->baseUrl($this->baseUrl())
@@ -107,6 +108,8 @@ class FlutterwaveGateway implements PaymentGateway
         return [
             'link' => (string) data_get($response->json(), 'data.link'),
             'tx_ref' => $txRef,
+            'amount_cents' => $amountCents,
+            'currency' => $plan->currency,
         ];
     }
 
@@ -255,7 +258,64 @@ class FlutterwaveGateway implements PaymentGateway
             // disputed charge by flw_ref, not the numeric id — can still be
             // matched back to this transaction. See resolveRefundEvent().
             'reference' => (string) ($flwData['flw_ref'] ?? ''),
+            // Audit item #2 (saved payment methods) — only present for a
+            // card charge with tokenization enabled on the account; a bank
+            // transfer/USSD/mobile-money payment has no reusable token.
+            'payment_method' => isset($flwData['card']['token']) ? [
+                'type' => 'card',
+                'brand' => strtolower((string) ($flwData['card']['type'] ?? '')),
+                'last4' => (string) ($flwData['card']['last_4digits'] ?? ''),
+                'exp_month' => (int) explode('/', (string) ($flwData['card']['expiry'] ?? '/'))[0],
+                // Flutterwave reports a 2-digit year ("MM/YY") where
+                // Paystack/Stripe report 4 — normalized here so every saved
+                // method's exp_year means the same thing regardless of
+                // gateway. Safe until the year 2100.
+                'exp_year' => 2000 + ((int) (explode('/', (string) ($flwData['card']['expiry'] ?? '/'))[1] ?? 0)),
+                'token' => (string) $flwData['card']['token'],
+            ] : null,
             'raw' => $flwData,
+        ];
+    }
+
+    /**
+     * The Africa side of the affiliate payout wallet (audit item #5) —
+     * pushes money OUT to an affiliate's own bank account, the opposite
+     * direction from checkout() above. Requires the bank's own Flutterwave
+     * bank_code (see https://developer.flutterwave.com/docs/bank-codes-nigeria),
+     * which is why an affiliate's bank_transfer payout details include a
+     * 'bank_code' field alongside the free-text bank name checkout()'s
+     * counterpart, the manual "mark paid" flow, never needed.
+     *
+     * @return array{success: bool, reference?: string, message: string, raw: array<string, mixed>}
+     */
+    public function transfer(string $bankCode, string $accountNumber, string $accountName, int $amountCents, string $currency, string $reference, string $narration): array
+    {
+        $response = Http::withToken($this->secretKey())
+            ->baseUrl($this->baseUrl())
+            ->post('/transfers', [
+                'account_bank' => $bankCode,
+                'account_number' => $accountNumber,
+                'beneficiary_name' => $accountName,
+                'amount' => $amountCents / 100,
+                'currency' => $currency,
+                'reference' => $reference,
+                'narration' => $narration,
+            ]);
+
+        $data = $response->json();
+
+        if ($response->failed() || data_get($data, 'status') !== 'success') {
+            return ['success' => false, 'message' => data_get($data, 'message', 'Flutterwave transfer request failed: '.$response->body()), 'raw' => (array) $data];
+        }
+
+        return [
+            'success' => true,
+            // Flutterwave's own transfer id — settlement itself is
+            // asynchronous (bank rails), so "success" here means the
+            // transfer was accepted and queued, not that it has landed yet.
+            'reference' => (string) data_get($data, 'data.id', $reference),
+            'message' => 'Transfer accepted by Flutterwave — pending bank settlement.',
+            'raw' => (array) $data,
         ];
     }
 
@@ -280,5 +340,40 @@ class FlutterwaveGateway implements PaymentGateway
         }
 
         return ['success' => true, 'message' => 'Connected successfully — Flutterwave accepted the secret key.'];
+    }
+
+    /**
+     * Audit item #8's automatic refund policy — actively pushes the refund
+     * back to Flutterwave rather than waiting for one, the opposite
+     * direction from resolveRefundEvent() above (which only reacts to a
+     * refund an admin issued by hand in the Flutterwave dashboard). A
+     * successful call here also eventually fires that same webhook back at
+     * us, but RefundExecutionService already updates the transaction
+     * synchronously from this response, so resolveRefundEvent()'s lookup
+     * simply finds nothing left to reverse a second time — see
+     * RefundProcessor::process()'s "already-reversed" no-op branch.
+     *
+     * @return array{success: bool, message: string, reference?: string, raw: array<string, mixed>}
+     */
+    public function refund(string $gatewayTxId, int $amountCents): array
+    {
+        $response = Http::withToken($this->secretKey())
+            ->baseUrl($this->baseUrl())
+            ->post("/transactions/{$gatewayTxId}/refund", [
+                'amount' => $amountCents / 100,
+            ]);
+
+        $data = $response->json();
+
+        if ($response->failed() || data_get($data, 'status') !== 'success') {
+            return ['success' => false, 'message' => data_get($data, 'message', 'Flutterwave refund request failed: '.$response->body()), 'raw' => (array) $data];
+        }
+
+        return [
+            'success' => true,
+            'reference' => (string) data_get($data, 'data.id', $gatewayTxId),
+            'message' => 'Refund accepted by Flutterwave.',
+            'raw' => (array) $data,
+        ];
     }
 }

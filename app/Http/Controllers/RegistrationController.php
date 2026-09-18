@@ -7,6 +7,7 @@ use App\Models\PaymentTransaction;
 use App\Models\PendingSignup;
 use App\Models\Plan;
 use App\Models\User;
+use App\Services\Payments\CheckoutCountryResolver;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Payments\PaymentProcessor;
 use App\Services\Referrals\ReferralService;
@@ -30,25 +31,27 @@ class RegistrationController extends Controller
 
     public function pricing(): View
     {
-        $plans = Plan::where('is_active', true)->orderBy('sort_order')->get();
+        // Audit item #7 (caching/performance) — see Plan::activePublicList().
+        $plans = Plan::activePublicList();
 
         return view('registration.pricing', compact('plans'));
     }
 
-    public function showForm(Plan $plan, PaymentGatewayManager $gateways): View
+    public function showForm(Request $request, Plan $plan, PaymentGatewayManager $gateways, CheckoutCountryResolver $countries): View
     {
-        $enabledGateways = $gateways->enabled();
+        $isNigeria = $countries->isNigeria($request);
+        $enabledGateways = $gateways->enabledForCountry($isNigeria ? 'NG' : 'US');
 
-        return view('registration.signup', compact('plan', 'enabledGateways'));
+        return view('registration.signup', compact('plan', 'enabledGateways', 'isNigeria'));
     }
 
-    public function store(Request $request, Plan $plan, PaymentGatewayManager $gateways, ReferralService $referrals): RedirectResponse
+    public function store(Request $request, Plan $plan, PaymentGatewayManager $gateways, ReferralService $referrals, CheckoutCountryResolver $countries): RedirectResponse
     {
         if (! $plan->is_active) {
             return back()->with('error', 'That plan is no longer available.');
         }
 
-        $enabledGateways = $gateways->enabled();
+        $enabledGateways = $gateways->enabledForCountry($countries->isNigeria($request) ? 'NG' : 'US');
 
         if (empty($enabledGateways)) {
             return back()->with('error', 'Payments are temporarily unavailable — please try again shortly.');
@@ -61,6 +64,13 @@ class RegistrationController extends Controller
             'email' => ['required', 'string', 'email', 'max:255'],
             'password' => $this->passwordRules(),
             'billing_cycle' => ['required', 'in:monthly,yearly'],
+            // Audit item #8 — required, not just recommended: no account is
+            // ever created without this being accepted first. See
+            // PaymentProcessor::completeSignup() for where it's copied onto
+            // the User row once payment verifies.
+            'accepts_refund_policy' => ['accepted'],
+        ], [
+            'accepts_refund_policy.accepted' => 'You must accept the Refund & Cancellation Policy to continue.',
         ])->validate();
 
         if (User::where('email', $validated['email'])->exists()) {
@@ -82,6 +92,7 @@ class RegistrationController extends Controller
             'tx_ref' => 'pending_'.Str::uuid(), // placeholder, replaced below once we have the real tx_ref
             'status' => 'pending',
             'expires_at' => now()->addHours(24),
+            'refund_policy_accepted_at' => now(),
         ]);
 
         $referrals->attachReferrerToPendingSignup($pending, $request);
@@ -108,8 +119,11 @@ class RegistrationController extends Controller
             'type' => 'signup',
             'gateway' => $gateway->key(),
             'tx_ref' => $checkout['tx_ref'],
-            'amount_cents' => $validated['billing_cycle'] === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents,
-            'currency' => $plan->currency,
+            // From the gateway itself, not assumed from the plan — a
+            // gateway that settles in a different currency (Paystack/NGN)
+            // reports the converted amount here. See PaymentGateway interface.
+            'amount_cents' => $checkout['amount_cents'],
+            'currency' => $checkout['currency'],
             'status' => 'pending',
         ]);
 

@@ -37,6 +37,14 @@ ScheduleMonitoring::track(
     'subscriptions:expire-lapsed',
 );
 
+// Self-service plan downgrade (audit item #2), non-Stripe half — see
+// ApplyPendingDowngrades. Stripe's own recurring billing applies its
+// scheduled downgrade at the next renewal webhook instead.
+ScheduleMonitoring::track(
+    Schedule::command('subscriptions:apply-pending-downgrades')->daily()->withoutOverlapping(),
+    'subscriptions:apply-pending-downgrades',
+);
+
 // Tom, the Security Agent: scans daily, then (separately) carries out
 // whatever a super-admin has approved and scheduled — see
 // SecurityScanService / SecurityFixExecutor / SecurityFindingResource.
@@ -77,6 +85,14 @@ ScheduleMonitoring::track(
 ScheduleMonitoring::track(
     Schedule::command('users:purge-deleted')->daily()->withoutOverlapping(),
     'users:purge-deleted',
+);
+
+// Vault, the funding-monitor agent: daily live-checks HeyGen and the payout
+// wallet, and evaluates whether either manual funding reminder (Anthropic,
+// Meta ad spend) has fallen due — see FundingHealthChecker.
+ScheduleMonitoring::track(
+    Schedule::command('integrations:check-funding-health')->daily()->withoutOverlapping(),
+    'integrations:check-funding-health',
 );
 
 // Self-maintenance: keep the run-history table itself from growing forever.

@@ -176,20 +176,23 @@ class SitePagesSeeder extends Seeder
             [
                 'slug' => 'refund-policy',
                 'title' => 'Refund & Cancellation Policy',
-                'meta_description' => 'AffilStack\'s money-back guarantee, refund eligibility, and how to cancel your subscription.',
+                'meta_description' => 'AffilStack\'s automatic 48-hour, no-usage refund policy, and how to cancel your subscription.',
                 'is_published' => true,
                 'content' => <<<'HTML'
-                    <h2>14-day money-back guarantee</h2>
-                    <p>If you're not satisfied with AffilStack, you can request a full refund within 14 days of your first payment on a plan. This guarantee applies once per customer, on your first subscription purchase — it does not apply to subsequent renewals or to add-on/top-up purchases (such as credit packs) made after the initial 14-day window.</p>
+                    <h2>48-hour, no-usage refund policy</h2>
+                    <p>You're eligible for a full, automatic refund of your most recent payment if both of the following are true: it was made within the last 48 hours, and you have not yet used any AI credits on your account. There's no approval queue — if both conditions are met, requesting a refund from your dashboard's billing page refunds your payment and cancels your subscription immediately.</p>
 
                     <h2>How to request a refund</h2>
-                    <p>Contact us through the <a href="/contact">Contact page</a> with your account email and the reason for your request. We aim to process eligible refunds within 5-10 business days, back to your original payment method.</p>
+                    <p>Open your dashboard's billing page. If you're currently eligible, a "Request refund" button is shown there along with how much time is left in your 48-hour window — click it to refund the payment instantly to your original payment method. Once you've used even one credit, or the 48-hour window has passed, the payment is no longer refundable this way.</p>
+
+                    <h2>Why usage ends eligibility</h2>
+                    <p>AI credits represent real, immediate cost to us the moment they're used, so a refund is only offered while an account has cost us nothing yet. This keeps the policy simple, instant, and fair to use without needing a case-by-case review.</p>
 
                     <h2>Cancelling your subscription</h2>
-                    <p>You can cancel your subscription at any time from your dashboard's billing settings. Cancelling stops future renewals — you keep access to your paid plan until the end of the billing period you've already paid for, after which your account reverts to a locked, non-renewing state until you resubscribe. Cancelling does not itself trigger a refund for the current period unless you're within the 14-day guarantee window above.</p>
+                    <p>You can cancel your subscription at any time from your dashboard's billing settings. Cancelling stops future renewals — you keep access to your paid plan until the end of the billing period you've already paid for, after which your account reverts to a locked, non-renewing state until you resubscribe. Cancelling on its own does not refund the current period unless you're still within the 48-hour, no-usage window above.</p>
 
                     <h2>Renewal charges</h2>
-                    <p>Subscriptions renew automatically. If you did not intend to renew and contact us promptly after a renewal charge, we will review the request in good faith, though renewal charges outside the 14-day guarantee window are not refundable by default.</p>
+                    <p>Subscriptions renew automatically. A renewal charge is eligible for the same automatic refund as any other payment, under the same 48-hour, no-usage rule.</p>
 
                     <h2>Affiliate program payouts</h2>
                     <p>This policy covers subscription payments only. Affiliate commission payouts are governed separately by the AffilStack Affiliate Program terms.</p>

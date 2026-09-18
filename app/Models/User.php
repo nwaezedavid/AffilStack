@@ -27,7 +27,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role'])]
+#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role', 'refund_policy_accepted_at', 'is_affiliate_only'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
@@ -38,8 +38,10 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     {
         return [
             'email_verified_at' => 'datetime',
+            'refund_policy_accepted_at' => 'datetime',
             'password' => 'hashed',
             'is_suspended' => 'boolean',
+            'is_affiliate_only' => 'boolean',
             'notify_email_on_completion' => 'boolean',
             'last_active_at' => 'datetime',
             'payout_details' => 'encrypted:array',
@@ -156,6 +158,20 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function isSeat(): bool
     {
         return $this->agency_owner_id !== null;
+    }
+
+    /**
+     * An account created by AffiliateApplicationService::approve() — never
+     * a platform customer, and never bought a plan. Scoped by
+     * RestrictAffiliateOnlyAccounts to referrals/profile/logout only — see
+     * config('referrals.affiliate_only_allowed_routes'). Every OTHER user
+     * is already an affiliate automatically (User::referralCode() /
+     * /referrals is open to any logged-in account); this flag exists only
+     * to identify the accounts that exist for NOTHING ELSE.
+     */
+    public function isAffiliateOnly(): bool
+    {
+        return (bool) $this->is_affiliate_only;
     }
 
     /**
@@ -414,6 +430,19 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function webhookEndpoints(): HasMany
     {
         return $this->hasMany(WebhookEndpoint::class);
+    }
+
+    /**
+     * Saved payment methods (audit item #2) — see PaymentMethodRecorder.
+     */
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(PaymentMethod::class)->latest();
+    }
+
+    public function defaultPaymentMethod(): ?PaymentMethod
+    {
+        return $this->paymentMethods()->where('is_default', true)->first();
     }
 
     public function hasPayoutMethodOnFile(): bool

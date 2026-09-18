@@ -60,6 +60,7 @@ class StripePaymentFlowTest extends TestCase
             'password_confirmation' => 'correct-horse-battery-staple',
             'billing_cycle' => 'monthly',
             'gateway' => 'stripe',
+            'accepts_refund_policy' => '1',
         ]);
 
         $response->assertRedirect('https://checkout.stripe.com/pay/cs_test_123');

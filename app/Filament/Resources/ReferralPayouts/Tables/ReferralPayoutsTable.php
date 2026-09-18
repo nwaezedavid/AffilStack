@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\ReferralPayouts\Tables;
 
 use App\Models\ReferralPayout;
+use App\Services\Referrals\PayoutDisbursementService;
 use App\Services\Referrals\ReferralPayoutService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -58,6 +60,28 @@ class ReferralPayoutsTable
                     ->modalContent(fn (ReferralPayout $record) => view('filament.referral-payouts.details', ['record' => $record]))
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Close'),
+
+                Action::make('disburseFromWallet')
+                    ->label('Disburse from wallet')
+                    ->color('primary')
+                    ->icon(Heroicon::OutlinedBolt)
+                    ->requiresConfirmation()
+                    ->modalDescription('Sends this payout automatically via Flutterwave (bank_transfer, NGN) or PayPal (paypal), drawing from the payout wallet balance.')
+                    ->visible(fn (ReferralPayout $record) => $record->isRequested() && app(PayoutDisbursementService::class)->canAutoDisburse($record))
+                    ->action(function (ReferralPayout $record) {
+                        try {
+                            app(PayoutDisbursementService::class)->disburse($record, auth()->user());
+                        } catch (InvalidArgumentException $e) {
+                            Notification::make()->title($e->getMessage())->danger()->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Payout disbursed from the wallet — the affiliate has been notified.')
+                            ->success()
+                            ->send();
+                    }),
 
                 Action::make('markPaid')
                     ->label('Mark paid')

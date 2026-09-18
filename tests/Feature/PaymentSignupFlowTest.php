@@ -62,6 +62,7 @@ class PaymentSignupFlowTest extends TestCase
             'password' => 'correct-horse-battery-staple',
             'password_confirmation' => 'correct-horse-battery-staple',
             'billing_cycle' => 'monthly',
+            'accepts_refund_policy' => '1',
         ]);
 
         $response->assertRedirect('https://checkout.flutterwave.com/pay/fake-link');
@@ -195,6 +196,7 @@ class PaymentSignupFlowTest extends TestCase
             'password' => 'correct-horse-battery-staple',
             'password_confirmation' => 'correct-horse-battery-staple',
             'billing_cycle' => 'monthly',
+            'accepts_refund_policy' => '1',
         ]);
 
         $response->assertRedirect(route('registration.form', $plan));

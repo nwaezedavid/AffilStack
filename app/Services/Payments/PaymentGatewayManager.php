@@ -17,6 +17,8 @@ class PaymentGatewayManager
     protected array $gateways = [
         'flutterwave' => FlutterwaveGateway::class,
         'stripe' => StripeGateway::class,
+        'paystack' => PaystackGateway::class,
+        'paypal' => PayPalGateway::class,
     ];
 
     public function get(string $key): PaymentGateway
@@ -42,5 +44,20 @@ class PaymentGatewayManager
     public function enabled(): array
     {
         return array_values(array_filter($this->all(), fn (PaymentGateway $gateway) => $gateway->isEnabled()));
+    }
+
+    /**
+     * Audit item #3: Paystack (NGN) is only ever shown to a checkout
+     * resolved as Nigerian; Flutterwave/Stripe/PayPal (USD) only to
+     * everyone else — on top of each gateway's own admin on/off toggle,
+     * never instead of it. See CheckoutCountryResolver.
+     *
+     * @return array<int, PaymentGateway>
+     */
+    public function enabledForCountry(string $countryCode): array
+    {
+        $allowedKeys = $countryCode === 'NG' ? ['paystack'] : ['flutterwave', 'stripe', 'paypal'];
+
+        return array_values(array_filter($this->enabled(), fn (PaymentGateway $gateway) => in_array($gateway->key(), $allowedKeys, true)));
     }
 }

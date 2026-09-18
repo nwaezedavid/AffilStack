@@ -38,7 +38,7 @@ class FaqItemsSeeder extends Seeder
             [
                 'category' => 'billing',
                 'question' => 'Do you offer refunds?',
-                'answer' => "We offer a money-back guarantee within the first 7 days of a new subscription if you're not satisfied. Open a support ticket from your dashboard to request one.",
+                'answer' => "Yes — automatically. If it's been less than 48 hours since your payment and you haven't used any AI credits yet, a \"Request refund\" button on your dashboard's billing page refunds you instantly, no support ticket needed. See our Refund & Cancellation Policy for details.",
             ],
             [
                 'category' => 'features',

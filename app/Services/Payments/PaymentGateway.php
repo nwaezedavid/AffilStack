@@ -11,7 +11,10 @@ use Illuminate\Http\Request;
  * PaymentProcessor, RegistrationController, and BillingController never
  * need to know which gateway a customer picked. Each gateway resolves a
  * browser redirect or a webhook down to the same normalized shape:
- * ['tx_ref', 'remote_id', 'status', 'amount', 'currency', 'meta', 'raw'].
+ * ['tx_ref', 'remote_id', 'status', 'amount', 'currency', 'meta', 'raw'],
+ * plus an optional 'payment_method' key (audit item #2 — see
+ * PaymentMethodRecorder) carrying whatever reusable card/account detail that
+ * particular gateway/charge exposed, or null when none is available.
  */
 interface PaymentGateway
 {
@@ -26,14 +29,27 @@ interface PaymentGateway
     public function isEnabled(): bool;
 
     /**
-     * @return array{link: string, tx_ref: string}
+     * amount_cents/currency are what will actually be charged — almost
+     * always the plan's own price/currency unchanged, except a gateway that
+     * settles in a different currency (e.g. Paystack converting a USD plan
+     * price to NGN kobo) reports the converted figures here so the caller's
+     * PaymentTransaction row matches what PaymentProcessor will later see
+     * come back from the gateway, instead of assuming the plan's currency.
+     *
+     * @return array{link: string, tx_ref: string, amount_cents: int, currency: string}
      */
     public function initiateSignupCheckout(string $email, string $name, Plan $plan, string $billingCycle, int $pendingSignupId): array;
 
     /**
-     * @return array{link: string, tx_ref: string}
+     * $overrideAmountCents, when given, charges that figure instead of the
+     * plan's own price — the only current use is PlanChangeService's
+     * prorated upgrade credit (audit item #2). It's always in the plan's
+     * own currency/base units before any gateway-specific conversion (e.g.
+     * Paystack's NGN kobo), same as the plan price it replaces.
+     *
+     * @return array{link: string, tx_ref: string, amount_cents: int, currency: string}
      */
-    public function initiateCheckout(User $user, Plan $plan, string $billingCycle): array;
+    public function initiateCheckout(User $user, Plan $plan, string $billingCycle, ?int $overrideAmountCents = null): array;
 
     /**
      * Resolve the browser's return-from-checkout redirect into a normalized

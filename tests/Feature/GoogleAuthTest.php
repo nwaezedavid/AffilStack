@@ -99,7 +99,7 @@ class GoogleAuthTest extends TestCase
             ], 200),
         ]);
 
-        $this->post(route('registration.google', $plan), ['billing_cycle' => 'monthly']);
+        $this->post(route('registration.google', $plan), ['billing_cycle' => 'monthly', 'accepts_refund_policy' => '1']);
         $state = session('google_oauth_state');
 
         $callback = $this->get(route('google.callback', ['state' => $state, 'code' => 'auth-code']));
@@ -125,7 +125,7 @@ class GoogleAuthTest extends TestCase
 
         $this->fakeGoogleProfile();
 
-        $this->post(route('registration.google', $plan), ['billing_cycle' => 'monthly']);
+        $this->post(route('registration.google', $plan), ['billing_cycle' => 'monthly', 'accepts_refund_policy' => '1']);
         $state = session('google_oauth_state');
 
         $callback = $this->get(route('google.callback', ['state' => $state, 'code' => 'auth-code']));

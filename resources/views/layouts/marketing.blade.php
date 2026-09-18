@@ -1,10 +1,16 @@
 <?php
     $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
-    $logo = \App\Models\SiteSetting::get('logo_path');
-    $favicon = \App\Models\SiteSetting::get('favicon_path');
+    $logo = \App\Models\SiteSetting::get('logo_rectangular_path');
+    $favicon = \App\Models\SiteSetting::get('logo_square_path');
     $announcement = \App\Models\SiteSetting::get('header_announcement');
     $footerText = \App\Models\SiteSetting::get('footer_text', '© '.date('Y').' '.$siteName.'.');
-    $menuItems = \App\Models\SiteSetting::get('menu_items', []);
+    // menu_items round-trips through JSON when persisted (SiteSetting is a
+    // plain string key-value store — see BrandSettings::save()), but a
+    // Tony (Creative Agent) preview overrides it with the raw array
+    // directly (SiteSetting::withPreviewOverrides()), so both shapes have
+    // to be accepted here.
+    $menuItemsRaw = \App\Models\SiteSetting::get('menu_items', '[]');
+    $menuItems = is_array($menuItemsRaw) ? $menuItemsRaw : (json_decode((string) $menuItemsRaw, true) ?: []);
     $blogUrl = \App\Models\SiteSetting::get('seo_blog_url');
     $metaDescription = trim(($__env->yieldContent('meta_description')) ?: \App\Models\SiteSetting::get('seo_meta_description', ''));
     $ogImage = \App\Models\SiteSetting::get('seo_og_image_path');
@@ -33,6 +39,7 @@
     @endif
     @if ($favicon)
         <link rel="icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
+        <link rel="apple-touch-icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
     @endif
     <link rel="canonical" href="{{ url()->current() }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])

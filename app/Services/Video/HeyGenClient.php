@@ -47,6 +47,34 @@ class HeyGenClient
     }
 
     /**
+     * HeyGen's own remaining-quota endpoint — the number returned is
+     * HeyGen's "credits" (roughly: seconds of avatar_iii video render time
+     * left on the connected account). Used by Vault, the funding-monitor
+     * agent (see FundingHealthChecker), to warn before a "Generate video"
+     * click fails mid-render because the account ran dry.
+     *
+     * @return array{success: bool, remaining: ?int, message: string}
+     */
+    public function checkBalance(): array
+    {
+        try {
+            $response = $this->client()->get('/v2/user/remaining_quota');
+        } catch (Throwable $e) {
+            return ['success' => false, 'remaining' => null, 'message' => 'Could not reach HeyGen: '.$e->getMessage()];
+        }
+
+        if ($response->failed()) {
+            return ['success' => false, 'remaining' => null, 'message' => $this->errorMessage($response)];
+        }
+
+        $remaining = data_get($response->json(), 'data.remaining_quota');
+
+        return $remaining === null
+            ? ['success' => false, 'remaining' => null, 'message' => 'HeyGen did not return a remaining_quota value.']
+            : ['success' => true, 'remaining' => (int) $remaining, 'message' => 'Balance check succeeded.'];
+    }
+
+    /**
      * A flat list of individually pickable stock avatar "looks" — HeyGen
      * technically organizes these into groups first, but a single flat
      * list is a simpler, good-enough picker for this first version of the

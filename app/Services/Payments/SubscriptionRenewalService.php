@@ -2,6 +2,7 @@
 
 namespace App\Services\Payments;
 
+use App\Models\PaymentMethod;
 use App\Models\PaymentTransaction;
 use App\Models\Subscription;
 use App\Notifications\SubscriptionExpired;
@@ -10,6 +11,7 @@ use App\Notifications\SubscriptionRenewalReminder;
 use App\Services\Credits\CreditManager;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 /**
  * Keeps a subscription's local status/current_period_end honest after the
@@ -39,7 +41,11 @@ use Illuminate\Support\Str;
  */
 class SubscriptionRenewalService
 {
-    public function __construct(protected CreditManager $credits) {}
+    public function __construct(
+        protected CreditManager $credits,
+        protected PlanChangeService $planChanges,
+        protected StripeGateway $stripe,
+    ) {}
 
     /**
      * @param  array{kind: string, gateway_subscription_id: string, gateway_tx_id?: string, amount?: float, currency?: string, raw: array<string, mixed>}  $event
@@ -58,7 +64,7 @@ class SubscriptionRenewalService
 
         match ($event['kind']) {
             'renewed' => $this->renew($subscription, $event),
-            'payment_failed' => $this->markPastDue($subscription),
+            'payment_failed' => $this->markPastDue($subscription, $event['gateway_invoice_id'] ?? null),
             'canceled' => $this->cancel($subscription),
             default => null,
         };
@@ -100,15 +106,53 @@ class SubscriptionRenewalService
             'processed_at' => now(),
         ]);
 
+        // A scheduled downgrade (audit item #2) swaps the plan and grants
+        // its own credits — never both that AND the old plan's renewal
+        // grant for the same cycle.
+        if ($subscription->pending_plan_id) {
+            $this->planChanges->applyPendingChange($subscription);
+
+            return;
+        }
+
         if ($subscription->plan && $subscription->user) {
             $this->credits->grant($subscription->user, $subscription->plan->credits_per_month, 'renewal_grant', $subscription);
         }
     }
 
-    protected function markPastDue(Subscription $subscription): void
+    /**
+     * Audit item #2: before giving up on a failed Stripe renewal, try the
+     * user's other saved cards against the same invoice — Stripe only ever
+     * retries with the card it already had on file, so without this a user
+     * with a second card saved would still get interrupted needlessly. A
+     * successful retry pays the invoice directly, which makes Stripe fire
+     * its own "invoice.paid" webhook a moment later — handled by renew() —
+     * so nothing else needs to happen here on success.
+     */
+    protected function markPastDue(Subscription $subscription, ?string $invoiceId = null): void
     {
         if ($subscription->status === 'past_due') {
             return;
+        }
+
+        if ($invoiceId) {
+            $alternates = PaymentMethod::where('user_id', $subscription->user_id)
+                ->where('gateway', 'stripe')
+                ->where('type', 'card')
+                ->orderByDesc('last_used_at')
+                ->get();
+
+            foreach ($alternates as $method) {
+                try {
+                    if ($this->stripe->retryInvoiceWithPaymentMethod($invoiceId, $method->gateway_token)) {
+                        $method->update(['last_used_at' => now()]);
+
+                        return;
+                    }
+                } catch (RuntimeException $e) {
+                    Log::warning('Stripe renewal retry with alternate card failed', ['subscription_id' => $subscription->id, 'error' => $e->getMessage()]);
+                }
+            }
         }
 
         $subscription->update(['status' => 'past_due']);
@@ -125,13 +169,15 @@ class SubscriptionRenewalService
     }
 
     /**
-     * Flutterwave-only reminder sweep — see class docblock. Stripe doesn't
-     * need this: it renews itself and tells us via webhook.
+     * Reminder sweep for every gateway that doesn't actually auto-renew —
+     * Flutterwave, Paystack, and PayPal are all one-time Standard/Orders
+     * checkouts here, not real subscriptions. Stripe doesn't need this: it
+     * renews itself and tells us via webhook.
      */
     public function sendRenewalReminders(int $daysBefore = 3): int
     {
         $subscriptions = Subscription::query()
-            ->where('gateway', 'flutterwave')
+            ->whereIn('gateway', ['flutterwave', 'paystack', 'paypal'])
             ->where('status', 'active')
             ->whereNull('renewal_reminder_sent_at')
             ->whereNotNull('current_period_end')

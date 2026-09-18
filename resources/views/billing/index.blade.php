@@ -13,6 +13,35 @@
                 Renews {{ $subscription->current_period_end?->format('M j, Y') }}
             </div>
         </div>
+
+        {{-- Self-service downgrade (audit item #2) — scheduled, not immediate. --}}
+        @if ($subscription->pending_plan_id && $subscription->pendingPlan)
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8 flex items-center justify-between gap-3">
+                <p class="text-sm text-amber-800">
+                    Scheduled to move to <strong>{{ $subscription->pendingPlan->name }}</strong> ({{ ucfirst($subscription->pending_billing_cycle) }}) on {{ $subscription->current_period_end?->format('M j, Y') }}.
+                </p>
+                <form method="POST" action="{{ route('billing.cancel-scheduled-change') }}">
+                    @csrf @method('DELETE')
+                    <button class="text-xs font-medium text-amber-800 underline hover:text-amber-900">Cancel</button>
+                </form>
+            </div>
+        @endif
+
+        {{-- Audit item #8's refund policy — fully automatic, so the button
+             only ever appears once the strict 48-hour/zero-usage rule
+             already says yes. No "request and wait" queue exists. --}}
+        @if ($refundableTransaction)
+            <div class="bg-surface border border-line rounded-lg p-4 mb-8 flex items-center justify-between gap-3">
+                <p class="text-sm text-ink-600">
+                    You paid {{ strtoupper($refundableTransaction->currency) }} {{ number_format($refundableTransaction->amount_cents / 100, 2) }} recently and haven't used any credits yet — you're eligible for a full refund for the next {{ $refundHoursRemaining }} hour{{ $refundHoursRemaining === 1 ? '' : 's' }}.
+                    See the <a href="{{ route('refund-policy') }}" target="_blank" class="underline hover:text-ink-900">refund policy</a>.
+                </p>
+                <form method="POST" action="{{ route('billing.request-refund') }}" onsubmit="return confirm('Refund this payment and cancel your subscription? This can\'t be undone.');">
+                    @csrf
+                    <button class="whitespace-nowrap rounded-md border border-red-200 text-red-700 text-sm font-medium px-4 py-2 hover:bg-red-50 transition">Request refund</button>
+                </form>
+            </div>
+        @endif
     @endif
 
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -33,7 +62,7 @@
                     @csrf
                     <select name="billing_cycle" class="w-full rounded-md border border-line px-2 py-1.5 text-xs">
                         <option value="monthly">Monthly — ${{ number_format($plan->priceMonthly()) }}/mo</option>
-                        <option value="yearly">Yearly — ${{ number_format($plan->priceYearly()) }}/yr</option>
+                        <option value="yearly">Yearly — ${{ number_format($plan->priceYearly(), 2) }}/yr (15% off)</option>
                     </select>
                     @if (count($enabledGateways) > 1)
                         <select name="gateway" class="w-full rounded-md border border-line px-2 py-1.5 text-xs">
@@ -44,8 +73,20 @@
                     @elseif (count($enabledGateways) === 1)
                         <input type="hidden" name="gateway" value="{{ $enabledGateways[0]->key() }}">
                     @endif
-                    <button class="w-full rounded-md bg-navy-900 text-white text-sm py-2 hover:bg-navy-800 transition">
-                        {{ $subscription?->plan_id === $plan->id ? 'Current plan' : 'Choose plan' }}
+                    <button @class([
+                        'w-full rounded-md text-white text-sm py-2 transition',
+                        'bg-line text-ink-400 cursor-not-allowed' => $subscription?->plan_id === $plan->id,
+                        'bg-navy-900 hover:bg-navy-800' => $subscription?->plan_id !== $plan->id,
+                    ]) @disabled($subscription?->plan_id === $plan->id)>
+                        @if ($subscription?->plan_id === $plan->id)
+                            Current plan
+                        @elseif ($subscription && $plan->price_monthly_cents < $subscription->plan->price_monthly_cents)
+                            Downgrade
+                        @elseif ($subscription)
+                            Upgrade
+                        @else
+                            Choose plan
+                        @endif
                     </button>
                 </form>
             </div>
@@ -53,6 +94,52 @@
     </div>
 
     <p class="text-xs text-ink-400 mt-6">Payments are processed securely by {{ $enabledGateways ? collect($enabledGateways)->map->label()->implode(' or ') : 'our payment provider' }}. You'll be redirected to complete payment.</p>
+
+    {{-- Audit item #3 — Paystack/Naira is shown only when we've detected
+         Nigeria; this is the escape hatch when that guess is wrong. --}}
+    <form method="POST" action="{{ route('checkout.country.update') }}" class="mt-1">
+        @csrf
+        <input type="hidden" name="country" value="{{ $isNigeria ? 'US' : 'NG' }}">
+        <button type="submit" class="text-xs text-ink-400 hover:text-ink-600 underline">
+            {{ $isNigeria ? 'Not in Nigeria? Pay in US dollars instead' : 'Paying from Nigeria? Switch to Naira' }}
+        </button>
+    </form>
+
+    {{-- Saved payment methods (audit item #2) — captured automatically from
+         a successful charge, see PaymentMethodRecorder; nothing to "add"
+         here, just pick a default or remove one. --}}
+    <h2 class="font-display font-semibold text-sm text-navy-900 mt-10 mb-3">Saved payment methods</h2>
+
+    @if ($paymentMethods->isEmpty())
+        <div class="bg-surface border border-dashed border-line rounded-lg p-6 text-center text-sm text-ink-600">
+            No saved payment methods yet — one is saved automatically the next time you pay.
+        </div>
+    @else
+        <div class="bg-surface border border-line rounded-lg divide-y divide-line">
+            @foreach ($paymentMethods as $method)
+                <div class="px-4 py-3 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-ink-900">{{ $method->display() }}</span>
+                        @if ($method->is_default)
+                            <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">Default</span>
+                        @endif
+                    </div>
+                    <div class="flex items-center gap-3 text-xs">
+                        @unless ($method->is_default)
+                            <form method="POST" action="{{ route('payment-methods.set-default', $method) }}">
+                                @csrf @method('PATCH')
+                                <button class="text-ink-600 underline hover:text-ink-900">Make default</button>
+                            </form>
+                        @endunless
+                        <form method="POST" action="{{ route('payment-methods.destroy', $method) }}" onsubmit="return confirm('Remove this payment method?');">
+                            @csrf @method('DELETE')
+                            <button class="text-red-600 underline hover:text-red-700">Remove</button>
+                        </form>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
 
     <h2 class="font-display font-semibold text-sm text-navy-900 mt-10 mb-3">Billing history</h2>
 

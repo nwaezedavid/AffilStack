@@ -24,6 +24,13 @@ class DashboardController extends Controller
                 : redirect()->route('offers.index');
         }
 
+        // An affiliate-only account (see RestrictAffiliateOnlyAccounts) has
+        // no offers, subscription, or account-wide stats to show — its
+        // referral link and earnings are its whole account.
+        if ($user->isAffiliateOnly()) {
+            return redirect()->route('referrals.index');
+        }
+
         $offers = $user->visibleOffers()->latest()->limit(5)->get();
         $recentGenerations = $user->visibleGenerations()->latest()->limit(8)->get();
         $balance = $credits->balance($user);

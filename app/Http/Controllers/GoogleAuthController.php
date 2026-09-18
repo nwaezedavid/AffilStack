@@ -46,7 +46,15 @@ class GoogleAuthController extends Controller
 
     public function redirectForSignup(Request $request, Plan $plan, GoogleOAuthService $google): RedirectResponse
     {
-        $validated = $request->validate(['billing_cycle' => ['required', 'in:monthly,yearly']]);
+        $validated = $request->validate([
+            'billing_cycle' => ['required', 'in:monthly,yearly'],
+            // Audit item #8 — the Google button skips the main signup form
+            // entirely, so this checkbox lives on its own mini-form instead.
+            // See startGoogleSignup() for where the timestamp is used.
+            'accepts_refund_policy' => ['accepted'],
+        ], [
+            'accepts_refund_policy.accepted' => 'You must accept the Refund & Cancellation Policy to continue.',
+        ]);
 
         if (! $plan->is_active) {
             return back()->with('error', 'That plan is no longer available.');
@@ -56,6 +64,7 @@ class GoogleAuthController extends Controller
             'type' => 'signup',
             'plan_id' => $plan->id,
             'billing_cycle' => $validated['billing_cycle'],
+            'refund_policy_accepted_at' => now()->toIso8601String(),
         ]);
     }
 
@@ -159,6 +168,7 @@ class GoogleAuthController extends Controller
             'tx_ref' => 'pending_'.Str::uuid(),
             'status' => 'pending',
             'expires_at' => now()->addHours(24),
+            'refund_policy_accepted_at' => $intent['refund_policy_accepted_at'] ?? now(),
         ]);
 
         $referrals->attachReferrerToPendingSignup($pending, $request);

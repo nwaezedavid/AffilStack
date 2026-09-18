@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Middleware\ApiTokenAuth;
+use App\Http\Middleware\CachePublicPage;
 use App\Http\Middleware\EnsureAccountNotSuspended;
 use App\Http\Middleware\EnsureAdminApiToken;
+use App\Http\Middleware\RestrictAffiliateOnlyAccounts;
 use App\Http\Middleware\RestrictAgencySeats;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,9 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'restrict-agency-seats' => RestrictAgencySeats::class,
+            'restrict-affiliate-only' => RestrictAffiliateOnlyAccounts::class,
             'not-suspended' => EnsureAccountNotSuspended::class,
             'api-token-auth' => ApiTokenAuth::class,
             'admin-api-token' => EnsureAdminApiToken::class,
+            'cache-public-page' => CachePublicPage::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

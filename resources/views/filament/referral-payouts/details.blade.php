@@ -13,6 +13,7 @@
                 <li>Account number: {{ $record->payout_details['account_number'] ?? '—' }}</li>
                 <li>Bank name: {{ $record->payout_details['bank_name'] ?? '—' }}</li>
                 <li>SWIFT / routing code: {{ $record->payout_details['swift_or_routing'] ?? '—' }}</li>
+                <li>Flutterwave bank code: {{ $record->payout_details['bank_code'] ?? '— (auto-disbursement unavailable, send manually)' }}</li>
             </ul>
         @endif
     </div>

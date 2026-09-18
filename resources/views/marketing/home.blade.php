@@ -13,6 +13,23 @@
 
     $features = \App\Models\HomepageFeature::previewAwareActiveList();
 
+    // Falls back to a real (not placeholder) description of the product
+    // when the admin hasn't added any Homepage Features yet — an empty
+    // Filament list used to make this entire section vanish, which was the
+    // single biggest reason the homepage read as "thin" on a fresh
+    // install. Mirrors the same "sensible default, admin can override"
+    // pattern the hero headline/subheadline already use above.
+    $defaultFeatures = [
+        ['icon' => '🔎', 'title' => 'Offer research', 'description' => 'A full research brief on any product or niche — audience, angles, and objections — in minutes.'],
+        ['icon' => '✍️', 'title' => 'AI content engine', 'description' => 'Blog articles, LinkedIn posts, email sequences, and X threads, written from your offer and ready to publish.'],
+        ['icon' => '🎬', 'title' => 'UGC video', 'description' => 'Turn a script into a human-avatar video your audience actually watches — no camera or editing required.'],
+        ['icon' => '📇', 'title' => 'Built-in CRM', 'description' => 'Every lead and contact tracked in one place, with automated email nurture sequences.'],
+        ['icon' => '🔗', 'title' => 'Multi-channel publishing', 'description' => 'Push content straight to LinkedIn, TikTok, Instagram, and X without leaving '.$siteName.'.'],
+        ['icon' => '🤝', 'title' => 'Affiliate program', 'description' => 'Every account comes with its own referral link — earn commission just by sharing what you use.'],
+    ];
+
+    $plans = \App\Models\Plan::activePublicList()->take(3);
+
     $metaDescriptionDefault = 'AffilStack is the all-in-one platform for affiliate marketers: offer research, AI-written content, UGC video, lead tracking, and a built-in affiliate program — everything you need to find an offer, find a buyer, and get paid.';
 
     $jsonLd = [
@@ -90,8 +107,18 @@
                         </div>
                     </div>
                 @else
-                    <div class="w-full aspect-video rounded-xl border border-line bg-surface-muted flex items-center justify-center text-ink-400 text-sm">
-                        Research → Content → Sales, in minutes.
+                    {{-- No hero image/video set yet (Brand Settings → Homepage hero) — a branded
+                         mini product visualization instead of an empty placeholder box. --}}
+                    <div class="w-full aspect-video rounded-xl bg-gradient-to-br from-navy-900 to-navy-700 flex flex-col items-center justify-center gap-5 px-6 text-center shadow-sm overflow-hidden relative">
+                        <div class="absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 20px 20px;" aria-hidden="true"></div>
+                        <div class="relative flex items-center gap-3 sm:gap-4 text-xs sm:text-sm font-medium">
+                            <span class="rounded-full bg-white/10 text-white px-4 py-2">🔎 Research</span>
+                            <span class="text-gold-400" aria-hidden="true">→</span>
+                            <span class="rounded-full bg-white/10 text-white px-4 py-2">✍️ Content</span>
+                            <span class="text-gold-400" aria-hidden="true">→</span>
+                            <span class="rounded-full bg-gold-500 text-navy-900 px-4 py-2 font-semibold">💰 Sales</span>
+                        </div>
+                        <p class="relative text-white/60 text-xs">Research → Content → Sales, in minutes.</p>
                     </div>
                 @endif
             </div>
@@ -144,6 +171,18 @@
                     </div>
                 @endforeach
             </div>
+        @else
+            {{-- No admin-configured Homepage Features yet (Content → Homepage Features) —
+                 a real, truthful description of the product instead of an empty section. --}}
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+                @foreach ($defaultFeatures as $feature)
+                    <div class="border border-line rounded-lg bg-surface p-5">
+                        <div class="text-2xl mb-2" aria-hidden="true">{{ $feature['icon'] }}</div>
+                        <h3 class="font-display font-semibold text-navy-900 mb-1">{{ $feature['title'] }}</h3>
+                        <p class="text-ink-600">{{ $feature['description'] }}</p>
+                    </div>
+                @endforeach
+            </div>
         @endif
     </section>
 
@@ -171,16 +210,53 @@
         </div>
     </section>
 
-    {{-- Who it's for --}}
-    <section class="max-w-5xl mx-auto px-6 py-16">
-        <div class="grid sm:grid-cols-2 gap-8">
-            <div class="border border-line rounded-lg p-6">
-                <h2 class="font-display font-semibold text-lg text-navy-900 mb-2">For individual marketers</h2>
-                <p class="text-ink-600 text-sm">Run your entire affiliate business solo — research, content, outreach, and payouts — without hiring a team or juggling separate subscriptions.</p>
+    {{-- Simple, transparent pricing (teaser — the full comparison lives at /pricing) --}}
+    @if ($plans->isNotEmpty())
+        <section class="max-w-5xl mx-auto px-6 pb-20">
+            <div class="text-center max-w-2xl mx-auto mb-10">
+                <h2 class="font-display font-semibold text-2xl sm:text-3xl text-navy-900 text-wrap-balance">Simple, transparent pricing</h2>
+                <p class="text-ink-600 mt-3">Every plan includes offer research, AI content, and the built-in affiliate program. Pick the credit allowance that fits how much you publish.</p>
             </div>
-            <div class="border border-line rounded-lg p-6">
-                <h2 class="font-display font-semibold text-lg text-navy-900 mb-2">For growing teams</h2>
-                <p class="text-ink-600 text-sm">Bring on collaborators, share what's working, and scale your output without losing track of what each campaign earned.</p>
+
+            <div class="grid sm:grid-cols-3 gap-6 text-sm max-w-3xl mx-auto">
+                @foreach ($plans as $plan)
+                    <div class="rounded-lg p-6 bg-surface flex flex-col {{ $plan->is_featured ? 'border-2 border-gold-500 shadow-sm' : 'border border-line' }}">
+                        @if ($plan->is_featured)
+                            <span class="self-start text-xs font-semibold text-navy-900 bg-gold-500 rounded-full px-2.5 py-0.5 mb-3">Most popular</span>
+                        @endif
+                        <h3 class="font-display font-semibold text-navy-900">{{ $plan->name }}</h3>
+                        <p class="mt-2">
+                            <span class="text-2xl font-display font-semibold text-navy-900">${{ number_format($plan->priceMonthly(), 0) }}</span>
+                            <span class="text-ink-400">/mo</span>
+                        </p>
+                        <p class="text-ink-600 mt-1">{{ number_format($plan->credits_per_month) }} credits/month</p>
+                        <a href="{{ route('registration.form', $plan) }}" class="mt-5 rounded-md {{ $plan->is_featured ? 'bg-navy-900 text-white hover:bg-navy-800' : 'border border-line text-navy-900 hover:bg-surface-muted' }} text-center text-sm font-medium py-2 transition">
+                            Get started
+                        </a>
+                    </div>
+                @endforeach
+            </div>
+
+            <p class="text-center mt-8">
+                <a href="{{ route('registration.pricing') }}" class="text-sm font-medium text-navy-900 hover:text-navy-700 underline">See the full plan comparison →</a>
+            </p>
+        </section>
+    @endif
+
+    {{-- Who it's for --}}
+    <section class="bg-surface-muted border-y border-line">
+        <div class="max-w-5xl mx-auto px-6 py-16">
+            <div class="grid sm:grid-cols-2 gap-8">
+                <div class="border border-line rounded-lg p-6 bg-surface">
+                    <div class="text-2xl mb-2" aria-hidden="true">👤</div>
+                    <h2 class="font-display font-semibold text-lg text-navy-900 mb-2">For individual marketers</h2>
+                    <p class="text-ink-600 text-sm">Run your entire affiliate business solo — research, content, outreach, and payouts — without hiring a team or juggling separate subscriptions.</p>
+                </div>
+                <div class="border border-line rounded-lg p-6 bg-surface">
+                    <div class="text-2xl mb-2" aria-hidden="true">👥</div>
+                    <h2 class="font-display font-semibold text-lg text-navy-900 mb-2">For growing teams</h2>
+                    <p class="text-ink-600 text-sm">Bring on collaborators, share what's working, and scale your output without losing track of what each campaign earned.</p>
+                </div>
             </div>
         </div>
     </section>

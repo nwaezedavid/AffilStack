@@ -1,7 +1,7 @@
 <?php
     $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
-    $logo = \App\Models\SiteSetting::get('logo_path');
-    $favicon = \App\Models\SiteSetting::get('favicon_path');
+    $logo = \App\Models\SiteSetting::get('logo_rectangular_path');
+    $favicon = \App\Models\SiteSetting::get('logo_square_path');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -11,6 +11,7 @@
     <title>@yield('title', $siteName)</title>
     @if ($favicon)
         <link rel="icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
+        <link rel="apple-touch-icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
     @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

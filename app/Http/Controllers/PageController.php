@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SitePage;
 use Illuminate\View\View;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Renders any published SitePage (About, Terms, Privacy, etc.) by slug.
@@ -14,7 +15,8 @@ class PageController extends Controller
 {
     public function show(string $slug): View
     {
-        $page = SitePage::where('slug', $slug)->where('is_published', true)->firstOrFail();
+        // Audit item #7 (caching/performance) — see SitePage::published().
+        $page = SitePage::published($slug) ?? throw new NotFoundHttpException;
 
         return view('marketing.page', compact('page'));
     }

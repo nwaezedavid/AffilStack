@@ -79,23 +79,23 @@ class StripeGateway implements PaymentGateway
         ]);
     }
 
-    public function initiateCheckout(User $user, Plan $plan, string $billingCycle): array
+    public function initiateCheckout(User $user, Plan $plan, string $billingCycle, ?int $overrideAmountCents = null): array
     {
         return $this->checkout($user->email, $plan, $billingCycle, route('billing.index'), route('billing.callback', ['gateway' => $this->key()]), [
             'user_id' => (string) $user->id,
             'plan_id' => (string) $plan->id,
             'billing_cycle' => $billingCycle,
-        ]);
+        ], $overrideAmountCents);
     }
 
     /**
      * @param  array<string, string>  $meta
-     * @return array{link: string, tx_ref: string}
+     * @return array{link: string, tx_ref: string, amount_cents: int, currency: string}
      */
-    protected function checkout(string $email, Plan $plan, string $billingCycle, string $cancelUrl, string $callbackUrl, array $meta): array
+    protected function checkout(string $email, Plan $plan, string $billingCycle, string $cancelUrl, string $callbackUrl, array $meta, ?int $overrideAmountCents = null): array
     {
         $txRef = 'affilstack_'.$plan->slug.'_'.$billingCycle.'_'.Str::uuid();
-        $amountCents = $billingCycle === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents;
+        $amountCents = $overrideAmountCents ?? ($billingCycle === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents);
         $meta = array_merge($meta, ['tx_ref' => $txRef]);
 
         // Stripe's success_url template placeholder must reach Stripe
@@ -132,6 +132,8 @@ class StripeGateway implements PaymentGateway
         return [
             'link' => (string) $response->json('url'),
             'tx_ref' => $txRef,
+            'amount_cents' => $amountCents,
+            'currency' => strtoupper($plan->currency),
         ];
     }
 
@@ -207,7 +209,12 @@ class StripeGateway implements PaymentGateway
     {
         $response = Http::withToken($this->secretKey())
             ->baseUrl($this->baseUrl())
-            ->get("/checkout/sessions/{$sessionId}");
+            ->get("/checkout/sessions/{$sessionId}", [
+                // Audit item #2 (saved payment methods) — expands enough of
+                // the session to read the card's brand/last4/token straight
+                // off the callback, no extra API round-trip.
+                'expand' => ['payment_intent.payment_method'],
+            ]);
 
         if ($response->failed()) {
             throw new RuntimeException('Stripe session retrieval failed: '.$response->body());
@@ -223,16 +230,30 @@ class StripeGateway implements PaymentGateway
     protected function normalize(array $session): array
     {
         $paid = ($session['payment_status'] ?? null) === 'paid';
+        // Only present when retrieveSession()'s expand actually ran — a
+        // webhook's checkout.session.completed payload carries payment_intent
+        // as a bare id string, not the expanded object, so this stays null
+        // there (the callback path is the one PaymentProcessor's idempotency
+        // check normally wins first — see class docblock).
+        $paymentMethod = data_get($session, 'payment_intent.payment_method.card');
 
         return [
             'tx_ref' => (string) (data_get($session, 'metadata.tx_ref') ?? $session['client_reference_id'] ?? ''),
-            'remote_id' => (string) ($session['payment_intent'] ?? $session['id'] ?? ''),
+            'remote_id' => (string) (data_get($session, 'payment_intent.id') ?? $session['payment_intent'] ?? $session['id'] ?? ''),
             'status' => $paid ? 'successful' : (string) ($session['payment_status'] ?? 'unpaid'),
             'amount' => ((float) ($session['amount_total'] ?? 0)) / 100,
             'currency' => strtoupper((string) ($session['currency'] ?? '')),
             'meta' => (array) ($session['metadata'] ?? []),
             'customer_reference' => (string) ($session['customer'] ?? ''),
             'subscription_reference' => (string) ($session['subscription'] ?? ''),
+            'payment_method' => $paymentMethod ? [
+                'type' => 'card',
+                'brand' => strtolower((string) ($paymentMethod['brand'] ?? '')),
+                'last4' => (string) ($paymentMethod['last4'] ?? ''),
+                'exp_month' => (int) ($paymentMethod['exp_month'] ?? 0),
+                'exp_year' => (int) ($paymentMethod['exp_year'] ?? 0),
+                'token' => (string) data_get($session, 'payment_intent.payment_method.id', ''),
+            ] : null,
             'raw' => $session,
         ];
     }
@@ -303,8 +324,33 @@ class StripeGateway implements PaymentGateway
         return [
             'kind' => 'payment_failed',
             'gateway_subscription_id' => (string) $invoice['subscription'],
+            // Carried through so SubscriptionRenewalService::markPastDue()
+            // can try the user's other saved cards against this exact
+            // invoice before giving up — see retryInvoiceWithPaymentMethod().
+            'gateway_invoice_id' => (string) ($invoice['id'] ?? ''),
             'raw' => $invoice,
         ];
+    }
+
+    /**
+     * Audit item #2's auto-retry: attempts to pay an already-failed renewal
+     * invoice using one specific saved card instead of the one Stripe just
+     * declined. A success here doesn't update anything itself — it makes
+     * Stripe fire its own "invoice.paid" event momentarily after, which
+     * StripeGateway::resolveRenewalEvent()/SubscriptionRenewalService::renew()
+     * already handle exactly like a normal on-time renewal.
+     */
+    public function retryInvoiceWithPaymentMethod(string $invoiceId, string $paymentMethodToken): bool
+    {
+        if ($invoiceId === '' || $paymentMethodToken === '') {
+            return false;
+        }
+
+        $response = $this->client()->post("/invoices/{$invoiceId}/pay", [
+            'payment_method' => $paymentMethodToken,
+        ]);
+
+        return $response->successful() && ($response->json('status') === 'paid');
     }
 
     /**
@@ -414,5 +460,39 @@ class StripeGateway implements PaymentGateway
         }
 
         return ['success' => true, 'message' => 'Connected successfully — Stripe accepted the secret key.'];
+    }
+
+    /**
+     * Audit item #8's automatic refund policy — actively issues the refund
+     * rather than waiting for one, the opposite direction from
+     * resolveRefundEvent() above (which only reacts to a refund an admin
+     * issued by hand in the Stripe dashboard). gatewayTxId is the
+     * payment_intent id normalize() stored as remote_id. A successful call
+     * here also eventually fires charge.refunded back at us, but
+     * RefundExecutionService already updates the transaction synchronously
+     * from this response, so resolveChargeRefunded()'s lookup simply finds
+     * nothing left to reverse a second time.
+     *
+     * @return array{success: bool, message: string, reference?: string, raw: array<string, mixed>}
+     */
+    public function refund(string $gatewayTxId, int $amountCents): array
+    {
+        $response = $this->client()->post('/refunds', [
+            'payment_intent' => $gatewayTxId,
+            'amount' => $amountCents,
+        ]);
+
+        $data = $response->json();
+
+        if ($response->failed()) {
+            return ['success' => false, 'message' => 'Stripe refund request failed: '.data_get($data, 'error.message', $response->body()), 'raw' => (array) $data];
+        }
+
+        return [
+            'success' => true,
+            'reference' => (string) ($data['id'] ?? $gatewayTxId),
+            'message' => 'Refund processed by Stripe.',
+            'raw' => (array) $data,
+        ];
     }
 }

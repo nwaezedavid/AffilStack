@@ -57,12 +57,18 @@ class PaymentGatewaySettings extends Page
      */
     public array $aiExplanations = [];
 
+    /**
+     * Every gateway this page manages — the single list the mount/save/
+     * header-actions loops all read from, so adding a gateway here is the
+     * only change needed to get it a form section + verify/explain buttons.
+     *
+     * @var array<int, string>
+     */
+    protected static array $gatewayKeys = ['flutterwave', 'stripe', 'paystack', 'paypal'];
+
     public function mount(): void
     {
-        $this->form->fill([
-            'flutterwave' => $this->stateFor('flutterwave'),
-            'stripe' => $this->stateFor('stripe'),
-        ]);
+        $this->form->fill(collect(static::$gatewayKeys)->mapWithKeys(fn (string $gateway) => [$gateway => $this->stateFor($gateway)])->all());
     }
 
     /**
@@ -79,6 +85,10 @@ class PaymentGatewaySettings extends Page
             'secret_hash' => $settings->credential('secret_hash'),
             'publishable_key' => $settings->credential('publishable_key'),
             'webhook_secret' => $settings->credential('webhook_secret'),
+            'usd_to_ngn_rate' => $settings->credential('usd_to_ngn_rate'),
+            'client_id' => $settings->credential('client_id'),
+            'client_secret' => $settings->credential('client_secret'),
+            'webhook_id' => $settings->credential('webhook_id'),
         ];
     }
 
@@ -128,6 +138,48 @@ class PaymentGatewaySettings extends Page
                             ->helperText('Developers > Webhooks > your endpoint — starts "whsec_".')
                             ->columnSpanFull(),
                     ]),
+
+                Section::make('Paystack')
+                    ->description($this->statusDescription('paystack'))
+                    ->columns(2)
+                    ->components([
+                        Toggle::make('paystack.is_enabled')
+                            ->label('Enabled')
+                            ->helperText('Shown only to customers checking out from Nigeria, paying in Naira.')
+                            ->columnSpanFull(),
+                        TextInput::make('paystack.secret_key')
+                            ->label('Secret key')
+                            ->password()->revealable()
+                            ->helperText('From the Paystack dashboard: Settings > API Keys & Webhooks.'),
+                        TextInput::make('paystack.public_key')
+                            ->label('Public key'),
+                        TextInput::make('paystack.usd_to_ngn_rate')
+                            ->label('USD → NGN exchange rate')
+                            ->numeric()
+                            ->step(0.01)
+                            ->helperText('Every plan is priced in USD — this is what it gets multiplied by to charge Nigerian cards in Naira. There is no live rate feed, so keep this current yourself.')
+                            ->columnSpanFull(),
+                    ]),
+
+                Section::make('PayPal')
+                    ->description($this->statusDescription('paypal'))
+                    ->columns(2)
+                    ->components([
+                        Toggle::make('paypal.is_enabled')
+                            ->label('Enabled')
+                            ->helperText('Customers can only pay with an enabled gateway.')
+                            ->columnSpanFull(),
+                        TextInput::make('paypal.client_id')
+                            ->label('Client ID')
+                            ->helperText('From the PayPal Developer Dashboard: your app\'s Client ID.'),
+                        TextInput::make('paypal.client_secret')
+                            ->label('Client secret')
+                            ->password()->revealable(),
+                        TextInput::make('paypal.webhook_id')
+                            ->label('Webhook ID')
+                            ->helperText('Your app\'s Webhooks tab — needed to verify that a webhook really came from PayPal.')
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 
@@ -157,7 +209,7 @@ class PaymentGatewaySettings extends Page
     {
         $data = $this->form->getState();
 
-        foreach (['flutterwave', 'stripe'] as $gateway) {
+        foreach (static::$gatewayKeys as $gateway) {
             $this->persist($gateway, $data[$gateway] ?? []);
         }
 
@@ -177,6 +229,10 @@ class PaymentGatewaySettings extends Page
                 'secret_hash' => $fields['secret_hash'] ?? null,
                 'publishable_key' => $fields['publishable_key'] ?? null,
                 'webhook_secret' => $fields['webhook_secret'] ?? null,
+                'usd_to_ngn_rate' => $fields['usd_to_ngn_rate'] ?? null,
+                'client_id' => $fields['client_id'] ?? null,
+                'client_secret' => $fields['client_secret'] ?? null,
+                'webhook_id' => $fields['webhook_id'] ?? null,
             ], fn ($value) => $value !== null && $value !== ''),
         ]);
     }
@@ -227,28 +283,20 @@ class PaymentGatewaySettings extends Page
 
     protected function getHeaderActions(): array
     {
-        return [
-            Action::make('verify_flutterwave')
-                ->label('Verify Flutterwave')
-                ->color('gray')
-                ->action(fn (PaymentGatewayManager $gateways) => $this->verify('flutterwave', $gateways)),
-            Action::make('explain_flutterwave')
-                ->label('Explain with AI')
-                ->color('gray')
-                ->icon(Heroicon::OutlinedSparkles)
-                ->visible(fn () => PaymentGatewaySetting::forGateway('flutterwave')->last_verification_status === 'failed')
-                ->action(fn (PaymentCredentialAdvisor $advisor) => $this->explainFailure('flutterwave', $advisor)),
-            Action::make('verify_stripe')
-                ->label('Verify Stripe')
-                ->color('gray')
-                ->action(fn (PaymentGatewayManager $gateways) => $this->verify('stripe', $gateways)),
-            Action::make('explain_stripe')
-                ->label('Explain with AI')
-                ->color('gray')
-                ->icon(Heroicon::OutlinedSparkles)
-                ->visible(fn () => PaymentGatewaySetting::forGateway('stripe')->last_verification_status === 'failed')
-                ->action(fn (PaymentCredentialAdvisor $advisor) => $this->explainFailure('stripe', $advisor)),
-        ];
+        return collect(static::$gatewayKeys)
+            ->flatMap(fn (string $gateway) => [
+                Action::make("verify_{$gateway}")
+                    ->label('Verify '.ucfirst($gateway))
+                    ->color('gray')
+                    ->action(fn (PaymentGatewayManager $gateways) => $this->verify($gateway, $gateways)),
+                Action::make("explain_{$gateway}")
+                    ->label('Explain with AI')
+                    ->color('gray')
+                    ->icon(Heroicon::OutlinedSparkles)
+                    ->visible(fn () => PaymentGatewaySetting::forGateway($gateway)->last_verification_status === 'failed')
+                    ->action(fn (PaymentCredentialAdvisor $advisor) => $this->explainFailure($gateway, $advisor)),
+            ])
+            ->all();
     }
 
     protected function getFormActions(): array

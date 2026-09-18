@@ -46,6 +46,16 @@ class ReferralPayout extends Model
         return $this->hasMany(ReferralEvent::class);
     }
 
+    /**
+     * The wallet debit(s) that funded this payout, when it was disbursed
+     * automatically rather than marked paid by hand — see
+     * PayoutDisbursementService.
+     */
+    public function walletTransactions(): HasMany
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
+
     public function isRequested(): bool
     {
         return $this->status === 'requested';

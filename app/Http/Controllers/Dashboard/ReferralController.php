@@ -53,6 +53,12 @@ class ReferralController extends Controller
             'bank_account_number' => ['required_if:payout_method,bank_transfer', 'nullable', 'string', 'max:255'],
             'bank_name' => ['required_if:payout_method,bank_transfer', 'nullable', 'string', 'max:255'],
             'bank_swift_or_routing' => ['required_if:payout_method,bank_transfer', 'nullable', 'string', 'max:255'],
+            // Optional — only needed for the payout wallet's automatic
+            // disbursement (audit item #5). Without it a bank_transfer
+            // payout still works exactly as before: an admin marks it paid
+            // by hand after sending it manually. See
+            // PayoutDisbursementService::canAutoDisburse().
+            'bank_code' => ['nullable', 'string', 'max:20'],
         ]);
 
         $details = $data['payout_method'] === 'paypal'
@@ -62,6 +68,7 @@ class ReferralController extends Controller
                 'account_number' => $data['bank_account_number'],
                 'bank_name' => $data['bank_name'],
                 'swift_or_routing' => $data['bank_swift_or_routing'],
+                'bank_code' => $data['bank_code'] ?? null,
             ];
 
         $request->user()->update([

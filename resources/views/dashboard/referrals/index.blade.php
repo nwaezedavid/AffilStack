@@ -77,6 +77,11 @@
                         <label class="block text-xs font-medium text-ink-900 mb-1">SWIFT / routing code</label>
                         <input type="text" name="bank_swift_or_routing" value="{{ old('bank_swift_or_routing', $user->payout_details['swift_or_routing'] ?? '') }}" class="w-full rounded-md border border-line px-2.5 py-2 text-sm">
                     </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-ink-900 mb-1">Flutterwave bank code (Nigeria only, optional)</label>
+                        <input type="text" name="bank_code" value="{{ old('bank_code', $user->payout_details['bank_code'] ?? '') }}" placeholder="e.g. 044" class="w-full rounded-md border border-line px-2.5 py-2 text-sm">
+                        <p class="text-xs text-ink-400 mt-1">Only needed for instant payouts from our payout wallet — find your bank's code on Flutterwave's published bank list. Without it, payouts are still sent, just processed manually.</p>
+                    </div>
                 </div>
                 <button type="submit" class="w-full rounded-md bg-navy-900 text-white text-sm font-medium py-2 hover:bg-navy-800 transition">Save payout details</button>
             </form>
