@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\BrandLogos\Schemas;
 
-use Filament\Forms\Components\FileUpload;
+use App\Filament\Support\WebpFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
@@ -18,7 +18,7 @@ class BrandLogoForm
                     ->required()
                     ->helperText('The brand\'s name — used as the logo\'s alt text.')
                     ->columnSpanFull(),
-                FileUpload::make('logo_path')
+                WebpFileUpload::make('logo_path')
                     ->label('Logo')
                     ->image()
                     ->disk('public')

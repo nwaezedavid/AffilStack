@@ -103,6 +103,16 @@ ScheduleMonitoring::track(
     'seo:check-links',
 );
 
+// Image WebP optimization: every future upload already converts itself at
+// save time (see WebpFileUpload), so this daily run is just a safety net —
+// cheap (WebpImageConverter treats an already-.webp path as a no-op) and
+// catches anything that ever slipped through (a future upload field that
+// forgot to use WebpFileUpload, a path set directly via a seeder/import).
+ScheduleMonitoring::track(
+    Schedule::command('images:optimize-to-webp')->daily()->withoutOverlapping(),
+    'images:optimize-to-webp',
+);
+
 // Self-maintenance: keep the run-history table itself from growing forever.
 Schedule::call(fn () => ScheduledTaskRun::where('created_at', '<', now()->subDays(30))->delete())
     ->daily()

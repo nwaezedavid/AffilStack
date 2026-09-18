@@ -3,10 +3,10 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Support\WebpFileUpload;
 use App\Models\SiteSetting;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -83,7 +83,7 @@ class SeoSettings extends Page
                             ->rows(2)
                             ->maxLength(160)
                             ->helperText('Used on pages that don\'t set their own — aim for under 160 characters.'),
-                        FileUpload::make('seo_og_image_path')
+                        WebpFileUpload::make('seo_og_image_path')
                             ->label('Default social share image (OG image)')
                             ->image()
                             ->disk('public')

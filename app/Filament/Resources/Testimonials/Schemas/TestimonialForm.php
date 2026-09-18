@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\Testimonials\Schemas;
 
+use App\Filament\Support\WebpFileUpload;
 use App\Models\Testimonial;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -34,7 +34,7 @@ class TestimonialForm
                             ->label('Role or company (optional)')
                             ->placeholder('e.g. Affiliate marketer, or "Founder, Acme Co."'),
                         Textarea::make('quote')->required()->rows(3)->columnSpanFull(),
-                        FileUpload::make('avatar_path')
+                        WebpFileUpload::make('avatar_path')
                             ->label('Photo (optional)')
                             ->image()
                             ->avatar()

@@ -2,10 +2,10 @@
 
 namespace App\Filament\Resources\SitePages\Schemas;
 
+use App\Filament\Support\WebpFileUpload;
 use App\Services\AI\AIGenerationException;
 use App\Services\Seo\SeoMetaAssistant;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Textarea;
@@ -74,7 +74,7 @@ class SitePageForm
                             ),
                         Textarea::make('meta_description')->rows(2)->columnSpanFull()->live(onBlur: true)
                             ->helperText('Shown in Google search results. Leave blank to fall back to the site default.'),
-                        FileUpload::make('og_image_path')
+                        WebpFileUpload::make('og_image_path')
                             ->label('Social share image (OG image)')
                             ->image()
                             ->disk('public')

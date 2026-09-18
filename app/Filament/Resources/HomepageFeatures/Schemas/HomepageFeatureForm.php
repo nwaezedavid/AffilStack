@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\HomepageFeatures\Schemas;
 
-use Filament\Forms\Components\FileUpload;
+use App\Filament\Support\WebpFileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -36,7 +36,7 @@ class HomepageFeatureForm
                     ->default('none')
                     ->live()
                     ->columnSpanFull(),
-                FileUpload::make('image_path')
+                WebpFileUpload::make('image_path')
                     ->label('Image')
                     ->image()
                     ->disk('public')

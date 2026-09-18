@@ -3,11 +3,11 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Support\WebpFileUpload;
 use App\Models\SiteSetting;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -84,13 +84,13 @@ class BrandSettings extends Page
                             ->label('Header announcement (optional)')
                             ->columnSpanFull()
                             ->helperText('A one-line banner shown at the top of every public page. Leave blank to hide it.'),
-                        FileUpload::make('logo_rectangular')
+                        WebpFileUpload::make('logo_rectangular')
                             ->label('Logo (rectangular)')
                             ->image()
                             ->disk('public')
                             ->directory('branding')
                             ->helperText('Wide/horizontal logo — used in the site header, the sign-in/sign-up pages, and the dashboard sidebar. SVG or PNG with a transparent background works best.'),
-                        FileUpload::make('logo_square')
+                        WebpFileUpload::make('logo_square')
                             ->label('Logo (square / icon)')
                             ->image()
                             ->disk('public')
@@ -122,7 +122,7 @@ class BrandSettings extends Page
                             ->default('none')
                             ->live()
                             ->columnSpanFull(),
-                        FileUpload::make('hero_image')
+                        WebpFileUpload::make('hero_image')
                             ->image()
                             ->disk('public')
                             ->directory('branding')
