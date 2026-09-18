@@ -1,3 +1,17 @@
+# Deny direct access to dotfiles (.htaccess, .env, .git, etc.) — HawkScan's
+# pre-launch scan found /.htaccess itself readable over HTTP. Application-
+# level redundancy for the same check lives in App\Http\Middleware\
+# SecurityHeaders, for any front-end web server that isn't Apache.
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

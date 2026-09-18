@@ -6,6 +6,7 @@ use App\Http\Middleware\EnsureAccountNotSuspended;
 use App\Http\Middleware\EnsureAdminApiToken;
 use App\Http\Middleware\RestrictAffiliateOnlyAccounts;
 use App\Http\Middleware\RestrictAgencySeats;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -23,6 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/flutterwave',
             'webhooks/stripe',
         ]);
+
+        // Pre-launch HawkScan fixes (security headers, X-Powered-By,
+        // cookie flags, dotfile access) — see SecurityHeaders' own
+        // docblock. Global (web + api) since every response needs them.
+        $middleware->append(SecurityHeaders::class);
 
         $middleware->alias([
             'restrict-agency-seats' => RestrictAgencySeats::class,

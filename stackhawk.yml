@@ -35,6 +35,29 @@ app:
   # an admin session risks the scanner's own write-endpoint fuzzing
   # breaking its own login mid-scan.
 
+hawk:
+  # Empty by default — a no-op everywhere except an environment that
+  # transparently re-terminates outbound HTTPS behind its own CA (some
+  # sandboxed CI/dev containers do this) and needs the scan engine's own
+  # JVM HTTP client to trust it when calling the StackHawk platform itself
+  # (auth.stackhawk.com etc). Set HAWK_OUTBOUND_PROXY_CA to that CA's PEM
+  # path only in such an environment; leave it unset everywhere else.
+  outboundProxy:
+    rootCACertPath: ${HAWK_OUTBOUND_PROXY_CA:}
+
+  scan:
+    # Caps how long the scanner spends on any single plugin/rule before
+    # moving on — a sane guardrail everywhere (a stuck or slow rule can
+    # otherwise stall the whole scan indefinitely; maxScanDurationInMins
+    # and maxRuleDurationInMins default to unlimited), not just here.
+    maxRuleDurationMinutes: 5
+    # StackHawk's own default is 20 request threads. Left alone everywhere
+    # except a CPU-constrained sandbox/CI runner, where 20 threads
+    # thrashing a couple of vCPUs against the target app's own server
+    # process actually slows the scan down; HAWK_SCAN_THREADS overrides it
+    # there only.
+    concurrentRequests: ${HAWK_SCAN_THREADS:20}
+
 tags:
   - name: git_origin
     value: github.com/nwaezedavid/AffilStack
