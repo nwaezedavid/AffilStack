@@ -24,7 +24,7 @@
             <p class="text-ink-600 mt-3">We'd love to hear from you. Reach us by email, social media, or the form below — we typically reply within one business day.</p>
         </div>
 
-        <div class="grid lg:grid-cols-2 gap-10 items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             {{-- Left: image + direct channels --}}
             <div class="space-y-8">
                 @if ($contactImage)
@@ -44,7 +44,7 @@
                 @endif
 
                 @if (! empty($emailChannels))
-                    <div class="grid sm:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         @foreach ($emailChannels as $channel)
                             <a href="mailto:{{ $channel['email'] }}" class="border border-line rounded-lg p-4 bg-surface hover:border-brand-500 hover:shadow-sm transition group">
                                 <div class="text-xl mb-2" aria-hidden="true">{{ $channel['icon'] }}</div>
@@ -65,7 +65,7 @@
             <form method="POST" action="{{ route('contact.store') }}" class="border border-line rounded-lg p-6 sm:p-8 space-y-5 bg-surface">
                 @csrf
 
-                <div class="grid sm:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                         <label for="name" class="block text-sm font-medium text-navy-900 mb-1">Name</label>
                         <input type="text" name="name" id="name" value="{{ old('name') }}" required

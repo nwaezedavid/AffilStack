@@ -97,7 +97,7 @@
             data-commission-rate="{{ $commissionRateDecimal }}"
             data-plans='@json($calculatorPlans)'
         >
-            <div class="grid sm:grid-cols-2 gap-6 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
                 <div>
                     <label for="calc-plan" class="block text-sm font-medium text-navy-900 mb-1">Plan your referrals typically choose</label>
                     <select id="calc-plan" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
@@ -119,7 +119,7 @@
                 </div>
             </div>
 
-            <div class="grid sm:grid-cols-3 gap-4 text-center">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                 <div class="rounded-lg bg-surface-muted p-4">
                     <div class="text-xs uppercase tracking-wide text-ink-400 mb-1">Month 1</div>
                     <div class="font-display font-semibold text-2xl text-navy-900" id="calc-month-1">$0</div>
@@ -152,7 +152,7 @@
 
     <section class="max-w-5xl mx-auto px-6 py-16 border-t border-line">
         <h2 class="font-display font-semibold text-2xl text-navy-900 text-center mb-10">How it works</h2>
-        <div class="grid sm:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
             <div class="text-center">
                 <div class="mx-auto h-10 w-10 rounded-full bg-navy-900 text-white flex items-center justify-center font-semibold mb-3">1</div>
                 <h3 class="font-semibold text-navy-900 mb-1">Apply</h3>
@@ -174,7 +174,7 @@
     <section class="bg-surface-muted border-y border-line">
         <div class="max-w-5xl mx-auto px-6 py-16">
             <h2 class="font-display font-semibold text-2xl text-navy-900 text-center mb-10">Built for people with an audience</h2>
-            <div class="grid sm:grid-cols-4 gap-6 text-center">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-6 text-center">
                 <div>
                     <div class="text-2xl mb-2">✍️</div>
                     <h3 class="font-semibold text-navy-900 text-sm mb-1">Bloggers & writers</h3>
@@ -209,7 +209,7 @@
             <form method="POST" action="{{ route('affiliate.apply') }}" class="bg-surface border border-line rounded-lg p-6 sm:p-8 space-y-5">
                 @csrf
 
-                <div class="grid sm:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                         <label for="name" class="block text-sm font-medium text-navy-900 mb-1">Name</label>
                         <input type="text" name="name" id="name" value="{{ old('name') }}" required
@@ -224,7 +224,7 @@
                     </div>
                 </div>
 
-                <div class="grid sm:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                         <label for="phone" class="block text-sm font-medium text-navy-900 mb-1">Phone (optional)</label>
                         <input type="text" name="phone" id="phone" value="{{ old('phone') }}"
@@ -239,7 +239,7 @@
                     </div>
                 </div>
 
-                <div class="grid sm:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                         <label for="audience_size" class="block text-sm font-medium text-navy-900 mb-1">Audience size</label>
                         <select name="audience_size" id="audience_size" required

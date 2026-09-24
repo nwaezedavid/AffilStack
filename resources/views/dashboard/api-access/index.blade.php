@@ -24,6 +24,7 @@
             <p class="text-sm text-ink-500">No tokens yet — generate one above to get started.</p>
         @else
             <div class="border border-line rounded-md overflow-hidden">
+                <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                         <tr>
@@ -47,6 +48,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             </div>
         @endif
     </div>
@@ -146,6 +148,7 @@
             &middot; 60 requests/minute per token.
         </p>
         <div class="border border-line rounded-md overflow-hidden">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -167,6 +170,7 @@
                     <tr><td class="px-4 py-2">GET</td><td class="px-4 py-2">/referrals/summary</td><td class="px-4 py-2 font-sans text-ink-600">Your referral link and commission totals</td></tr>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 @endsection

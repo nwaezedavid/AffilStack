@@ -71,7 +71,7 @@
                     <dt class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Where to find them</dt>
                     <dd class="text-ink-900 whitespace-pre-line">{{ $offer->where_to_find }}</dd>
                 </div>
-                <div class="grid sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <dt class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Recommended channel</dt>
                         <dd class="text-ink-900 capitalize font-medium">{{ str_replace('_', ' ', $offer->recommended_channel) }}</dd>
@@ -88,13 +88,13 @@
         </div>
 
         {{-- Generate content --}}
-        <div class="grid sm:grid-cols-2 gap-4 mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
             <div class="bg-surface border border-line rounded-lg p-5">
                 <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">Blog / Medium article</h3>
                 <p class="text-xs text-ink-600 mb-3">SEO-optimized, formatted to convert. <span class="font-mono text-ink-400">({{ config('credits.costs.blog_article') }} credits)</span></p>
                 <form method="POST" action="{{ route('offers.blog.store', $offer) }}" class="flex gap-2">
                     @csrf
-                    <input name="target_keyword" placeholder="Target keyword (optional)" class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <input name="target_keyword" placeholder="Target keyword (optional)" class="flex-1 min-w-0 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
                     <button class="rounded-md bg-navy-900 text-white text-sm px-3 py-1.5 hover:bg-navy-800 transition whitespace-nowrap">Generate</button>
                 </form>
             </div>
@@ -225,7 +225,7 @@
                     <p class="text-xs text-ink-600 mb-3">Pick who to nurture — the sequence is written for them specifically, not a generic template.</p>
                     <form method="POST" action="{{ route('offers.nurture.generate', $offer) }}" class="flex gap-2">
                         @csrf
-                        <select name="contact_id" required class="flex-1 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <select name="contact_id" required class="flex-1 min-w-0 rounded-md border border-line px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
                             <option value="">Choose a contact&hellip;</option>
                             @foreach ($contacts as $contact)
                                 <option value="{{ $contact->id }}">{{ $contact->name ?: $contact->email ?: 'Contact #'.$contact->id }}{{ $contact->company ? ' · '.$contact->company : '' }}</option>
@@ -309,7 +309,7 @@
                             {{ $gen->output_meta['recommended_adjustment'] ?? '' }}
                         </div>
                     @elseif ($gen->module === 'linkedin_keywords')
-                        <div class="grid sm:grid-cols-2 gap-3 text-sm">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                             <div>
                                 <div class="text-xs uppercase text-ink-400 font-mono mb-1">Search keywords</div>
                                 <div class="text-ink-900">{{ implode(', ', $gen->output_meta['search_keywords'] ?? []) }}</div>
@@ -387,7 +387,7 @@
                             <summary class="cursor-pointer text-sm text-brand-600 hover:text-brand-700">View description</summary>
                             <pre class="whitespace-pre-wrap text-sm text-ink-900 mt-3 font-sans">{{ $offer->cloak($gen->output_meta['description'] ?? '', $gen->module) }}</pre>
                         </details>
-                        <div class="grid sm:grid-cols-2 gap-3 text-sm mb-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-3">
                             <div>
                                 <div class="text-xs uppercase text-ink-400 font-mono mb-1">Keywords</div>
                                 <div class="text-ink-900">{{ implode(', ', $gen->output_meta['keywords'] ?? []) }}</div>
@@ -525,7 +525,7 @@
                                     <form method="POST" action="{{ route('offers.ugc.video', $offer) }}" class="space-y-2">
                                         @csrf
                                         <input type="hidden" name="content_generation_id" value="{{ $gen->id }}">
-                                        <div class="grid sm:grid-cols-2 gap-2">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <select name="avatar_id" required class="rounded-md border border-line text-xs px-2 py-1.5 bg-surface">
                                                 <option value="">Choose an avatar…</option>
                                                 @foreach ($ugcAvatars as $avatar)

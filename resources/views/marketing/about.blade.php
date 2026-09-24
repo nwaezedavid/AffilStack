@@ -85,7 +85,7 @@
 
     {{-- Hero --}}
     <section class="max-w-5xl mx-auto px-6 pt-14 pb-16 sm:pt-20 sm:pb-24">
-        <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div class="text-center lg:text-left">
                 <span class="inline-block text-xs font-semibold uppercase tracking-wide text-gold-600 mb-3">{{ $heroEyebrow }}</span>
                 <h1 class="font-display font-semibold text-4xl sm:text-5xl text-navy-900 leading-tight text-wrap-balance">
@@ -123,7 +123,7 @@
     {{-- Our story --}}
     <section class="border-y border-line bg-surface-muted">
         <div class="max-w-5xl mx-auto px-6 py-16">
-            <div class="grid lg:grid-cols-2 gap-10 items-center">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
                 <div class="{{ $storyImage ? 'lg:order-2' : '' }}">
                     @if ($storyImage)
                         <img
@@ -147,7 +147,7 @@
 
     {{-- Mission & vision --}}
     <section class="max-w-5xl mx-auto px-6 py-16">
-        <div class="grid sm:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div class="border border-line rounded-lg p-6 sm:p-8 bg-surface">
                 <div class="text-2xl mb-3" aria-hidden="true">🧭</div>
                 <h2 class="font-display font-semibold text-lg text-navy-900 mb-2">Our mission</h2>
@@ -167,7 +167,7 @@
             <div class="text-center max-w-2xl mx-auto mb-10">
                 <h2 class="font-display font-semibold text-2xl sm:text-3xl text-navy-900 text-wrap-balance">What we're working toward</h2>
             </div>
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
                 @foreach ($goals as $goal)
                     <div class="border border-line rounded-lg bg-surface p-5">
                         @if (! empty($goal['icon']))
@@ -187,7 +187,7 @@
             <h2 class="font-display font-semibold text-2xl sm:text-3xl text-navy-900 text-wrap-balance">What we do</h2>
             <p class="text-ink-600 mt-3">Everything an affiliate marketer needs, from first research to final payout.</p>
         </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
             @foreach ($whatWeDo as $item)
                 <div class="border border-line rounded-lg bg-surface p-5">
                     @if (! empty($item['icon']))
@@ -204,7 +204,7 @@
     <section class="bg-surface-muted border-y border-line">
         <div class="max-w-5xl mx-auto px-6 py-16">
             <h2 class="font-display font-semibold text-2xl sm:text-3xl text-navy-900 text-center text-wrap-balance">How we work</h2>
-            <div class="grid sm:grid-cols-3 gap-8 mt-10 text-sm text-center">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 mt-10 text-sm text-center">
                 @foreach ($howWeWork as $index => $step)
                     <div>
                         <div class="mx-auto h-10 w-10 rounded-full bg-navy-900 text-white font-display font-semibold flex items-center justify-center mb-3">{{ $index + 1 }}</div>
@@ -221,7 +221,7 @@
         <div class="text-center max-w-2xl mx-auto mb-10">
             <h2 class="font-display font-semibold text-2xl sm:text-3xl text-navy-900 text-wrap-balance">Who we serve</h2>
         </div>
-        <div class="grid sm:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             @foreach ($whoWeServe as $audience)
                 <div class="border border-line rounded-lg p-6 bg-surface">
                     @if (! empty($audience['icon']))

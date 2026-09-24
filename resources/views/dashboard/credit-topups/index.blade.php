@@ -8,7 +8,7 @@
         instantly and never expires.
     </p>
 
-    <div class="grid sm:grid-cols-3 gap-4 max-w-3xl">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl">
         @foreach ($packages as $package)
             <div class="bg-surface border rounded-lg p-5 flex flex-col gap-3 {{ $package->is_featured ? 'border-gold-500 ring-1 ring-gold-500' : 'border-line' }}">
                 @if ($package->is_featured)

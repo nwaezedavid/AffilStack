@@ -74,7 +74,7 @@
 
     {{-- Hero --}}
     <section class="max-w-5xl mx-auto px-6 pt-14 pb-16 sm:pt-20 sm:pb-24">
-        <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div class="text-center lg:text-left">
                 @if ($heroHeadline)
                     <h1 class="font-display font-semibold text-4xl sm:text-5xl text-navy-900 leading-tight text-wrap-balance">
@@ -191,7 +191,7 @@
         </div>
 
         @if ($features->isNotEmpty())
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
                 @foreach ($features as $feature)
                     <div class="border border-line rounded-lg overflow-hidden bg-surface flex flex-col">
                         @if ($feature->media_type === 'image' && $feature->image_path)
@@ -232,7 +232,7 @@
         @else
             {{-- No admin-configured Homepage Features yet (Content → Homepage Features) —
                  a real, truthful description of the product instead of an empty section. --}}
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
                 @foreach ($defaultFeatures as $feature)
                     <div class="border border-line rounded-lg bg-surface p-5">
                         <div class="text-2xl mb-2" aria-hidden="true">{{ $feature['icon'] }}</div>
@@ -248,7 +248,7 @@
     <section class="bg-surface-muted border-y border-line">
         <div class="max-w-5xl mx-auto px-6 py-16">
             <h2 class="font-display font-semibold text-2xl sm:text-3xl text-navy-900 text-center text-wrap-balance">How {{ $siteName }} works</h2>
-            <div class="grid sm:grid-cols-3 gap-8 mt-10 text-sm text-center">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 mt-10 text-sm text-center">
                 <div>
                     <div class="mx-auto h-10 w-10 rounded-full bg-navy-900 text-white font-display font-semibold flex items-center justify-center mb-3">1</div>
                     <h3 class="font-display font-semibold text-navy-900 mb-1">Tell it what you're promoting</h3>
@@ -279,7 +279,7 @@
                 <p class="text-ink-600 mt-3">Every plan includes offer research, AI content, and the built-in affiliate program. Pick the credit allowance that fits how much you publish.</p>
             </div>
 
-            <div class="grid sm:grid-cols-3 gap-6 text-sm max-w-3xl mx-auto">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm max-w-3xl mx-auto">
                 @foreach ($plans as $plan)
                     <div class="rounded-lg p-6 bg-surface flex flex-col {{ $plan->is_featured ? 'border-2 border-gold-500 shadow-sm' : 'border border-line' }}">
                         @if ($plan->is_featured)
@@ -307,7 +307,7 @@
     {{-- Who it's for --}}
     <section class="bg-surface-muted border-y border-line">
         <div class="max-w-5xl mx-auto px-6 py-16">
-            <div class="grid sm:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div class="border border-line rounded-lg p-6 bg-surface">
                     <div class="text-2xl mb-2" aria-hidden="true">👤</div>
                     <h2 class="font-display font-semibold text-lg text-navy-900 mb-2">For individual marketers</h2>
@@ -331,7 +331,7 @@
             <div class="text-center max-w-2xl mx-auto mb-10">
                 <h2 class="font-display font-semibold text-2xl sm:text-3xl text-navy-900 text-wrap-balance">What affiliates are saying</h2>
             </div>
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
                 @foreach ($testimonials as $testimonial)
                     <figure class="border border-line rounded-lg bg-surface p-6 flex flex-col gap-4">
                         @if ($testimonial->rating)

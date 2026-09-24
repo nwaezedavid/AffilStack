@@ -30,7 +30,7 @@
             No entries match those filters.
         </div>
     @else
-        <div class="grid sm:grid-cols-2 gap-4 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             @foreach ($entries as $entry)
                 <div class="bg-surface border border-line rounded-lg p-4">
                     <div class="flex items-center gap-2 mb-2 flex-wrap">

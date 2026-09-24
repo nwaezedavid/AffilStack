@@ -26,7 +26,7 @@
         @forelse ($groups as $category => $tutorials)
             <div class="mb-14">
                 <h2 class="font-display font-semibold text-lg text-navy-900 border-b border-line pb-2 mb-6">{{ $category ?: 'General' }}</h2>
-                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach ($tutorials as $tutorial)
                         <article class="border border-line rounded-lg overflow-hidden bg-surface flex flex-col">
                             @if ($tutorial->youtubeEmbedUrl())

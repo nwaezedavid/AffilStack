@@ -9,7 +9,7 @@
             <p class="text-ink-600 mt-2">Pick a plan to create your account — payment happens once, your account is ready the moment it clears.</p>
         </div>
 
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-start">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-start">
             @foreach ($plans as $plan)
                 <div class="bg-surface border rounded-lg p-5 flex flex-col gap-3 {{ $plan->is_featured ? 'border-gold-500 ring-1 ring-gold-500' : 'border-line' }}">
                     @if ($plan->is_featured)

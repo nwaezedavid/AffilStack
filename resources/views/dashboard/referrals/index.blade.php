@@ -13,7 +13,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-surface border border-line rounded-lg p-5">
             <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Link clicks</div>
             <div class="text-2xl font-display font-semibold text-navy-900">{{ number_format($clickCount) }}</div>
@@ -127,6 +127,7 @@
     @if ($payouts->isNotEmpty())
         <h2 class="text-sm font-semibold text-navy-900 mb-3">Payout history</h2>
         <div class="bg-surface border border-line rounded-lg overflow-hidden mb-8">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -153,6 +154,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
     @endif
 
@@ -164,6 +166,7 @@
         </div>
     @else
         <div class="bg-surface border border-line rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -193,6 +196,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
     @endif
 @endsection

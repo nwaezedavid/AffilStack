@@ -49,8 +49,19 @@
         </div>
     @endif
     <div class="min-h-screen flex">
-        {{-- Sidebar --}}
-        <aside class="w-64 shrink-0 {{ $sidebarBg }} text-white flex flex-col">
+        {{-- Mobile sidebar toggle — pure-CSS checkbox/peer drawer (no Alpine
+             on this layout). `sr-only` (not `hidden`) keeps the checkbox
+             itself keyboard-focusable and screen-reader reachable. --}}
+        <input type="checkbox" id="sidebar-toggle" class="peer sr-only">
+
+        {{-- Backdrop: mobile only, shown while the drawer is open --}}
+        <label for="sidebar-toggle" class="hidden peer-checked:block md:hidden fixed inset-0 bg-black/40 z-30" aria-hidden="true"></label>
+
+        {{-- Sidebar: an off-canvas drawer below md, a normal in-flow column at md+ --}}
+        <aside class="w-64 shrink-0 {{ $sidebarBg }} text-white flex flex-col
+                      fixed inset-y-0 left-0 z-40 -translate-x-full transition-transform duration-200 ease-out
+                      peer-checked:translate-x-0
+                      md:static md:translate-x-0">
             <div class="px-5 py-5 border-b {{ $sidebarBorder }}">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-display font-semibold text-lg">
                     @if ($logo && ! $isAffiliatePortal)
@@ -159,20 +170,29 @@
 
         {{-- Main --}}
         <div class="flex-1 min-w-0">
-            <header class="bg-surface border-b border-line px-6 py-4 flex items-center justify-between">
-                <div>
-                    <h1 class="font-display font-semibold text-lg text-ink-900">@yield('title', 'Overview')</h1>
-                    @if ($isAffiliatePortal)
-                        <p class="text-xs text-emerald-700">Affiliate Partner Portal</p>
-                    @endif
+            <header class="bg-surface border-b border-line px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <label for="sidebar-toggle"
+                           class="md:hidden shrink-0 -ml-1 p-2 rounded-md text-ink-600 hover:bg-surface-muted cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-navy-900"
+                           aria-label="Open menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </label>
+                    <div class="min-w-0">
+                        <h1 class="font-display font-semibold text-lg text-ink-900 truncate">@yield('title', 'Overview')</h1>
+                        @if ($isAffiliatePortal)
+                            <p class="text-xs text-emerald-700">Affiliate Partner Portal</p>
+                        @endif
+                    </div>
                 </div>
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 sm:gap-4 shrink-0">
                     <div id="notif-bell" class="relative">
                         <button type="button" id="notif-toggle" class="relative flex items-center justify-center h-9 w-9 rounded-md text-ink-600 hover:bg-surface-muted transition" aria-label="Notifications">
                             <span aria-hidden="true">🔔</span>
                             <span id="notif-badge" class="hidden absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[10px] leading-4 text-center font-mono"></span>
                         </button>
-                        <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-surface border border-line rounded-lg shadow-lg z-20">
+                        <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto bg-surface border border-line rounded-lg shadow-lg z-20">
                             <div class="flex items-center justify-between px-4 py-2.5 border-b border-line">
                                 <span class="text-xs font-mono uppercase tracking-wide text-ink-400">Notifications</span>
                                 <button type="button" id="notif-mark-all" class="text-xs text-brand-600 hover:text-brand-700">Mark all read</button>
@@ -182,11 +202,11 @@
                             </div>
                         </div>
                     </div>
-                    <div class="text-sm text-ink-600">{{ auth()->user()->name }}</div>
+                    <div class="text-sm text-ink-600 hidden sm:block truncate max-w-[10rem]">{{ auth()->user()->name }}</div>
                 </div>
             </header>
 
-            <main class="p-6 max-w-5xl">
+            <main class="p-4 sm:p-6 max-w-5xl">
                 @if (session('success'))
                     <div class="mb-5 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-4 py-2.5 whitespace-pre-line">
                         {{ session('success') }}

@@ -44,7 +44,7 @@
         @endif
     @endif
 
-    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         @foreach ($plans as $plan)
             <div class="bg-surface border rounded-lg p-5 flex flex-col gap-3 {{ $plan->is_featured ? 'border-gold-500 ring-1 ring-gold-500' : 'border-line' }}">
                 @if ($plan->is_featured)
@@ -149,6 +149,7 @@
         </div>
     @else
         <div class="bg-surface border border-line rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -179,6 +180,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
         <div class="mt-4">{{ $transactions->onEachSide(1)->links() }}</div>
     @endif

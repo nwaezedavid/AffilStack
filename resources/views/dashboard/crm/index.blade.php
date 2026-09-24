@@ -30,7 +30,7 @@
 
     <details class="bg-surface border border-line rounded-lg p-5 mb-6">
         <summary class="cursor-pointer text-sm font-medium text-ink-900">+ Add a contact manually</summary>
-        <form method="POST" action="{{ route('crm.store') }}" class="grid sm:grid-cols-2 gap-3 mt-4">
+        <form method="POST" action="{{ route('crm.store') }}" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
             @csrf
             <input name="name" placeholder="Name" class="rounded-md border border-line px-3 py-2 text-sm">
             <input name="company" placeholder="Company" class="rounded-md border border-line px-3 py-2 text-sm">
@@ -69,6 +69,7 @@
         </div>
     @else
         <div class="bg-surface border border-line rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -112,6 +113,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
         <div class="mt-4">{{ $contacts->links() }}</div>
     @endif

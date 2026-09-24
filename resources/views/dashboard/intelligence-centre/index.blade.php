@@ -97,7 +97,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
             <div class="bg-surface border border-line rounded-lg p-4">
                 <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Generation success rate</div>
                 <div class="text-xl font-display font-semibold text-navy-900">

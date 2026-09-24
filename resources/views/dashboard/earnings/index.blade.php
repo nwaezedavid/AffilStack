@@ -5,7 +5,7 @@
 @section('content')
     <p class="text-sm text-ink-600 max-w-2xl mb-5">Your affiliate networks track conversions on their own dashboards — this is where you bring that revenue in and map it back to the cloaked links above, so you can see which offer and which channel is actually making money, not just getting clicks. Every <span class="mono">/go/</span> link now passes its code through to the network as a <span class="font-mono text-xs bg-surface-muted rounded px-1">{{ config('earnings.tracking_param') }}</span> parameter — turn on "sub ID passthrough" (or equivalent) in your network's reporting export and a CSV import here will match rows to links automatically.</p>
 
-    <div class="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <div class="bg-surface border border-line rounded-lg p-5">
             <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Total earnings</div>
             <div class="text-2xl font-display font-semibold text-navy-900">${{ number_format($totals['total_cents'] / 100, 2) }}</div>
@@ -98,6 +98,7 @@
     @if ($byOffer->isNotEmpty())
         <h2 class="text-sm font-semibold text-navy-900 mb-3">By offer</h2>
         <div class="bg-surface border border-line rounded-lg overflow-hidden mb-8">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -118,12 +119,14 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
     @endif
 
     @if ($byChannel->isNotEmpty())
         <h2 class="text-sm font-semibold text-navy-900 mb-3">By channel</h2>
         <div class="bg-surface border border-line rounded-lg overflow-hidden mb-8">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -144,12 +147,14 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
     @endif
 
     @if ($unmatched->isNotEmpty())
         <h2 class="text-sm font-semibold text-navy-900 mb-3">Unmatched entries — assign an offer{{ $unmatchedCount > $unmatched->count() ? ' (showing '.$unmatched->count().' of '.$unmatchedCount.')' : '' }}</h2>
         <div class="bg-surface border border-line rounded-lg overflow-hidden mb-8">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -182,6 +187,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
     @endif
 
@@ -192,6 +198,7 @@
         </div>
     @else
         <div class="bg-surface border border-line rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -226,6 +233,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
         <div class="mt-4">{{ $entries->links() }}</div>
     @endif

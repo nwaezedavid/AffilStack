@@ -8,7 +8,7 @@
     <div class="bg-surface border border-line rounded-lg p-5 my-4">
         <h2 class="font-display font-semibold text-lg text-navy-900 mb-1">{{ $trackedLink->offer->product_name }}</h2>
         <p class="text-xs text-ink-600 mb-3 capitalize">{{ str_replace('_', ' ', $trackedLink->module) }} channel</p>
-        <dl class="grid sm:grid-cols-3 gap-4 text-sm">
+        <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div>
                 <dt class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Cloaked link</dt>
                 <dd><code class="text-xs bg-surface-muted rounded px-2 py-1">{{ $trackedLink->short_url }}</code></dd>
@@ -24,7 +24,7 @@
         </dl>
     </div>
 
-    <div class="grid sm:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div class="bg-surface border border-line rounded-lg p-5">
             <h3 class="font-display font-semibold text-sm text-navy-900 mb-3">By device</h3>
             @forelse ($byDevice as $device => $total)
@@ -67,6 +67,7 @@
         </div>
     @else
         <div class="bg-surface border border-line rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -89,6 +90,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
         <div class="mt-4">{{ $clicks->links() }}</div>
     @endif

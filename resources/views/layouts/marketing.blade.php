@@ -112,8 +112,14 @@
         <div class="bg-navy-900 text-white text-xs text-center py-2 px-4">{{ $announcement }}</div>
     @endif
     <header class="border-b border-line">
-        <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-            <a href="{{ route('home') }}" class="flex items-center gap-2 font-display font-semibold text-lg text-navy-900">
+        {{-- Mobile nav toggle — a pure-CSS checkbox/peer pattern (no Alpine/JS
+             dependency on this layout), so it degrades to a keyboard- and
+             screen-reader-reachable control rather than a `hidden` (removed
+             from the tab order) checkbox. See the matching pattern in
+             layouts/app.blade.php's sidebar drawer. --}}
+        <input type="checkbox" id="marketing-nav-toggle" class="peer sr-only">
+        <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+            <a href="{{ route('home') }}" class="flex items-center gap-2 font-display font-semibold text-lg text-navy-900 shrink-0">
                 @if ($logo)
                     <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($logo) }}" alt="{{ $siteName }}" class="h-8 w-auto">
                 @else
@@ -121,7 +127,9 @@
                     {{ $siteName }}
                 @endif
             </a>
-            <div class="flex items-center gap-4 text-sm">
+
+            {{-- Desktop nav (md and up) --}}
+            <div class="hidden md:flex items-center gap-4 text-sm">
                 @foreach ($menuItems as $item)
                     <a href="{{ $item['url'] ?? '#' }}" class="text-ink-600 hover:text-ink-900">{{ $item['label'] ?? '' }}</a>
                 @endforeach
@@ -137,6 +145,35 @@
                 <a href="{{ route('login') }}" class="text-ink-600 hover:text-ink-900">Sign in</a>
                 <a href="{{ route('registration.pricing') }}" class="rounded-md bg-navy-900 text-white px-4 py-2 text-sm font-medium hover:bg-navy-800 transition">Get started</a>
             </div>
+
+            {{-- Mobile: compact CTA + hamburger (below md) --}}
+            <div class="flex md:hidden items-center gap-2 shrink-0">
+                <a href="{{ route('registration.pricing') }}" class="rounded-md bg-navy-900 text-white px-3 py-1.5 text-sm font-medium hover:bg-navy-800 transition">Get started</a>
+                <label for="marketing-nav-toggle"
+                       class="cursor-pointer p-2 -mr-2 rounded-md text-ink-600 hover:bg-surface-muted peer-focus-visible:ring-2 peer-focus-visible:ring-navy-900"
+                       aria-label="Toggle menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </label>
+            </div>
+        </div>
+
+        {{-- Mobile dropdown panel --}}
+        <div class="hidden peer-checked:flex md:hidden flex-col gap-1 px-6 pb-4 text-sm border-t border-line">
+            @foreach ($menuItems as $item)
+                <a href="{{ $item['url'] ?? '#' }}" class="text-ink-600 hover:text-ink-900 py-2">{{ $item['label'] ?? '' }}</a>
+            @endforeach
+            @if (\App\Models\SiteSetting::flag('affiliate_program_enabled'))
+                <a href="{{ route('affiliate.landing') }}" class="text-ink-600 hover:text-ink-900 py-2">Affiliate Program</a>
+            @endif
+            @if ($blogUrl)
+                <a href="{{ $blogUrl }}" class="text-ink-600 hover:text-ink-900 py-2">Blog</a>
+            @endif
+            <a href="{{ route('tutorials.index') }}" class="text-ink-600 hover:text-ink-900 py-2">Learning Centre</a>
+            <a href="{{ route('registration.pricing') }}" class="text-ink-600 hover:text-ink-900 py-2">Pricing</a>
+            <a href="{{ route('help.index') }}" class="text-ink-600 hover:text-ink-900 py-2">Help</a>
+            <a href="{{ route('login') }}" class="text-ink-600 hover:text-ink-900 py-2">Sign in</a>
         </div>
     </header>
 

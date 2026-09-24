@@ -11,6 +11,7 @@
         </div>
     @else
         <div class="bg-surface border border-line rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                     <tr>
@@ -37,6 +38,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
     @endif
 @endsection

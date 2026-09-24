@@ -30,7 +30,7 @@
         <h1 class="font-display text-3xl font-semibold text-navy-900 mb-2">Help & Support</h1>
         <p class="text-ink-600 mb-8">Search the FAQs below, or reach us directly — whichever is fastest for you.</p>
 
-        <div class="grid sm:grid-cols-3 gap-4 mb-12">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
             <a href="mailto:{{ $supportEmail }}" class="block bg-surface border border-line rounded-lg p-5 hover:border-brand-400 transition">
                 <span class="block text-sm font-semibold text-ink-900 mb-1">Email us</span>
                 <span class="block text-xs text-ink-500 mb-3">For anything that isn't urgent.</span>

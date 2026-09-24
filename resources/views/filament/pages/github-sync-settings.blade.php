@@ -31,6 +31,7 @@
     @if ($runs->isEmpty())
         <p class="afs-panel-empty">No syncs recorded yet.</p>
     @else
+        <div style="overflow-x: auto;">
         <table class="afs-panel-table">
             <thead>
                 <tr>
@@ -67,5 +68,6 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
     @endif
 </x-filament-panels::page>

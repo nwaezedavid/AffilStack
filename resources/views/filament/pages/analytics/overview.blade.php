@@ -57,6 +57,7 @@
                 @if (empty($pages))
                     <p class="afs-panel-empty">No recorded visits yet for this period.</p>
                 @else
+                    <div style="overflow-x: auto;">
                     <table class="afs-panel-table">
                         <thead>
                             <tr>
@@ -75,6 +76,7 @@
                             @endforeach
                         </tbody>
                     </table>
+                    </div>
                 @endif
             </div>
         </div>
@@ -86,6 +88,7 @@
                 @if (empty($sources))
                     <p class="afs-panel-empty">No recorded visits yet for this period.</p>
                 @else
+                    <div style="overflow-x: auto;">
                     <table class="afs-panel-table">
                         <thead>
                             <tr>
@@ -109,6 +112,7 @@
                             @endforeach
                         </tbody>
                     </table>
+                    </div>
                 @endif
             </div>
         </div>
@@ -122,6 +126,7 @@
         @if (empty($plans))
             <p class="afs-panel-empty">No active or trialing subscriptions yet.</p>
         @else
+            <div style="overflow-x: auto;">
             <table class="afs-panel-table">
                 <thead>
                     <tr>
@@ -140,6 +145,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         @endif
     </div>
 
