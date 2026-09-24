@@ -116,7 +116,7 @@ class UgcVideoServiceTest extends TestCase
     {
         Storage::fake('public');
         $this->connectedHeyGen();
-        $user = User::factory()->create(['credits_balance' => 100]);
+        $user = User::factory()->create(['credits_balance' => 150]);
         $offer = $this->offer($user);
         $content = $this->completedContentGeneration($offer, $user);
 
@@ -137,9 +137,9 @@ class UgcVideoServiceTest extends TestCase
 
         $video->refresh();
         $this->assertSame('completed', $video->status);
-        $this->assertSame(40, $video->credits_spent);
+        $this->assertSame(100, $video->credits_spent);
         Storage::disk('public')->assertExists('ugc-videos/'.$video->id.'.mp4');
-        $this->assertSame(100 - 40, $user->fresh()->credits_balance);
+        $this->assertSame(150 - 100, $user->fresh()->credits_balance);
     }
 
     public function test_generate_marks_the_generation_failed_when_heygen_rejects_the_submission(): void
@@ -195,7 +195,7 @@ class UgcVideoServiceTest extends TestCase
     {
         Storage::fake('public');
         $this->connectedHeyGen();
-        $user = User::factory()->create(['credits_balance' => 40]);
+        $user = User::factory()->create(['credits_balance' => 100]);
         $offer = $this->offer($user);
         $content = $this->completedContentGeneration($offer, $user);
 
@@ -203,9 +203,9 @@ class UgcVideoServiceTest extends TestCase
             'api.heygen.com/v3/videos' => Http::response(['data' => ['video_id' => 'v_1']]),
             'api.heygen.com/v3/videos/v_1' => function () use ($user) {
                 // Simulates a second, concurrent generation spending this
-                // user's last 40 credits while this one is still rendering:
+                // user's last 100 credits while this one is still rendering:
                 // hasEnough() passed when this generation started (balance
-                // was 40), but by the time credits->spend() runs after the
+                // was 100), but by the time credits->spend() runs after the
                 // render finishes, the balance has already been taken.
                 $user->update(['credits_balance' => 0]);
 
@@ -225,7 +225,7 @@ class UgcVideoServiceTest extends TestCase
 
         $video->refresh();
         // Before the fix: status ended up "completed" with credits_spent
-        // recorded as 40 even though spend() threw InsufficientCreditsException
+        // recorded as 100 even though spend() threw InsufficientCreditsException
         // and the ledger/balance were never actually touched by this
         // generation — the rendered video was handed out for free.
         $this->assertSame('failed', $video->status);

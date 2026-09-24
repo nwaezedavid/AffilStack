@@ -9,28 +9,42 @@ use Illuminate\Database\Seeder;
  * Item #2 of the pricing/payments audit — repriced from scratch rather than
  * left as-is. There's no full per-module AI cost ledger in this app yet
  * (see config/credits.php), so this is built from what IS known plus
- * standard estimates, not a live figure:
+ * standard estimates, not a live figure. Revisited and corrected once more
+ * (see the platform-wide AI-cost-vs-pricing review this docblock was last
+ * updated alongside): the original version of this estimate assumed
+ * ugc_video cost ~$0.75-$1.00 in HeyGen fees, which was wrong — verified
+ * against HeyGen's real API pricing ($0.05/second) and UgcService's own
+ * video_script prompt target (~45-60 seconds spoken), the real cost is
+ * $2.25-$3.00. config/credits.php's ugc_video price was corrected from 40
+ * to 100 credits to match, which is what restores the numbers below rather
+ * than requiring a change to the plan prices or credit allotments
+ * themselves:
  *
- *   - ugc_video (40 credits) is documented at ~$0.75-$1.00 in HeyGen fees —
- *     by far the single most expensive module per credit (~$0.02/credit).
- *   - Every other module is a single text-generation AI call; at typical
- *     LLM API pricing a call sized to its credit cost runs roughly
- *     $0.01-$0.08 (e.g. blog_article's 15 credits ≈ $0.08, a 3-credit reply
- *     draft ≈ $0.01) — call it $0.003-$0.004/credit blended, well under
- *     ugc_video's rate precisely because that module was already priced as
- *     "a healthy multiple" of its own real cost.
- *   - Blending the full config('credits.costs') menu on that basis lands
- *     around $0.008/credit of actual AI spend at typical usage.
+ *   - ugc_video (100 credits, corrected) costs $2.25-$3.00 in HeyGen fees —
+ *     by far the single most expensive module per credit, but now priced
+ *     to match (~$0.0225-$0.03/credit, roughly what this module was always
+ *     intended to cost before the underlying HeyGen assumption was wrong).
+ *   - Every other module is a single text-generation AI call; at gpt-4o-mini's
+ *     real, verified pricing ($0.15/$0.60 per 1M input/output tokens) even a
+ *     deliberately generous worst-case estimate for any single call comes to
+ *     roughly $0.0015 — under $0.0002/credit blended across the whole
+ *     non-video menu, two orders of magnitude cheaper than ugc_video.
+ *   - Blending the full config('credits.costs') menu at a realistic mix
+ *     (most users spend a minority of credits on video) lands around
+ *     84-97% gross margin at up to 30% of credits spent on ugc_video, and
+ *     ~100% margin for a user who never touches it — comfortably inside the
+ *     85-95%+ this pricing was designed around. A single user spending
+ *     their *entire* monthly allowance on nothing but ugc_video (the
+ *     extreme, unthrottled worst case) still holds 47-76% margin depending
+ *     on plan and script length, instead of running an outright loss on
+ *     Pro/Business/Agency the way the old 40-credit price did.
  *
- * Old pricing already ran 85-95%+ gross margin at that blended cost — the
- * bottleneck was never margin, it was conversion friction at the entry
+ * The bottleneck was never margin, it was conversion friction at the entry
  * price point. This repricing lowers Starter (cheaper first purchase =
  * more of them) while capturing more from Pro/Business/Agency, where team
  * size and unlimited products/contacts mean the value delivered is highest
  * and price sensitivity is lowest — net more total profit, not just a
- * different split of the same money. Every tier still clears an ~85%+
- * margin at the estimate above (Starter: ~$1.60 cost vs $19 price ≈ 91.6%;
- * Agency: ~$56 cost vs $399 price ≈ 85.9%).
+ * different split of the same money.
  *
  * Yearly price is never typed independently — see Plan::yearlyPriceCentsFor().
  */
