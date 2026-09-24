@@ -164,7 +164,16 @@ class HeyGenClient
      */
     public function checkVideoStatus(string $videoId): array
     {
-        $response = $this->client()->get("/v3/videos/{$videoId}");
+        // Polled in a loop for up to MAX_WAIT_MINUTES (see UgcVideoService)
+        // — a transient network blip on any one poll is a real possibility
+        // over that window, and must resolve the same terminal "failed" way
+        // an outright HTTP error already does below, not throw and crash
+        // the queue worker mid-poll (see generateVideo()'s identical guard).
+        try {
+            $response = $this->client()->get("/v3/videos/{$videoId}");
+        } catch (Throwable $e) {
+            return ['status' => 'failed', 'video_url' => null, 'message' => 'Could not reach HeyGen: '.$e->getMessage()];
+        }
 
         if ($response->failed()) {
             return ['status' => 'failed', 'video_url' => null, 'message' => $this->errorMessage($response)];

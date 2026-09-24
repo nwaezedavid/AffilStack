@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Credits\CreditManager;
 use App\Services\Credits\InsufficientCreditsException;
 use App\Services\Video\HeyGenClient;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -133,14 +134,31 @@ class UgcVideoService
         $localPath = $this->downloadVideo($result['video_url'], $generation->id);
         $videoUrl = $localPath ? Storage::disk('public')->url($localPath) : $result['video_url'];
 
-        $generation->update([
-            'status' => 'completed',
-            'output' => $videoUrl,
-            'output_meta' => ['heygen_video_id' => $videoId, 'video_url' => $videoUrl],
-            'credits_spent' => $cost,
-        ]);
+        // Spending the credits and marking the generation completed must be
+        // atomic: if spend() fails (e.g. a concurrent generation already
+        // took the user's last credits between the hasEnough() check above
+        // and here — this HeyGen round-trip can take several minutes,
+        // leaving plenty of time for exactly that race), the generation
+        // must NOT be left "completed" with credits_spent recorded — that
+        // would hand out this rendered video for free while the ledger
+        // shows nothing charged.
+        try {
+            DB::transaction(function () use ($generation, $user, $cost, $videoId, $videoUrl) {
+                $this->credits->spend($user, $cost, 'ugc_video', $generation);
 
-        $this->credits->spend($user, $cost, 'ugc_video', $generation);
+                $generation->update([
+                    'status' => 'completed',
+                    'output' => $videoUrl,
+                    'output_meta' => ['heygen_video_id' => $videoId, 'video_url' => $videoUrl],
+                    'credits_spent' => $cost,
+                ]);
+            });
+        } catch (Throwable $e) {
+            Log::error('Credit spend failed after a successful UGC video render — video was generated but not charged', [
+                'generation_id' => $generation->id, 'user_id' => $user->id, 'error' => $e->getMessage(),
+            ]);
+            $generation->update(['status' => 'failed', 'error_message' => 'Insufficient credits at processing time.']);
+        }
     }
 
     /**

@@ -191,6 +191,49 @@ class UgcVideoServiceTest extends TestCase
         $this->assertStringContainsString('render error', $video->fresh()->error_message);
     }
 
+    public function test_a_credit_spend_failure_leaves_the_generation_failed_not_completed(): void
+    {
+        Storage::fake('public');
+        $this->connectedHeyGen();
+        $user = User::factory()->create(['credits_balance' => 40]);
+        $offer = $this->offer($user);
+        $content = $this->completedContentGeneration($offer, $user);
+
+        Http::fake([
+            'api.heygen.com/v3/videos' => Http::response(['data' => ['video_id' => 'v_1']]),
+            'api.heygen.com/v3/videos/v_1' => function () use ($user) {
+                // Simulates a second, concurrent generation spending this
+                // user's last 40 credits while this one is still rendering:
+                // hasEnough() passed when this generation started (balance
+                // was 40), but by the time credits->spend() runs after the
+                // render finishes, the balance has already been taken.
+                $user->update(['credits_balance' => 0]);
+
+                return Http::response(['data' => ['status' => 'completed', 'video_url' => 'https://cdn.heygen.com/v_1.mp4']]);
+            },
+            'cdn.heygen.com/*' => Http::response('fake-mp4-bytes', 200),
+        ]);
+
+        $video = $offer->generations()->create([
+            'user_id' => $user->id,
+            'module' => 'ugc_video',
+            'input' => ['content_generation_id' => $content->id, 'avatar_id' => 'avatar_1', 'voice_id' => 'voice_1', 'video_script' => 'Hey there.'],
+            'status' => 'queued',
+        ]);
+
+        app(UgcVideoService::class)->generate($video);
+
+        $video->refresh();
+        // Before the fix: status ended up "completed" with credits_spent
+        // recorded as 40 even though spend() threw InsufficientCreditsException
+        // and the ledger/balance were never actually touched by this
+        // generation — the rendered video was handed out for free.
+        $this->assertSame('failed', $video->status);
+        $this->assertSame(0, $video->credits_spent);
+        $this->assertNull($video->output);
+        $this->assertSame(0, $user->fresh()->credits_balance);
+    }
+
     public function test_generate_falls_back_to_heygens_own_url_when_the_download_fails(): void
     {
         Storage::fake('public');

@@ -9,6 +9,9 @@ use App\Services\AI\AIGenerationException;
 use App\Services\AI\AIProvider;
 use App\Services\Credits\CreditManager;
 use App\Services\Credits\InsufficientCreditsException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Feature 1: given nothing but a product name, its URL, and the affiliate
@@ -115,29 +118,66 @@ class OfferResearchService
             ]);
 
             return;
+        } catch (Throwable $e) {
+            Log::error('Unexpected error running offer research', ['offer_id' => $offer->id, 'error' => $e->getMessage()]);
+            $offer->update(['status' => 'failed']);
+            $offer->generations()->create([
+                'user_id' => $user->id,
+                'module' => 'research',
+                'input' => $offer->only(['product_name', 'product_url', 'affiliate_network']),
+                'credits_spent' => 0,
+                'status' => 'failed',
+                'error_message' => 'Something went wrong generating this research — please try again.',
+            ]);
+
+            return;
         }
 
-        $offer->update([
-            'status' => 'ready',
-            'ideal_customer_summary' => $result['ideal_customer_summary'] ?? null,
-            'where_to_find' => is_array($result['where_to_find'] ?? null)
-                ? implode("\n", $result['where_to_find'])
-                : ($result['where_to_find'] ?? null),
-            'recommended_channel' => $result['recommended_channel'] ?? null,
-            'recommended_angle' => $result['recommended_angle'] ?? null,
-            'research_data' => $result,
-        ]);
+        // Updating the offer, creating its completed Generation row, and
+        // spending the credits must be atomic: if spend() fails (e.g. a
+        // concurrent generation already took the user's last credits
+        // between the hasEnough() check above and here), none of it should
+        // stick — otherwise the offer would show real research data and a
+        // "completed" generation while the ledger never charged for it.
+        try {
+            DB::transaction(function () use ($offer, $user, $cost, $result) {
+                $offer->update([
+                    'status' => 'ready',
+                    'ideal_customer_summary' => $result['ideal_customer_summary'] ?? null,
+                    'where_to_find' => is_array($result['where_to_find'] ?? null)
+                        ? implode("\n", $result['where_to_find'])
+                        : ($result['where_to_find'] ?? null),
+                    'recommended_channel' => $result['recommended_channel'] ?? null,
+                    'recommended_angle' => $result['recommended_angle'] ?? null,
+                    'research_data' => $result,
+                ]);
 
-        $generation = $offer->generations()->create([
-            'user_id' => $user->id,
-            'module' => 'research',
-            'input' => $offer->only(['product_name', 'product_url', 'affiliate_network']),
-            'output' => json_encode($result),
-            'output_meta' => $result,
-            'credits_spent' => $cost,
-            'status' => 'completed',
-        ]);
+                $generation = $offer->generations()->create([
+                    'user_id' => $user->id,
+                    'module' => 'research',
+                    'input' => $offer->only(['product_name', 'product_url', 'affiliate_network']),
+                    'output' => json_encode($result),
+                    'output_meta' => $result,
+                    'credits_spent' => $cost,
+                    'status' => 'completed',
+                ]);
 
-        $this->credits->spend($user, $cost, 'research', $generation);
+                $this->credits->spend($user, $cost, 'research', $generation);
+            });
+        } catch (Throwable $e) {
+            Log::error('Credit spend failed after a successful offer research generation — content was generated but not charged', [
+                'offer_id' => $offer->id, 'user_id' => $user->id, 'error' => $e->getMessage(),
+            ]);
+
+            $offer->update(['status' => 'failed']);
+            $offer->generations()->create([
+                'user_id' => $user->id,
+                'module' => 'research',
+                'input' => $offer->only(['product_name', 'product_url', 'affiliate_network']),
+                'credits_spent' => 0,
+                'status' => 'failed',
+                'error_message' => 'Insufficient credits at processing time.',
+            ]);
+        }
     }
 }

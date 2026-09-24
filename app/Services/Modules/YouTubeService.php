@@ -10,8 +10,11 @@ use App\Services\AI\AIGenerationException;
 use App\Services\AI\AIProvider;
 use App\Services\Credits\CreditManager;
 use App\Services\Credits\InsufficientCreditsException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 
 /**
  * Feature 4: YouTube module. Two steps, run in that order: a video script,
@@ -139,16 +142,32 @@ class YouTubeService
             $generation->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
 
             return;
+        } catch (Throwable $e) {
+            Log::error('Unexpected error generating YouTube content', ['generation_id' => $generation->id, 'error' => $e->getMessage()]);
+            $generation->update(['status' => 'failed', 'error_message' => 'Something went wrong generating this content — please try again.']);
+
+            return;
         }
 
-        $generation->update([
-            'output' => $result['script_markdown'] ?? json_encode($result),
-            'output_meta' => $result,
-            'credits_spent' => $cost,
-            'status' => 'completed',
-        ]);
+        // Spending the credits and marking the generation completed must be
+        // atomic — see BlogArticleService for why.
+        try {
+            DB::transaction(function () use ($generation, $user, $module, $cost, $result) {
+                $this->credits->spend($user, $cost, $module, $generation);
 
-        $this->credits->spend($user, $cost, $module, $generation);
+                $generation->update([
+                    'output' => $result['script_markdown'] ?? json_encode($result),
+                    'output_meta' => $result,
+                    'credits_spent' => $cost,
+                    'status' => 'completed',
+                ]);
+            });
+        } catch (Throwable $e) {
+            Log::error('Credit spend failed after a successful YouTube generation — content was generated but not charged', [
+                'generation_id' => $generation->id, 'user_id' => $user->id, 'error' => $e->getMessage(),
+            ]);
+            $generation->update(['status' => 'failed', 'error_message' => 'Insufficient credits at processing time.']);
+        }
     }
 
     protected function latestScript(Offer $offer): ?Generation

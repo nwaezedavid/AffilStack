@@ -10,6 +10,9 @@ use App\Services\AI\AIGenerationException;
 use App\Services\AI\AIProvider;
 use App\Services\Credits\CreditManager;
 use App\Services\Credits\InsufficientCreditsException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Core feature 6 (Phase 2): Pinterest pin generator. Pinterest is a search
@@ -101,16 +104,32 @@ class PinterestService
             $generation->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
 
             return;
+        } catch (Throwable $e) {
+            Log::error('Unexpected error generating Pinterest pins', ['generation_id' => $generation->id, 'error' => $e->getMessage()]);
+            $generation->update(['status' => 'failed', 'error_message' => 'Something went wrong generating this content — please try again.']);
+
+            return;
         }
 
-        $generation->update([
-            'output' => json_encode($result),
-            'output_meta' => $result,
-            'credits_spent' => $cost,
-            'status' => 'completed',
-        ]);
+        // Spending the credits and marking the generation completed must be
+        // atomic — see BlogArticleService for why.
+        try {
+            DB::transaction(function () use ($generation, $user, $module, $cost, $result) {
+                $this->credits->spend($user, $cost, $module, $generation);
 
-        $this->credits->spend($user, $cost, $module, $generation);
+                $generation->update([
+                    'output' => json_encode($result),
+                    'output_meta' => $result,
+                    'credits_spent' => $cost,
+                    'status' => 'completed',
+                ]);
+            });
+        } catch (Throwable $e) {
+            Log::error('Credit spend failed after a successful Pinterest generation — content was generated but not charged', [
+                'generation_id' => $generation->id, 'user_id' => $user->id, 'error' => $e->getMessage(),
+            ]);
+            $generation->update(['status' => 'failed', 'error_message' => 'Insufficient credits at processing time.']);
+        }
     }
 
     protected function offerContext(Offer $offer): string

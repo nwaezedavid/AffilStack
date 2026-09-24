@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Services\Video\HeyGenClient;
 use App\Services\Video\VideoGenerationException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -118,5 +119,27 @@ class HeyGenClientTest extends TestCase
 
         $this->assertSame('failed', $status['status']);
         $this->assertSame('render error', $status['message']);
+    }
+
+    /**
+     * UgcVideoService polls this in a loop for up to 8 minutes — a
+     * transient network blip on any one poll is a real possibility over
+     * that window. Before the fix, this threw Illuminate's ConnectionException
+     * straight out of checkVideoStatus() (uncaught by UgcVideoService::generate(),
+     * whose queue job has $tries = 1 and no failed() handler), crashing the
+     * worker mid-poll instead of resolving to a terminal "failed" status the
+     * same way an outright HTTP error already does.
+     */
+    public function test_check_video_status_reports_failure_instead_of_throwing_on_a_connection_error(): void
+    {
+        Http::fake(['api.heygen.com/v3/videos/v_123' => function () {
+            throw new ConnectionException('cURL error 28: Operation timed out');
+        }]);
+
+        $status = (new HeyGenClient('key'))->checkVideoStatus('v_123');
+
+        $this->assertSame('failed', $status['status']);
+        $this->assertNull($status['video_url']);
+        $this->assertStringContainsString('Could not reach HeyGen', $status['message']);
     }
 }

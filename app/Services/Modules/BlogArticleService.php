@@ -10,6 +10,9 @@ use App\Services\AI\AIGenerationException;
 use App\Services\AI\AIProvider;
 use App\Services\Credits\CreditManager;
 use App\Services\Credits\InsufficientCreditsException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Feature 3: one-click blog / Medium article generation, formatted to rank
@@ -93,15 +96,35 @@ class BlogArticleService
             $generation->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
 
             return;
+        } catch (Throwable $e) {
+            Log::error('Unexpected error generating a blog article', ['generation_id' => $generation->id, 'error' => $e->getMessage()]);
+            $generation->update(['status' => 'failed', 'error_message' => 'Something went wrong generating this content — please try again.']);
+
+            return;
         }
 
-        $generation->update([
-            'output' => $result['article_markdown'] ?? null,
-            'output_meta' => $result,
-            'credits_spent' => $cost,
-            'status' => 'completed',
-        ]);
+        // Spending the credits and marking the generation completed must be
+        // atomic: if spend() fails (e.g. a concurrent generation already
+        // took the user's last credits between the hasEnough() check above
+        // and here), the generation must NOT be left "completed" with
+        // credits_spent recorded — that would hand out this AI-generated
+        // article for free while the ledger shows nothing charged.
+        try {
+            DB::transaction(function () use ($generation, $user, $cost, $result) {
+                $this->credits->spend($user, $cost, 'blog_article', $generation);
 
-        $this->credits->spend($user, $cost, 'blog_article', $generation);
+                $generation->update([
+                    'output' => $result['article_markdown'] ?? null,
+                    'output_meta' => $result,
+                    'credits_spent' => $cost,
+                    'status' => 'completed',
+                ]);
+            });
+        } catch (Throwable $e) {
+            Log::error('Credit spend failed after a successful blog article generation — content was generated but not charged', [
+                'generation_id' => $generation->id, 'user_id' => $user->id, 'error' => $e->getMessage(),
+            ]);
+            $generation->update(['status' => 'failed', 'error_message' => 'Insufficient credits at processing time.']);
+        }
     }
 }
