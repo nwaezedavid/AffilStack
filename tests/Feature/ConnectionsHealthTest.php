@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Pages\ConnectionsHealth;
 use App\Models\BingWebmasterSetting;
 use App\Models\BrainAgentSetting;
+use App\Models\GitHubSyncSetting;
 use App\Models\GoogleOauthSetting;
 use App\Models\GoogleSiteAnalyticsSetting;
 use App\Models\HeyGenSetting;
@@ -192,5 +193,40 @@ class ConnectionsHealthTest extends TestCase
         Livewire::actingAs($user)
             ->test(ConnectionsHealth::class)
             ->assertForbidden();
+    }
+
+    /**
+     * The built-in GitHub sync feature registers with this same aggregator
+     * rather than a parallel status screen — see
+     * SettingsHealthChecker::gitHubSyncItem().
+     */
+    public function test_the_github_sync_item_appears_unconfigured_by_default(): void
+    {
+        $item = collect(app(SettingsHealthChecker::class)->items())->firstWhere('key', 'github_sync');
+
+        $this->assertNotNull($item);
+        $this->assertSame('System', $item['group']);
+        $this->assertFalse($item['is_configured']);
+        $this->assertNull($item['success']);
+    }
+
+    public function test_running_live_checks_verifies_github_sync_once_credentials_are_configured(): void
+    {
+        GitHubSyncSetting::current()->update([
+            'repo_owner' => 'acme',
+            'repo_name' => 'affilistack',
+            'credentials' => ['personal_access_token' => 'ghp_fake'],
+        ]);
+
+        Http::fake(['api.github.com/*' => Http::response(['message' => 'Bad credentials'], 401)]);
+
+        app(SettingsHealthChecker::class)->runLiveChecks();
+
+        $settings = GitHubSyncSetting::current();
+        $this->assertSame('failed', $settings->last_sync_status);
+        $this->assertNotNull($settings->last_sync_at);
+
+        $item = collect(app(SettingsHealthChecker::class)->items())->firstWhere('key', 'github_sync');
+        $this->assertFalse($item['success']);
     }
 }

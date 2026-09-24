@@ -113,6 +113,16 @@ ScheduleMonitoring::track(
     'images:optimize-to-webp',
 );
 
+// Built-in GitHub sync: pushes this application's own working copy to the
+// super-admin's connected repo (Filament: System > GitHub Sync) whenever
+// that connection's auto-sync toggle is on — see GitHubSyncService for the
+// commit/push mechanics and its .env-leak defense-in-depth guard. The same
+// service also powers the page's on-demand "Sync now" button.
+ScheduleMonitoring::track(
+    Schedule::command('github:sync')->daily()->withoutOverlapping(),
+    'github:sync',
+);
+
 // Self-maintenance: keep the run-history table itself from growing forever.
 Schedule::call(fn () => ScheduledTaskRun::where('created_at', '<', now()->subDays(30))->delete())
     ->daily()

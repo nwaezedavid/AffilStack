@@ -4,6 +4,7 @@ namespace App\Services\Settings;
 
 use App\Models\BingWebmasterSetting;
 use App\Models\BrainAgentSetting;
+use App\Models\GitHubSyncSetting;
 use App\Models\GoogleOauthSetting;
 use App\Models\GoogleSiteAnalyticsSetting;
 use App\Models\HeyGenSetting;
@@ -17,6 +18,7 @@ use App\Services\AI\AnthropicClient;
 use App\Services\Analytics\BingWebmasterClient;
 use App\Services\Analytics\GoogleSiteAnalyticsService;
 use App\Services\Auth\GoogleOAuthService;
+use App\Services\GitHub\GitHubSyncService;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Referrals\PartnerStackClient;
 use App\Services\Video\HeyGenClient;
@@ -80,6 +82,7 @@ class SettingsHealthChecker
             $this->bingItem(),
             $this->metaPixelItem(),
             $this->tiktokPixelItem(),
+            $this->gitHubSyncItem(),
         ];
     }
 
@@ -167,6 +170,16 @@ class SettingsHealthChecker
                 'verified_at' => now(),
                 'verification_status' => $gscResult['success'] ? 'success' : 'failed',
                 'verification_message' => $gscResult['message'],
+            ]);
+        }
+
+        $gitHubSync = GitHubSyncSetting::current();
+        if ($gitHubSync->hasCredentials()) {
+            $gitHubResult = app(GitHubSyncService::class)->verifyConnection($gitHubSync);
+            $gitHubSync->update([
+                'last_sync_status' => $gitHubResult['success'] ? 'success' : 'failed',
+                'last_sync_at' => now(),
+                'last_sync_message' => $gitHubResult['message'],
             ]);
         }
 
@@ -530,6 +543,29 @@ class SettingsHealthChecker
             'message' => filled($pixelId) ? "Pixel {$pixelId} is injected sitewide." : 'Not configured yet.',
             'live_checkable' => false,
             'frontend_hint' => 'Use TikTok Events Manager\'s diagnostics tool against the live site.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function gitHubSyncItem(): array
+    {
+        $settings = GitHubSyncSetting::current();
+
+        return [
+            'key' => 'github_sync',
+            'label' => 'GitHub Sync',
+            'group' => 'System',
+            'what_it_does' => "Pushes this platform's own code to a connected GitHub repository, daily and on demand.",
+            'settings_url' => route('filament.admin.pages.git-hub-sync-settings'),
+            'is_enabled' => $settings->is_enabled,
+            'is_configured' => $settings->hasCredentials(),
+            'checked_at' => $settings->last_sync_at,
+            'success' => $this->tristate($settings->last_sync_status),
+            'message' => $settings->last_sync_message,
+            'live_checkable' => true,
+            'frontend_hint' => "Nothing user-facing depends on this — it only affects this platform's own codebase repository.",
         ];
     }
 }
