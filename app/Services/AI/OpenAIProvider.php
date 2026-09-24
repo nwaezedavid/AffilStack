@@ -79,7 +79,23 @@ class OpenAIProvider implements AIProvider
             throw new AIGenerationException('AI image generation failed: '.$response->body());
         }
 
-        return (string) data_get($response->json(), 'data.0.url', '');
+        $image = data_get($response->json(), 'data.0', []);
+
+        // dall-e-2/3 return a hosted url; the current gpt-image-* family
+        // returns base64 only (b64_json) and never a url at all — verified
+        // against OpenAI's own API reference, not assumed. Handling both
+        // keeps this working regardless of which family OPENAI_IMAGE_MODEL
+        // points at, rather than silently returning '' the moment the
+        // configured model happens to be a base64-only one.
+        if (! empty($image['url'])) {
+            return (string) $image['url'];
+        }
+
+        if (! empty($image['b64_json'])) {
+            return 'data:image/png;base64,'.$image['b64_json'];
+        }
+
+        return '';
     }
 
     protected function client()
