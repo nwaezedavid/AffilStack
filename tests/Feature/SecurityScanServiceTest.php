@@ -122,4 +122,147 @@ class SecurityScanServiceTest extends TestCase
 
         $this->assertDatabaseCount('security_findings', 2);
     }
+
+    public function test_it_finds_no_unencrypted_credential_columns_in_the_real_schema(): void
+    {
+        // Every credential-shaped column in this app's actual models is
+        // already protected — by an encrypted/hashed cast, a verified
+        // framework mechanism (Fortify's own encrypt/decrypt, remember_token),
+        // or a verified one-way hash elsewhere in the app. This is the
+        // "prove it's currently clean" counterpart to the fixture-based
+        // tests below, which prove the check *would* fire on a real gap.
+        $findings = $this->invokeCheck('checkUnencryptedSecretColumns');
+
+        $this->assertSame([], $findings);
+    }
+
+    public function test_column_is_hashed_not_encrypted_recognizes_real_hash_assignments_app_wide(): void
+    {
+        // ApiToken hashes its own column ('token_hash' => hash('sha256', ...)
+        // inside the model); AffiliateApplication's is hashed from its
+        // service class instead ('set_password_token' => hash('sha256', ...)
+        // in AffiliateApplicationService) — the check has to find both,
+        // since it can't assume the hashing always happens in the model.
+        $this->assertTrue($this->invokeCheck('columnIsHashedNotEncrypted', ['token_hash']));
+        $this->assertTrue($this->invokeCheck('columnIsHashedNotEncrypted', ['set_password_token']));
+        $this->assertFalse($this->invokeCheck('columnIsHashedNotEncrypted', ['definitely_not_a_real_column_anywhere']));
+    }
+
+    public function test_it_finds_no_ai_prompt_credential_leaks_in_the_real_codebase(): void
+    {
+        $findings = $this->invokeCheck('checkAiPromptCredentialInterpolation');
+
+        $this->assertSame([], $findings);
+    }
+
+    public function test_find_credential_leaks_in_source_catches_a_secret_read_directly_inside_an_ai_call(): void
+    {
+        $source = <<<'PHP'
+            <?php
+            class Example
+            {
+                public function run(): string
+                {
+                    return $this->ai->generateText(
+                        'You are a helpful assistant.',
+                        'Use this key: '.env('OPENAI_API_KEY')
+                    );
+                }
+            }
+            PHP;
+
+        $offending = $this->invokeCheck('findCredentialLeaksInSource', [$source]);
+
+        $this->assertCount(1, $offending);
+        $this->assertSame('$ai->generateText(...)', $offending[0]['call']);
+        $this->assertStringContainsString('OPENAI_API_KEY', $offending[0]['expression']);
+    }
+
+    public function test_find_credential_leaks_in_source_ignores_non_ai_calls_and_non_secret_keys(): void
+    {
+        // Regression fixture for GoogleMapsLeadService: reading a
+        // credential-shaped config() value to call a *different* third-party
+        // API entirely, with zero AI-provider call anywhere in the file,
+        // must never be flagged — an earlier, file-wide version of this
+        // check false-positived on exactly this shape.
+        $unrelatedApiCall = <<<'PHP'
+            <?php
+            class GoogleMapsLeadServiceFixture
+            {
+                public function __construct(protected ?string $apiKey = null)
+                {
+                    $this->apiKey ??= config('services.google_places.api_key');
+                }
+            }
+            PHP;
+
+        $this->assertSame([], $this->invokeCheck('findCredentialLeaksInSource', [$unrelatedApiCall]));
+
+        // A real AI call whose arguments only read non-secret-shaped config
+        // (a model name) must also stay quiet.
+        $safeAiCall = <<<'PHP'
+            <?php
+            class Example
+            {
+                public function run(): string
+                {
+                    return $this->ai->generateText('system', config('ai.openai.text_model'));
+                }
+            }
+            PHP;
+
+        $this->assertSame([], $this->invokeCheck('findCredentialLeaksInSource', [$safeAiCall]));
+    }
+
+    public function test_extract_balanced_parens_handles_nesting_and_multiline_calls(): void
+    {
+        $source = 'foo(bar(1, 2), "text with ) inside", [multi, line])->baz();';
+        $openParenPos = strpos($source, '(');
+
+        $result = $this->invokeCheck('extractBalancedParens', [$source, $openParenPos]);
+
+        $this->assertSame('bar(1, 2), "text with ) inside", [multi, line]', $result);
+    }
+
+    public function test_find_credential_leaks_in_source_is_not_confused_by_a_parenthetical_remark_in_the_prompt_text(): void
+    {
+        // A system prompt like "Keep the answer short (2-3 sentences)." is
+        // completely ordinary AI-prompt writing — its own ")" must not be
+        // mistaken for the end of the generateText(...) call, which would
+        // otherwise truncate the captured arguments before ever reaching the
+        // real env() call further along in the same call.
+        $source = <<<'PHP'
+            <?php
+            class Example
+            {
+                public function run(): string
+                {
+                    return $this->ai->generateText(
+                        'Keep the answer short (2-3 sentences).',
+                        'Use this key: '.env('OPENAI_API_KEY')
+                    );
+                }
+            }
+            PHP;
+
+        $offending = $this->invokeCheck('findCredentialLeaksInSource', [$source]);
+
+        $this->assertCount(1, $offending);
+        $this->assertStringContainsString('OPENAI_API_KEY', $offending[0]['expression']);
+    }
+
+    /**
+     * Invokes a protected/private method on a real SecurityScanService
+     * instance — every method under test here is pure logic with no side
+     * effects, so reflection is simpler and safer than making them public
+     * just for tests.
+     */
+    protected function invokeCheck(string $method, array $args = []): mixed
+    {
+        $service = app(SecurityScanService::class);
+        $reflection = new \ReflectionMethod($service, $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invoke($service, ...$args);
+    }
 }
