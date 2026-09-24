@@ -20,11 +20,15 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * Deliberately skips the admin panel, API, and webhook paths — 404s there
  * are a developer/integration concern, not something the marketing site's
  * 404 monitor should collect or that a marketing-authored redirect should
- * ever apply to.
+ * ever apply to. 'afs-login' is the standalone login-redirect route (see
+ * routes/web.php); 'afs-admin' is the actual Filament panel path
+ * (AdminPanelProvider) — both are real, deliberately registered routes
+ * this fallback should never shadow, and 'admin' is kept too as the old,
+ * now-unused default Filament path, in case anything still probes it.
  */
 class RedirectFallbackController extends Controller
 {
-    protected const EXCLUDED_PREFIXES = ['afs-login', 'admin', 'api', 'webhooks'];
+    protected const EXCLUDED_PREFIXES = ['afs-login', 'afs-admin', 'admin', 'api', 'webhooks'];
 
     public function __construct(protected SiteNotFoundResponder $responder) {}
 

@@ -56,6 +56,7 @@ use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\TutorialController;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Route;
 
 // Audit item #7 (caching/performance) — every page in this group has no
@@ -81,6 +82,17 @@ Route::middleware('cache-public-page')->group(function () {
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+
+// The ONLY admin URL anyone should ever need to type or bookmark. Every
+// other admin screen lives under /afs-admin/* (see AdminPanelProvider's
+// ->path()) — this route's one job is to be a stable front door into that
+// panel's login screen. Built from Filament::getPanel('admin')->getLoginUrl()
+// rather than a hardcoded '/afs-admin/login' string so it can never drift
+// out of sync if the panel path or login slug ever changes again. Must be
+// registered before the generic /{slug} SitePage route further down, or
+// this would 404 through PageController::show instead.
+Route::get('/afs-login', fn () => redirect()->to(Filament::getPanel('admin')->getLoginUrl()))
+    ->name('admin.login-redirect');
 
 // Manual override for CheckoutCountryResolver's auto-detected country —
 // public, no auth needed: it's used from the pre-signup pricing/signup

@@ -20,8 +20,8 @@ use Tests\TestCase;
  * Uses Livewire::test() directly on each List page rather than an HTTP
  * GET on the panel route, the same way AffiliateApplicationTest and
  * PublicContentCachingTest exercise Filament pages elsewhere — a plain
- * HTTP request to any /afs-login/* resource redirects every admin to
- * /afs-login/multi-factor-authentication/set-up (isRequired: true in
+ * HTTP request to any /afs-admin/* resource redirects every admin to
+ * /afs-admin/multi-factor-authentication/set-up (isRequired: true in
  * AdminPanelProvider, confirmed against the pre-existing PlanResource
  * too, so that's expected platform behavior, not something to route
  * around here).

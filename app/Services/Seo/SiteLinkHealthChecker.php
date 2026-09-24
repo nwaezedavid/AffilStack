@@ -33,7 +33,7 @@ class SiteLinkHealthChecker
     /** Mirrors RedirectFallbackController::EXCLUDED_PREFIXES — a scanned
      * path under one of these is a developer/integration concern, never
      * something this checker should touch. */
-    protected const EXCLUDED_PREFIXES = ['afs-login', 'admin', 'api', 'webhooks'];
+    protected const EXCLUDED_PREFIXES = ['afs-login', 'afs-admin', 'admin', 'api', 'webhooks'];
 
     /** A redirect chain longer than this is treated as broken rather than
      * followed forever — matches Redirect::wouldCreateCycle()'s own bound. */

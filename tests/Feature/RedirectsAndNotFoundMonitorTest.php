@@ -101,6 +101,18 @@ class RedirectsAndNotFoundMonitorTest extends TestCase
 
     public function test_the_admin_panel_path_is_never_redirect_checked_or_logged(): void
     {
+        $response = $this->get('/afs-admin/some-nonexistent-page');
+
+        $response->assertNotFound();
+        $this->assertSame(0, NotFoundLog::count());
+    }
+
+    public function test_the_login_redirect_path_is_never_redirect_checked_or_logged_either(): void
+    {
+        // /afs-login itself is a real registered route (a redirect to the
+        // login form) so this never even reaches the fallback controller,
+        // but anything else under that prefix should still be excluded the
+        // same way /afs-admin/* is.
         $response = $this->get('/afs-login/some-nonexistent-page');
 
         $response->assertNotFound();
