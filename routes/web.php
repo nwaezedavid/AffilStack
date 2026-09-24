@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AffiliateSetPasswordController;
+use App\Http\Controllers\AnalyticsBeaconController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CheckoutCountryController;
 use App\Http\Controllers\ContactController;
@@ -104,6 +105,15 @@ Route::get('/r/{code}', [ReferralController::class, 'redirect'])->name('referral
 Route::get('/e/o/{token}.png', [CrmEmailTrackingController::class, 'open'])->name('crm.track.open');
 Route::get('/e/c/{token}', [CrmEmailTrackingController::class, 'click'])->name('crm.track.click');
 Route::get('/crm/unsubscribe/{token}', [CrmController::class, 'unsubscribe'])->name('crm.unsubscribe');
+
+// First-party page-view beacon (item #4, statistics area) — fired from
+// partials/analytics-beacon.blade.php on every marketing/dashboard page
+// load. Excluded from CSRF in bootstrap/app.php alongside the webhooks,
+// for the same "can't always guarantee a fresh token" reason.
+Route::middleware('throttle:120,1')->group(function () {
+    Route::post('/internal/analytics/view', [AnalyticsBeaconController::class, 'record'])->name('analytics.beacon.view');
+    Route::post('/internal/analytics/duration', [AnalyticsBeaconController::class, 'duration'])->name('analytics.beacon.duration');
+});
 
 Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->name('webhooks.flutterwave');
 Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');

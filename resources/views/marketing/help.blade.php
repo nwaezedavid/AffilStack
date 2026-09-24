@@ -27,8 +27,29 @@
 
 @section('content')
     <div class="max-w-3xl mx-auto px-6 py-14">
-        <h1 class="font-display text-3xl font-semibold text-navy-900 mb-2">Help & FAQ</h1>
-        <p class="text-ink-600 mb-10">Can't find what you need? Our <a href="{{ route('login') }}" class="text-brand-600 underline">AI assistant</a> in the dashboard can help instantly, or you can open a support ticket once signed in.</p>
+        <h1 class="font-display text-3xl font-semibold text-navy-900 mb-2">Help & Support</h1>
+        <p class="text-ink-600 mb-8">Search the FAQs below, or reach us directly — whichever is fastest for you.</p>
+
+        <div class="grid sm:grid-cols-3 gap-4 mb-12">
+            <a href="mailto:{{ $supportEmail }}" class="block bg-surface border border-line rounded-lg p-5 hover:border-brand-400 transition">
+                <span class="block text-sm font-semibold text-ink-900 mb-1">Email us</span>
+                <span class="block text-xs text-ink-500 mb-3">For anything that isn't urgent.</span>
+                <span class="block text-sm text-brand-600 break-all">{{ $supportEmail }}</span>
+            </a>
+            <a href="{{ route('support.chat') }}" class="block bg-surface border border-line rounded-lg p-5 hover:border-brand-400 transition">
+                <span class="block text-sm font-semibold text-ink-900 mb-1">Chat with support</span>
+                <span class="block text-xs text-ink-500 mb-3">Our AI assistant knows the platform and answers instantly. It can hand you to a human ticket any time.</span>
+                <span class="block text-sm text-brand-600">Start a chat &rarr;</span>
+            </a>
+            <a href="{{ route('support.create') }}" class="block bg-surface border border-line rounded-lg p-5 hover:border-brand-400 transition">
+                <span class="block text-sm font-semibold text-ink-900 mb-1">Open a ticket</span>
+                <span class="block text-xs text-ink-500 mb-3">For account, billing, or technical issues you'd like our team to track.</span>
+                <span class="block text-sm text-brand-600">Open a ticket &rarr;</span>
+            </a>
+        </div>
+        <p class="text-xs text-ink-400 -mt-8 mb-12">Chat and tickets require you to be signed in — you'll be sent to log in first if you aren't.</p>
+
+        <h2 class="font-display text-xl font-semibold text-navy-900 mb-4">Frequently asked questions</h2>
 
         @forelse ($groups as $category => $items)
             <div class="mb-10">

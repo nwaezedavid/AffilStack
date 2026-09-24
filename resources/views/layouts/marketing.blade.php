@@ -103,6 +103,7 @@
     <script type="application/ld+json">{!! json_encode($organizationJsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.tracking-head')
+    @include('partials.analytics-beacon')
     @stack('head')
 </head>
 <body class="bg-surface text-ink-900 antialiased">

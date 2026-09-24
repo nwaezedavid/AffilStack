@@ -23,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'webhooks/flutterwave',
             'webhooks/stripe',
+            'internal/analytics/view',
+            'internal/analytics/duration',
         ]);
 
         // Pre-launch HawkScan fixes (security headers, X-Powered-By,

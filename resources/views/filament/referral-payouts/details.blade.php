@@ -1,14 +1,16 @@
-<div class="space-y-4 text-sm">
+@include('filament.pages._panel-styles')
+
+<div class="afs-panel-detail">
     <div>
-        <div class="font-semibold text-gray-700 dark:text-gray-200 mb-1">Method</div>
-        <p class="text-gray-600 dark:text-gray-400">{{ config("referrals.payout_methods.{$record->payout_method}", $record->payout_method) }}</p>
+        <div class="afs-panel-detail-label">Method</div>
+        <p class="afs-panel-detail-value">{{ config("referrals.payout_methods.{$record->payout_method}", $record->payout_method) }}</p>
     </div>
     <div>
-        <div class="font-semibold text-gray-700 dark:text-gray-200 mb-1">Details</div>
+        <div class="afs-panel-detail-label">Details</div>
         @if ($record->payout_method === 'paypal')
-            <p class="text-gray-600 dark:text-gray-400">PayPal email: {{ $record->payout_details['paypal_email'] ?? '—' }}</p>
+            <p class="afs-panel-detail-value">PayPal email: {{ $record->payout_details['paypal_email'] ?? '—' }}</p>
         @else
-            <ul class="text-gray-600 dark:text-gray-400 space-y-1">
+            <ul class="afs-panel-detail-list">
                 <li>Account name: {{ $record->payout_details['account_name'] ?? '—' }}</li>
                 <li>Account number: {{ $record->payout_details['account_number'] ?? '—' }}</li>
                 <li>Bank name: {{ $record->payout_details['bank_name'] ?? '—' }}</li>
@@ -17,7 +19,7 @@
             </ul>
         @endif
     </div>
-    <p class="text-xs text-gray-500 dark:text-gray-500">
+    <p class="afs-panel-detail-hint">
         These are a snapshot of the affiliate's profile at the moment they requested this payout — a later
         change to their payout profile won't affect where this batch is sent.
     </p>

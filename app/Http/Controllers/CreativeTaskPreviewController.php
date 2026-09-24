@@ -72,7 +72,9 @@ class CreativeTaskPreviewController extends Controller
             ->sortBy('sort_order')
             ->groupBy('category');
 
-        return view('marketing.help', compact('groups'))->render();
+        $supportEmail = SiteSetting::get('support_email', 'support@affilstack.com');
+
+        return view('marketing.help', compact('groups', 'supportEmail'))->render();
     }
 
     protected function renderBranding(AgentTask $task): string

@@ -38,6 +38,7 @@
     @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.tracking-head')
+    @include('partials.analytics-beacon')
     @stack('head')
 </head>
 <body class="bg-surface-muted text-ink-900 antialiased">

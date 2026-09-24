@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\NotFoundLogs;
 
+use App\Filament\Clusters\Analytics;
 use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Resources\NotFoundLogs\Pages\ListNotFoundLogs;
+use App\Filament\Resources\NotFoundLogs\Pages\ViewNotFoundLog;
 use App\Filament\Resources\NotFoundLogs\Tables\NotFoundLogsTable;
 use App\Models\NotFoundLog;
 use BackedEnum;
@@ -16,6 +18,10 @@ use Filament\Tables\Table;
  * that 404'd on the public site (see NotFoundLog, written from
  * RedirectFallbackController). No create/edit form: an admin either
  * ignores a stray hit or turns it into a real Redirect via the row action.
+ * Grouped under the Analytics cluster (moved from the standalone "Site" nav
+ * group) since the 404 monitor was requested as part of the same
+ * statistics area as Analytics\Overview — department scoping is unchanged,
+ * still gated on the existing "site" department.
  */
 class NotFoundLogResource extends Resource
 {
@@ -25,9 +31,9 @@ class NotFoundLogResource extends Resource
 
     protected static ?string $model = NotFoundLog::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedExclamationTriangle;
+    protected static ?string $cluster = Analytics::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Site';
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedExclamationTriangle;
 
     protected static ?string $navigationLabel = '404 Monitor';
 
@@ -47,6 +53,7 @@ class NotFoundLogResource extends Resource
     {
         return [
             'index' => ListNotFoundLogs::route('/'),
+            'view' => ViewNotFoundLog::route('/{record}'),
         ];
     }
 }
