@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\LinkedInOauthSetting;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -24,7 +25,7 @@ use Illuminate\Support\Facades\URL;
  */
 class LinkedInOAuthSettings extends Page
 {
-    use ScopedToDepartment;
+    use ScopedToDepartment, WritesMaskedCredentials;
 
     protected static string $department = 'site';
 
@@ -50,12 +51,15 @@ class LinkedInOAuthSettings extends Page
         $this->form->fill([
             'is_enabled' => $settings->is_enabled,
             'client_id' => $settings->credential('client_id'),
-            'client_secret' => $settings->credential('client_secret'),
+            // Never the real secret — see WritesMaskedCredentials.
+            'client_secret' => null,
         ]);
     }
 
     public function form(Schema $schema): Schema
     {
+        $settings = LinkedInOauthSetting::current();
+
         return $schema
             ->statePath('data')
             ->components([
@@ -70,7 +74,8 @@ class LinkedInOAuthSettings extends Page
                         TextInput::make('client_id')->label('Client ID'),
                         TextInput::make('client_secret')
                             ->label('Client secret')
-                            ->password()->revealable(),
+                            ->password()->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('client_secret')))),
                         Placeholder::make('redirect_uri')
                             ->label('Authorized redirect URL')
                             ->helperText('Add this exact URL to the app in the LinkedIn Developer Portal, under OAuth 2.0 settings.')
@@ -85,12 +90,14 @@ class LinkedInOAuthSettings extends Page
      */
     protected function persist(array $data): void
     {
-        LinkedInOauthSetting::current()->update([
+        $settings = LinkedInOauthSetting::current();
+
+        $settings->update([
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
-            'credentials' => array_filter([
+            'credentials' => $this->mergeMaskedCredentials($settings->credentials ?? [], [
                 'client_id' => $data['client_id'] ?? null,
                 'client_secret' => $data['client_secret'] ?? null,
-            ], fn ($value) => $value !== null && $value !== ''),
+            ], ['client_secret']),
         ]);
     }
 

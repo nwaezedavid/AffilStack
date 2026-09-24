@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\BrainAgentSetting;
 use App\Services\AI\AnthropicClient;
 use BackedEnum;
@@ -28,7 +29,7 @@ use Filament\Support\Icons\Heroicon;
  */
 class BrainAgentSettings extends Page
 {
-    use ScopedToDepartment;
+    use ScopedToDepartment, WritesMaskedCredentials;
 
     protected static string $department = 'ai_agents';
 
@@ -53,15 +54,18 @@ class BrainAgentSettings extends Page
 
         $this->form->fill([
             'is_enabled' => $settings->is_enabled,
-            'anthropic_api_key' => $settings->credential('anthropic_api_key'),
+            // Never the real secrets — see WritesMaskedCredentials.
+            'anthropic_api_key' => null,
             'anthropic_model' => $settings->credential('anthropic_model'),
             'meta_mcp_url' => $settings->credential('meta_mcp_url'),
-            'meta_mcp_token' => $settings->credential('meta_mcp_token'),
+            'meta_mcp_token' => null,
         ]);
     }
 
     public function form(Schema $schema): Schema
     {
+        $settings = BrainAgentSetting::current();
+
         return $schema
             ->statePath('data')
             ->components([
@@ -77,6 +81,7 @@ class BrainAgentSettings extends Page
                         TextInput::make('anthropic_api_key')
                             ->label('Anthropic API key')
                             ->password()->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('anthropic_api_key'))))
                             ->helperText('From console.anthropic.com — this is your own account, not AffilStack\'s.'),
                         TextInput::make('anthropic_model')
                             ->label('Model (optional)')
@@ -93,7 +98,8 @@ class BrainAgentSettings extends Page
                             ->helperText('The remote Meta Ads MCP server you set up with your own Meta App credentials.'),
                         TextInput::make('meta_mcp_token')
                             ->label('Authorization token')
-                            ->password()->revealable(),
+                            ->password()->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('meta_mcp_token')))),
                         Placeholder::make('meta_mcp_note')
                             ->label('')
                             ->content('AffilStack never talks to Meta directly — Claude calls your MCP server\'s tools once this is connected.')

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\GoogleOauthSetting;
 use App\Services\Auth\GoogleOAuthService;
 use BackedEnum;
@@ -26,7 +27,7 @@ use Illuminate\Support\Facades\URL;
  */
 class GoogleOAuthSettings extends Page
 {
-    use ScopedToDepartment;
+    use ScopedToDepartment, WritesMaskedCredentials;
 
     protected static string $department = 'site';
 
@@ -56,12 +57,15 @@ class GoogleOAuthSettings extends Page
             'youtube_approval_status' => $settings->youtube_approval_status,
             'youtube_approval_notes' => $settings->youtube_approval_notes,
             'client_id' => $settings->credential('client_id'),
-            'client_secret' => $settings->credential('client_secret'),
+            // Never the real secret — see WritesMaskedCredentials.
+            'client_secret' => null,
         ]);
     }
 
     public function form(Schema $schema): Schema
     {
+        $settings = GoogleOauthSetting::current();
+
         return $schema
             ->statePath('data')
             ->components([
@@ -78,7 +82,8 @@ class GoogleOAuthSettings extends Page
                             ->helperText('Ends with .apps.googleusercontent.com'),
                         TextInput::make('client_secret')
                             ->label('Client secret')
-                            ->password()->revealable(),
+                            ->password()->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('client_secret')))),
                         Placeholder::make('redirect_uri')
                             ->label('Authorized redirect URI')
                             ->helperText('Add this exact URL to the OAuth client in Google Cloud Console, under Authorized redirect URIs.')
@@ -143,16 +148,18 @@ class GoogleOAuthSettings extends Page
      */
     protected function persist(array $data): void
     {
-        GoogleOauthSetting::current()->update([
+        $settings = GoogleOauthSetting::current();
+
+        $settings->update([
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
             'gmail_sending_enabled' => (bool) ($data['gmail_sending_enabled'] ?? false),
             'youtube_publishing_enabled' => (bool) ($data['youtube_publishing_enabled'] ?? false),
             'youtube_approval_status' => $data['youtube_approval_status'] ?? 'not_submitted',
             'youtube_approval_notes' => $data['youtube_approval_notes'] ?? null,
-            'credentials' => array_filter([
+            'credentials' => $this->mergeMaskedCredentials($settings->credentials ?? [], [
                 'client_id' => $data['client_id'] ?? null,
                 'client_secret' => $data['client_secret'] ?? null,
-            ], fn ($value) => $value !== null && $value !== ''),
+            ], ['client_secret']),
         ]);
     }
 

@@ -58,6 +58,41 @@ class BrainAgentAdminUiTest extends TestCase
         $this->assertStringNotContainsString('sk-ant-secret', (string) $raw);
     }
 
+    /**
+     * A Livewire component's public properties (the form's `$data`, bound
+     * via ->statePath('data')) are serialized into the page's wire:snapshot
+     * on every render — plain, view-source-visible text in the response
+     * HTML, regardless of the widget itself rendering as a masked
+     * `type="password"` input. Before the WritesMaskedCredentials fix,
+     * mount() filled anthropic_api_key/meta_mcp_token with their real
+     * decrypted values, so Brain's own AI credentials were in the page's
+     * raw HTML the instant an admin opened this settings page.
+     */
+    public function test_mounting_the_page_does_not_leak_the_anthropic_key_or_mcp_token_into_the_rendered_snapshot(): void
+    {
+        BrainAgentSetting::current()->update([
+            'is_enabled' => true,
+            'credentials' => [
+                'anthropic_api_key' => 'sk-ant-TOPSECRET99',
+                'anthropic_model' => 'claude-sonnet-5',
+                'meta_mcp_url' => 'https://mcp.example.com/meta-ads',
+                'meta_mcp_token' => 'mcp-token-TOPSECRET99',
+            ],
+        ]);
+
+        $html = Livewire::actingAs($this->admin)
+            ->test(BrainAgentSettings::class)
+            ->html();
+
+        $this->assertStringNotContainsString('sk-ant-TOPSECRET99', $html);
+        $this->assertStringNotContainsString('mcp-token-TOPSECRET99', $html);
+
+        // Non-secret fields are fine to round-trip into the visible form.
+        // (The URL is JSON-encoded inside wire:snapshot, so slashes are
+        // escaped as \/ — assert on a slash-free substring instead.)
+        $this->assertStringContainsString('mcp.example.com', $html);
+    }
+
     public function test_verify_anthropic_persists_the_form_then_records_the_result(): void
     {
         Http::fake(['api.anthropic.com/v1/models' => Http::response(['data' => []], 200)]);

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\BingWebmasterSetting;
 use App\Services\Analytics\BingWebmasterClient;
 use BackedEnum;
@@ -23,7 +24,7 @@ use Filament\Support\Icons\Heroicon;
  */
 class BingWebmasterSettings extends Page
 {
-    use ScopedToDepartment;
+    use ScopedToDepartment, WritesMaskedCredentials;
 
     protected static string $department = 'site';
 
@@ -48,13 +49,16 @@ class BingWebmasterSettings extends Page
 
         $this->form->fill([
             'is_enabled' => $settings->is_enabled,
-            'api_key' => $settings->credential('api_key'),
+            // Never the real secret — see WritesMaskedCredentials.
+            'api_key' => null,
             'verification_code' => $settings->verification_code,
         ]);
     }
 
     public function form(Schema $schema): Schema
     {
+        $settings = BingWebmasterSetting::current();
+
         return $schema
             ->statePath('data')
             ->components([
@@ -68,6 +72,7 @@ class BingWebmasterSettings extends Page
                             ->label('API key')
                             ->password()
                             ->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('api_key'))))
                             ->helperText('From bing.com/webmasters — Settings (gear icon) > API Access.'),
                         TextInput::make('verification_code')
                             ->label('Site verification code')
@@ -94,12 +99,14 @@ class BingWebmasterSettings extends Page
      */
     protected function persist(array $data): void
     {
-        BingWebmasterSetting::current()->update([
+        $settings = BingWebmasterSetting::current();
+
+        $settings->update([
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
             'verification_code' => $data['verification_code'] ?? null,
-            'credentials' => array_filter([
+            'credentials' => $this->mergeMaskedCredentials($settings->credentials ?? [], [
                 'api_key' => $data['api_key'] ?? null,
-            ], fn ($value) => $value !== null && $value !== ''),
+            ], ['api_key']),
         ]);
     }
 

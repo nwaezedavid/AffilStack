@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\HeyGenSetting;
 use App\Services\Video\HeyGenClient;
 use BackedEnum;
@@ -25,7 +26,7 @@ use Filament\Support\Icons\Heroicon;
  */
 class UgcVideoSettings extends Page
 {
-    use ScopedToDepartment;
+    use ScopedToDepartment, WritesMaskedCredentials;
 
     protected static string $department = 'content';
 
@@ -50,12 +51,15 @@ class UgcVideoSettings extends Page
 
         $this->form->fill([
             'is_enabled' => $settings->is_enabled,
-            'api_key' => $settings->credential('api_key'),
+            // Never the real secret — see WritesMaskedCredentials.
+            'api_key' => null,
         ]);
     }
 
     public function form(Schema $schema): Schema
     {
+        $settings = HeyGenSetting::current();
+
         return $schema
             ->statePath('data')
             ->components([
@@ -70,6 +74,7 @@ class UgcVideoSettings extends Page
                         TextInput::make('api_key')
                             ->label('HeyGen API key')
                             ->password()->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('api_key'))))
                             ->helperText('From app.heygen.com/settings/api — this is AffilStack\'s own account, billed to you and recovered through user credits.'),
                     ]),
             ]);
@@ -95,11 +100,13 @@ class UgcVideoSettings extends Page
      */
     protected function persist(array $data): void
     {
-        HeyGenSetting::current()->update([
+        $settings = HeyGenSetting::current();
+
+        $settings->update([
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
-            'credentials' => array_filter([
+            'credentials' => $this->mergeMaskedCredentials($settings->credentials ?? [], [
                 'api_key' => $data['api_key'] ?? null,
-            ], fn ($value) => $value !== null && $value !== ''),
+            ], ['api_key']),
         ]);
     }
 

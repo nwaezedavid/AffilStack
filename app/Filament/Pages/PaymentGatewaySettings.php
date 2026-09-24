@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\PaymentGatewaySetting;
 use App\Services\Payments\PaymentCredentialAdvisor;
 use App\Services\Payments\PaymentGatewayManager;
@@ -42,7 +43,7 @@ use Illuminate\Support\HtmlString;
  */
 class PaymentGatewaySettings extends Page
 {
-    use ScopedToDepartment;
+    use ScopedToDepartment, WritesMaskedCredentials;
 
     protected static string $department = 'billing';
 
@@ -85,6 +86,15 @@ class PaymentGatewaySettings extends Page
         'paypal' => ['label' => 'PayPal', 'icon' => 'heroicon-o-currency-dollar', 'shownTo' => 'International customers (USD)'],
     ];
 
+    /**
+     * Every credentials key, across every gateway, that's rendered as a
+     * masked `->password()` field — see WritesMaskedCredentials. None of
+     * these ever get their real value put into form state on mount().
+     *
+     * @var array<int, string>
+     */
+    protected static array $secretCredentialKeys = ['secret_key', 'secret_hash', 'webhook_secret', 'client_secret'];
+
     public function mount(): void
     {
         $this->form->fill(collect(array_keys(static::$gateways))->mapWithKeys(fn (string $gateway) => [$gateway => $this->stateFor($gateway)])->all());
@@ -125,6 +135,11 @@ class PaymentGatewaySettings extends Page
     }
 
     /**
+     * Never puts a secret's real value into form state — see
+     * WritesMaskedCredentials. Only non-secret fields (public_key,
+     * publishable_key, usd_to_ngn_rate, client_id, webhook_id) mount with
+     * their real stored value.
+     *
      * @return array<string, mixed>
      */
     protected function stateFor(string $gateway): array
@@ -133,14 +148,14 @@ class PaymentGatewaySettings extends Page
 
         return [
             'is_enabled' => $settings->is_enabled,
-            'secret_key' => $settings->credential('secret_key'),
+            'secret_key' => null,
             'public_key' => $settings->credential('public_key'),
-            'secret_hash' => $settings->credential('secret_hash'),
+            'secret_hash' => null,
             'publishable_key' => $settings->credential('publishable_key'),
-            'webhook_secret' => $settings->credential('webhook_secret'),
+            'webhook_secret' => null,
             'usd_to_ngn_rate' => $settings->credential('usd_to_ngn_rate'),
             'client_id' => $settings->credential('client_id'),
-            'client_secret' => $settings->credential('client_secret'),
+            'client_secret' => null,
             'webhook_id' => $settings->credential('webhook_id'),
         ];
     }
@@ -158,12 +173,14 @@ class PaymentGatewaySettings extends Page
                     TextInput::make('flutterwave.secret_key')
                         ->label('Secret key')
                         ->password()->revealable()
+                        ->placeholder($this->maskedPlaceholder(filled(PaymentGatewaySetting::forGateway('flutterwave')->credential('secret_key'))))
                         ->helperText('From the Flutterwave dashboard: Settings > API Keys.'),
                     TextInput::make('flutterwave.public_key')
                         ->label('Public key'),
                     TextInput::make('flutterwave.secret_hash')
                         ->label('Webhook secret hash')
                         ->password()->revealable()
+                        ->placeholder($this->maskedPlaceholder(filled(PaymentGatewaySetting::forGateway('flutterwave')->credential('secret_hash'))))
                         ->helperText('Settings > Webhooks — not your API secret key.')
                         ->columnSpanFull(),
                 ]),
@@ -176,12 +193,14 @@ class PaymentGatewaySettings extends Page
                     TextInput::make('stripe.secret_key')
                         ->label('Secret key')
                         ->password()->revealable()
+                        ->placeholder($this->maskedPlaceholder(filled(PaymentGatewaySetting::forGateway('stripe')->credential('secret_key'))))
                         ->helperText('From the Stripe dashboard: Developers > API keys.'),
                     TextInput::make('stripe.publishable_key')
                         ->label('Publishable key'),
                     TextInput::make('stripe.webhook_secret')
                         ->label('Webhook signing secret')
                         ->password()->revealable()
+                        ->placeholder($this->maskedPlaceholder(filled(PaymentGatewaySetting::forGateway('stripe')->credential('webhook_secret'))))
                         ->helperText('Developers > Webhooks > your endpoint — starts "whsec_".')
                         ->columnSpanFull(),
                 ]),
@@ -194,6 +213,7 @@ class PaymentGatewaySettings extends Page
                     TextInput::make('paystack.secret_key')
                         ->label('Secret key')
                         ->password()->revealable()
+                        ->placeholder($this->maskedPlaceholder(filled(PaymentGatewaySetting::forGateway('paystack')->credential('secret_key'))))
                         ->helperText('From the Paystack dashboard: Settings > API Keys & Webhooks.'),
                     TextInput::make('paystack.public_key')
                         ->label('Public key'),
@@ -215,7 +235,8 @@ class PaymentGatewaySettings extends Page
                         ->helperText('From the PayPal Developer Dashboard: your app\'s Client ID.'),
                     TextInput::make('paypal.client_secret')
                         ->label('Client secret')
-                        ->password()->revealable(),
+                        ->password()->revealable()
+                        ->placeholder($this->maskedPlaceholder(filled(PaymentGatewaySetting::forGateway('paypal')->credential('client_secret')))),
                     TextInput::make('paypal.webhook_id')
                         ->label('Webhook ID')
                         ->helperText('Your app\'s Webhooks tab — needed to verify that a webhook really came from PayPal.')
@@ -318,9 +339,11 @@ class PaymentGatewaySettings extends Page
      */
     protected function persist(string $gateway, array $fields): void
     {
-        PaymentGatewaySetting::forGateway($gateway)->update([
+        $settings = PaymentGatewaySetting::forGateway($gateway);
+
+        $settings->update([
             'is_enabled' => (bool) ($fields['is_enabled'] ?? false),
-            'credentials' => array_filter([
+            'credentials' => $this->mergeMaskedCredentials($settings->credentials ?? [], [
                 'secret_key' => $fields['secret_key'] ?? null,
                 'public_key' => $fields['public_key'] ?? null,
                 'secret_hash' => $fields['secret_hash'] ?? null,
@@ -330,7 +353,7 @@ class PaymentGatewaySettings extends Page
                 'client_id' => $fields['client_id'] ?? null,
                 'client_secret' => $fields['client_secret'] ?? null,
                 'webhook_id' => $fields['webhook_id'] ?? null,
-            ], fn ($value) => $value !== null && $value !== ''),
+            ], static::$secretCredentialKeys),
         ]);
     }
 

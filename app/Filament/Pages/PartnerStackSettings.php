@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\PartnerStackSetting;
 use App\Services\Referrals\PartnerStackClient;
 use BackedEnum;
@@ -25,7 +26,7 @@ use Filament\Support\Icons\Heroicon;
  */
 class PartnerStackSettings extends Page
 {
-    use ScopedToDepartment;
+    use ScopedToDepartment, WritesMaskedCredentials;
 
     protected static string $department = 'billing';
 
@@ -51,12 +52,15 @@ class PartnerStackSettings extends Page
         $this->form->fill([
             'is_enabled' => $settings->is_enabled,
             'public_key' => $settings->credential('public_key'),
-            'secret_key' => $settings->credential('secret_key'),
+            // Never the real secret — see WritesMaskedCredentials.
+            'secret_key' => null,
         ]);
     }
 
     public function form(Schema $schema): Schema
     {
+        $settings = PartnerStackSetting::current();
+
         return $schema
             ->statePath('data')
             ->components([
@@ -73,7 +77,8 @@ class PartnerStackSettings extends Page
                             ->helperText('From your PartnerStack dashboard: Settings > API Keys.'),
                         TextInput::make('secret_key')
                             ->label('Secret key')
-                            ->password()->revealable(),
+                            ->password()->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('secret_key')))),
                     ]),
             ]);
     }
@@ -98,12 +103,14 @@ class PartnerStackSettings extends Page
      */
     protected function persist(array $data): void
     {
-        PartnerStackSetting::current()->update([
+        $settings = PartnerStackSetting::current();
+
+        $settings->update([
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
-            'credentials' => array_filter([
+            'credentials' => $this->mergeMaskedCredentials($settings->credentials ?? [], [
                 'public_key' => $data['public_key'] ?? null,
                 'secret_key' => $data['secret_key'] ?? null,
-            ], fn ($value) => $value !== null && $value !== ''),
+            ], ['secret_key']),
         ]);
     }
 

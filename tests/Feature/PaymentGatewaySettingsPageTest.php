@@ -115,4 +115,74 @@ class PaymentGatewaySettingsPageTest extends TestCase
             return ! str_contains(json_encode($request->data()), 'pk_test_wrong_type');
         });
     }
+
+    /**
+     * A Livewire component's public properties (here, the form's `$data`,
+     * bound via ->statePath('data')) are serialized into the page's
+     * wire:snapshot on every render — plain, view-source-visible text in
+     * the response HTML, regardless of the widget itself rendering as a
+     * masked `type="password"` input. Before the WritesMaskedCredentials
+     * fix, mount()'s stateFor() filled every gateway's secret fields with
+     * their real decrypted value, so a stored key was in the page's raw
+     * HTML the instant the page loaded, before an admin touched anything.
+     */
+    public function test_mounting_the_page_does_not_leak_stored_secrets_into_the_rendered_snapshot(): void
+    {
+        PaymentGatewaySetting::forGateway('stripe')->update([
+            'is_enabled' => true,
+            'credentials' => [
+                'secret_key' => 'sk_live_TOPSECRET99',
+                'publishable_key' => 'pk_live_public_ok',
+                'webhook_secret' => 'whsec_TOPSECRET99',
+            ],
+        ]);
+        PaymentGatewaySetting::forGateway('flutterwave')->update([
+            'is_enabled' => true,
+            'credentials' => ['secret_key' => 'FLWSECK-TOPSECRET99', 'secret_hash' => 'flw-hash-TOPSECRET99'],
+        ]);
+        PaymentGatewaySetting::forGateway('paypal')->update([
+            'is_enabled' => true,
+            'credentials' => ['client_secret' => 'paypal-TOPSECRET99'],
+        ]);
+
+        $html = Livewire::actingAs($this->admin)
+            ->test(PaymentGatewaySettings::class)
+            ->html();
+
+        foreach ([
+            'sk_live_TOPSECRET99',
+            'whsec_TOPSECRET99',
+            'FLWSECK-TOPSECRET99',
+            'flw-hash-TOPSECRET99',
+            'paypal-TOPSECRET99',
+        ] as $secret) {
+            $this->assertStringNotContainsString($secret, $html, "Leaked secret [{$secret}] found in the page's rendered HTML/wire:snapshot.");
+        }
+
+        // A non-secret credential is fine to round-trip into the visible form.
+        $this->assertStringContainsString('pk_live_public_ok', $html);
+    }
+
+    /**
+     * Since a secret field never mounts with its real value (see above), a
+     * blank submission must not be read as "clear the stored secret" —
+     * only a non-empty submission should ever replace it.
+     */
+    public function test_saving_with_a_blank_secret_field_keeps_the_previously_stored_secret(): void
+    {
+        PaymentGatewaySetting::forGateway('stripe')->update([
+            'is_enabled' => true,
+            'credentials' => ['secret_key' => 'sk_live_KEEPME', 'publishable_key' => 'pk_live_old'],
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(PaymentGatewaySettings::class)
+            ->fillForm(['stripe' => ['is_enabled' => true, 'publishable_key' => 'pk_live_new']])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $stripe = PaymentGatewaySetting::forGateway('stripe');
+        $this->assertSame('sk_live_KEEPME', $stripe->credential('secret_key'));
+        $this->assertSame('pk_live_new', $stripe->credential('publishable_key'));
+    }
 }

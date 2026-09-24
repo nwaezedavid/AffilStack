@@ -116,6 +116,36 @@ class GoogleOAuthSettingsPageTest extends TestCase
         $this->assertTrue(GoogleOauthSetting::current()->isYoutubeApprovedForPublishing());
     }
 
+    /**
+     * A Livewire component's public properties (the form's `$data`, bound
+     * via ->statePath('data')) are serialized into the page's wire:snapshot
+     * on every render — plain, view-source-visible text in the response
+     * HTML, regardless of the widget itself rendering as a masked
+     * `type="password"` input. Before the WritesMaskedCredentials fix,
+     * mount() filled client_secret with its real decrypted value, so the
+     * OAuth client secret was in the page's raw HTML the instant an admin
+     * opened this settings page.
+     */
+    public function test_mounting_the_page_does_not_leak_the_client_secret_into_the_rendered_snapshot(): void
+    {
+        GoogleOauthSetting::current()->update([
+            'is_enabled' => true,
+            'credentials' => [
+                'client_id' => '123-abc.apps.googleusercontent.com',
+                'client_secret' => 'TOPSECRET99',
+            ],
+        ]);
+
+        $html = Livewire::actingAs($this->admin)
+            ->test(GoogleOAuthSettings::class)
+            ->html();
+
+        $this->assertStringNotContainsString('TOPSECRET99', $html);
+
+        // The non-secret client id is fine to round-trip into the visible form.
+        $this->assertStringContainsString('123-abc.apps.googleusercontent.com', $html);
+    }
+
     public function test_check_credentials_flags_a_malformed_client_id(): void
     {
         Livewire::actingAs($this->admin)

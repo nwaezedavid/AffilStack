@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\TikTokSetting;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -25,7 +26,7 @@ use Illuminate\Support\Facades\URL;
  */
 class TikTokPublishingSettings extends Page
 {
-    use ScopedToDepartment;
+    use ScopedToDepartment, WritesMaskedCredentials;
 
     protected static string $department = 'content';
 
@@ -53,12 +54,15 @@ class TikTokPublishingSettings extends Page
             'approval_status' => $settings->approval_status,
             'approval_notes' => $settings->approval_notes,
             'client_key' => $settings->credential('client_key'),
-            'client_secret' => $settings->credential('client_secret'),
+            // Never the real secret — see WritesMaskedCredentials.
+            'client_secret' => null,
         ]);
     }
 
     public function form(Schema $schema): Schema
     {
+        $settings = TikTokSetting::current();
+
         return $schema
             ->statePath('data')
             ->components([
@@ -72,7 +76,8 @@ class TikTokPublishingSettings extends Page
                         TextInput::make('client_key')->label('Client key'),
                         TextInput::make('client_secret')
                             ->label('Client secret')
-                            ->password()->revealable(),
+                            ->password()->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('client_secret')))),
                         Select::make('approval_status')
                             ->label('Content Posting API audit status')
                             ->options([
@@ -98,14 +103,16 @@ class TikTokPublishingSettings extends Page
      */
     protected function persist(array $data): void
     {
-        TikTokSetting::current()->update([
+        $settings = TikTokSetting::current();
+
+        $settings->update([
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
             'approval_status' => $data['approval_status'] ?? 'not_submitted',
             'approval_notes' => $data['approval_notes'] ?? null,
-            'credentials' => array_filter([
+            'credentials' => $this->mergeMaskedCredentials($settings->credentials ?? [], [
                 'client_key' => $data['client_key'] ?? null,
                 'client_secret' => $data['client_secret'] ?? null,
-            ], fn ($value) => $value !== null && $value !== ''),
+            ], ['client_secret']),
         ]);
     }
 

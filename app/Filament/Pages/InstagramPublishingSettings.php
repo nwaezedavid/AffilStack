@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\InstagramSetting;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -26,7 +27,7 @@ use Illuminate\Support\Facades\URL;
  */
 class InstagramPublishingSettings extends Page
 {
-    use ScopedToDepartment;
+    use ScopedToDepartment, WritesMaskedCredentials;
 
     protected static string $department = 'content';
 
@@ -54,12 +55,15 @@ class InstagramPublishingSettings extends Page
             'approval_status' => $settings->approval_status,
             'approval_notes' => $settings->approval_notes,
             'app_id' => $settings->credential('app_id'),
-            'app_secret' => $settings->credential('app_secret'),
+            // Never the real secret — see WritesMaskedCredentials.
+            'app_secret' => null,
         ]);
     }
 
     public function form(Schema $schema): Schema
     {
+        $settings = InstagramSetting::current();
+
         return $schema
             ->statePath('data')
             ->components([
@@ -73,7 +77,8 @@ class InstagramPublishingSettings extends Page
                         TextInput::make('app_id')->label('App ID'),
                         TextInput::make('app_secret')
                             ->label('App secret')
-                            ->password()->revealable(),
+                            ->password()->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('app_secret')))),
                         Select::make('approval_status')
                             ->label('App Review status')
                             ->options([
@@ -99,14 +104,16 @@ class InstagramPublishingSettings extends Page
      */
     protected function persist(array $data): void
     {
-        InstagramSetting::current()->update([
+        $settings = InstagramSetting::current();
+
+        $settings->update([
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
             'approval_status' => $data['approval_status'] ?? 'not_submitted',
             'approval_notes' => $data['approval_notes'] ?? null,
-            'credentials' => array_filter([
+            'credentials' => $this->mergeMaskedCredentials($settings->credentials ?? [], [
                 'app_id' => $data['app_id'] ?? null,
                 'app_secret' => $data['app_secret'] ?? null,
-            ], fn ($value) => $value !== null && $value !== ''),
+            ], ['app_secret']),
         ]);
     }
 

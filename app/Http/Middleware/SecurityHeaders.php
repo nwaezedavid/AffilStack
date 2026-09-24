@@ -33,6 +33,11 @@ use Symfony\Component\HttpFoundation\Response;
  *   (the dev server has no dotfile restriction of its own). Apache is
  *   covered separately in public/.htaccess; this is the same guard for
  *   any server in front of the app that doesn't block dotfiles itself.
+ *   isDotfileRequest() blocks any path segment starting with a dot — not
+ *   just the exact names HawkScan happened to probe — so it also covers
+ *   .env.backup, .env.production, and any other dotfile that might end up
+ *   web-readable (e.g. an editor swap file), the same way public/.htaccess's
+ *   generic `<FilesMatch "^\.">` rule already does for Apache.
  *
  * Left alone, with reasoning recorded rather than "fixed": the bearer-token
  * `/api/v1/*` CORS wildcard (App\Http\Middleware\ApiTokenAuth is the actual
@@ -90,10 +95,12 @@ class SecurityHeaders
 
     private function isDotfileRequest(Request $request): bool
     {
-        $path = $request->path();
+        foreach (explode('/', $request->path()) as $segment) {
+            if ($segment !== '' && str_starts_with($segment, '.')) {
+                return true;
+            }
+        }
 
-        return $path === '.htaccess'
-            || $path === '.env'
-            || str_starts_with($path, '.git');
+        return false;
     }
 }
