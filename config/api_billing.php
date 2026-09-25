@@ -61,4 +61,31 @@ return [
 
     'min_topup_cents' => 1000, // $10.00 minimum, same reasoning as min_amount_cents above
 
+    /*
+    |--------------------------------------------------------------------|
+    | Plan-aware rate limits (API roadmap item #3)
+    |--------------------------------------------------------------------|
+    |
+    | Requests per minute per token, resolved from the calling token's
+    | owner's billed plan (see AppServiceProvider's 'api' RateLimiter and
+    | routes/api.php's throttle:api). 'default' covers a token with no
+    | active subscription behind it (e.g. a trialing/canceled account) —
+    | previously every token got the old flat 60/min regardless of plan.
+    |
+    */
+    'rate_limits' => [
+        'starter' => 60,
+        'growth' => 60,
+        'pro' => 120,
+        'business' => 300,
+        'agency' => 300,
+        'default' => 60,
+    ],
+
+    // API roadmap item #6 — max contacts accepted in one POST
+    // /crm-contacts/bulk call. High enough for a real CRM migration/import,
+    // low enough that one request can't tie up a worker or blow past a
+    // plan's contact limit unnoticed.
+    'bulk_max_items' => 100,
+
 ];

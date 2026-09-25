@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendWebhookDelivery;
 use App\Models\ApiToken;
+use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
 use App\Services\Payments\CheckoutCountryResolver;
 use App\Services\Payments\PaymentGatewayManager;
@@ -45,6 +47,17 @@ class ApiAccessController extends Controller
         $user = auth()->user();
 
         $tokens = $user->apiTokens()->where('type', 'user')->latest()->get();
+
+        // API roadmap item #7 (per-token usage analytics) — a light,
+        // 30-day rollup per token from ApiRequestLog (see LogApiRequest).
+        // Tokens per user is a small collection, so N+1 here is cheap and
+        // keeps the query trivial to read; not worth a join for this.
+        $tokens->each(function (ApiToken $token) {
+            $recent = $token->requestLogs()->where('created_at', '>=', now()->subDays(30));
+            $token->calls_30d = $recent->count();
+            $token->spend_cents_30d = (int) $recent->sum('cost_cents');
+        });
+
         $webhookEndpoints = $user->isSeat()
             ? collect()
             : $user->webhookEndpoints()->with(['deliveries' => fn ($query) => $query->latest()->limit(5)])->latest()->get();
@@ -64,9 +77,12 @@ class ApiAccessController extends Controller
         $walletEnabledGateways = $gateways->enabledForCountry($countries->isNigeria($request) ? 'NG' : 'US');
         $walletTopupPresets = config('api_billing.topup_presets_cents', []);
 
+        // API roadmap item #4 — linked from the Endpoints reference section.
+        $openApiUrl = route('api.v1.openapi');
+
         return view('dashboard.api-access.index', compact(
             'tokens', 'webhookEndpoints', 'billable', 'walletBalanceCents', 'walletTransactions',
-            'walletPaymentMethods', 'walletEnabledGateways', 'walletTopupPresets',
+            'walletPaymentMethods', 'walletEnabledGateways', 'walletTopupPresets', 'openApiUrl',
         ));
     }
 
@@ -74,9 +90,19 @@ class ApiAccessController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            // API roadmap item #2 (read-only tokens) and item #5 (sandbox
+            // mode) — both optional, defaulting to today's behavior (full
+            // access, live data) when the form field is left out entirely.
+            'scope' => ['nullable', 'string', Rule::in(['full', 'read_only'])],
+            'is_sandbox' => ['nullable', 'boolean'],
         ]);
 
-        $result = ApiToken::generate(auth()->user(), $validated['name']);
+        $result = ApiToken::generate(
+            auth()->user(),
+            $validated['name'],
+            scope: $validated['scope'] ?? 'full',
+            isSandbox: $request->boolean('is_sandbox'),
+        );
 
         return back()->with(
             'success',
@@ -129,5 +155,28 @@ class ApiAccessController extends Controller
         $webhook->delete();
 
         return back()->with('success', 'Webhook endpoint removed.');
+    }
+
+    /**
+     * API roadmap item #10 — resend a past delivery's exact event/payload
+     * as a brand new delivery, reusing SendWebhookDelivery exactly like a
+     * fresh event would (same signing, same retry policy) rather than
+     * mutating the original row, so the original attempt's own history
+     * (attempts, response) stays intact for reference.
+     */
+    public function replayWebhookDelivery(WebhookDelivery $delivery): RedirectResponse
+    {
+        abort_unless($delivery->endpoint?->user_id === auth()->id(), 403);
+
+        $replay = WebhookDelivery::create([
+            'webhook_endpoint_id' => $delivery->webhook_endpoint_id,
+            'event' => $delivery->event,
+            'payload' => $delivery->payload,
+            'status' => 'pending',
+        ]);
+
+        SendWebhookDelivery::dispatch($replay);
+
+        return back()->with('success', 'Replaying delivery — refresh in a moment to see the result.');
     }
 }

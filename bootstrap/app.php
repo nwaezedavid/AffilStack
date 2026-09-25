@@ -4,6 +4,9 @@ use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Middleware\CachePublicPage;
 use App\Http\Middleware\EnsureAccountNotSuspended;
 use App\Http\Middleware\EnsureAdminApiToken;
+use App\Http\Middleware\EnsureIdempotency;
+use App\Http\Middleware\EnsureTokenScope;
+use App\Http\Middleware\LogApiRequest;
 use App\Http\Middleware\MeterApiUsage;
 use App\Http\Middleware\RestrictAffiliateOnlyAccounts;
 use App\Http\Middleware\RestrictAgencySeats;
@@ -40,6 +43,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'api-token-auth' => ApiTokenAuth::class,
             'admin-api-token' => EnsureAdminApiToken::class,
             'meter-api-usage' => MeterApiUsage::class,
+            'token-scope' => EnsureTokenScope::class,
+            'idempotent' => EnsureIdempotency::class,
+            'log-api-request' => LogApiRequest::class,
             'cache-public-page' => CachePublicPage::class,
         ]);
     })

@@ -48,6 +48,15 @@ class MeterApiUsage
             return $next($request);
         }
 
+        // API roadmap item #5 (sandbox mode) — a sandbox token never spends
+        // real money: OffersController::store() also skips the real
+        // (paid) research pipeline entirely for one, so there is nothing
+        // here to charge for in the first place.
+        $token = $request->attributes->get('apiToken');
+        if ($token?->is_sandbox) {
+            return $next($request);
+        }
+
         $user = $request->user();
 
         try {
@@ -61,10 +70,16 @@ class MeterApiUsage
             ], 402);
         }
 
+        // API roadmap item #7 (per-token usage analytics) — LogApiRequest
+        // reads this back once the response is final, so it logs the NET
+        // cost actually kept, not the gross charge above.
+        $request->attributes->set('api_metered_cost_cents', $costCents);
+
         $response = $next($request);
 
         if ($response->getStatusCode() >= 400) {
             $this->wallet->refund($user, $costCents, "api:{$routeName}:request_failed");
+            $request->attributes->set('api_metered_cost_cents', 0);
         }
 
         return $response;

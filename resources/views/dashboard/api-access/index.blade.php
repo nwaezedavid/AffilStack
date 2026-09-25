@@ -14,10 +14,26 @@
         <h3 class="font-display font-semibold text-sm text-navy-900 mb-2">Your tokens</h3>
         <p class="text-sm text-ink-600 mb-4">Give each integration its own token so you can revoke one without affecting the others. A token created here also works for the browser extension, and vice versa.</p>
 
-        <form method="POST" action="{{ route('api-access.tokens.store') }}" class="flex items-center gap-2 mb-5 flex-wrap">
+        <form method="POST" action="{{ route('api-access.tokens.store') }}" class="mb-5 space-y-2">
             @csrf
-            <input name="name" required placeholder="e.g. Zapier" class="rounded-md border border-line px-3 py-2 text-sm">
-            <button class="rounded-md border border-line text-ink-900 text-sm px-3 py-2 hover:bg-surface-muted transition">Generate token</button>
+            <div class="flex items-center gap-2 flex-wrap">
+                <input name="name" required placeholder="e.g. Zapier" class="rounded-md border border-line px-3 py-2 text-sm">
+                <button class="rounded-md border border-line text-ink-900 text-sm px-3 py-2 hover:bg-surface-muted transition">Generate token</button>
+            </div>
+            <div class="flex flex-wrap items-center gap-4 text-xs text-ink-600">
+                <label class="flex items-center gap-1.5">
+                    <input type="radio" name="scope" value="full" checked>
+                    Full access
+                </label>
+                <label class="flex items-center gap-1.5">
+                    <input type="radio" name="scope" value="read_only">
+                    Read-only — GET requests only, can never write data or spend the wallet
+                </label>
+                <label class="flex items-center gap-1.5">
+                    <input type="checkbox" name="is_sandbox" value="1">
+                    Sandbox token — test data only, never bills your wallet or credits
+                </label>
+            </div>
         </form>
 
         @if ($tokens->isEmpty())
@@ -29,6 +45,8 @@
                     <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
                         <tr>
                             <th class="text-left px-4 py-2">Name</th>
+                            <th class="text-left px-4 py-2">Type</th>
+                            <th class="text-left px-4 py-2">Last 30 days</th>
                             <th class="text-left px-4 py-2">Last used</th>
                             <th></th>
                         </tr>
@@ -37,6 +55,18 @@
                         @foreach ($tokens as $token)
                             <tr>
                                 <td class="px-4 py-2.5 font-medium text-ink-900">{{ $token->name }}</td>
+                                <td class="px-4 py-2.5">
+                                    <span class="text-xs font-mono px-2 py-0.5 rounded bg-surface-muted text-ink-600">{{ $token->isReadOnly() ? 'Read-only' : 'Full access' }}</span>
+                                    @if ($token->is_sandbox)
+                                        <span class="text-xs font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-700">Sandbox</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-2.5 text-ink-600">
+                                    {{ $token->calls_30d }} call{{ $token->calls_30d === 1 ? '' : 's' }}
+                                    @if ($token->spend_cents_30d > 0)
+                                        &middot; ${{ number_format($token->spend_cents_30d / 100, 2) }}
+                                    @endif
+                                </td>
                                 <td class="px-4 py-2.5 text-ink-600">{{ $token->last_used_at?->diffForHumans() ?? 'Never' }}</td>
                                 <td class="px-4 py-2.5 text-right">
                                     <form method="POST" action="{{ route('api-access.tokens.destroy', $token) }}" onsubmit="return confirm('Revoke this token? Anything using it will stop working immediately.')">
@@ -282,7 +312,7 @@
                                 &middot; Last delivered: {{ $endpoint->last_triggered_at?->diffForHumans() ?? 'Never' }}
                             </p>
                             @if ($endpoint->deliveries->isNotEmpty())
-                                <div class="mt-2 flex flex-wrap gap-1.5">
+                                <div class="mt-2 flex flex-wrap items-center gap-1.5">
                                     @foreach ($endpoint->deliveries as $delivery)
                                         <span title="{{ $delivery->event }} — {{ $delivery->created_at->diffForHumans() }}" @class([
                                             'text-[11px] font-mono px-1.5 py-0.5 rounded',
@@ -290,6 +320,11 @@
                                             'bg-red-50 text-red-700' => $delivery->status === 'failed',
                                             'bg-amber-50 text-amber-700' => $delivery->status === 'pending',
                                         ])>{{ $delivery->event }}: {{ $delivery->status }}</span>
+                                        {{-- API roadmap item #10 --}}
+                                        <form method="POST" action="{{ route('api-access.webhooks.deliveries.replay', $delivery) }}">
+                                            @csrf
+                                            <button class="text-[11px] text-brand-600 hover:text-brand-700 underline">Replay</button>
+                                        </form>
                                     @endforeach
                                 </div>
                             @endif
@@ -302,13 +337,18 @@
 
     {{-- Reference --}}
     <div class="bg-surface border border-line rounded-lg p-5">
-        <h3 class="font-display font-semibold text-sm text-navy-900 mb-2">Endpoints</h3>
+        <div class="flex items-start justify-between gap-4 flex-wrap mb-2">
+            <h3 class="font-display font-semibold text-sm text-navy-900">Endpoints</h3>
+            <a href="{{ $openApiUrl }}" class="text-xs text-brand-600 hover:text-brand-700 underline shrink-0">
+                Download OpenAPI spec
+            </a>
+        </div>
         <p class="text-sm text-ink-600 mb-4">
             Base URL: <code class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">{{ url('/api/v1') }}</code>
             &middot; Auth header: <code class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">Authorization: Bearer &lt;token&gt;</code>
-            &middot; 60 requests/minute per token.
+            &middot; 60&ndash;300 requests/minute per token, based on your plan.
         </p>
-        <p class="text-xs text-ink-400 mb-4">
+        <p class="text-xs text-ink-400 mb-1">
             Everything below is free except <code class="font-mono bg-surface-muted px-1 py-0.5 rounded">POST /offers</code>,
             which costs $0.75 a call
             @if (auth()->user()->isSeat())
@@ -316,6 +356,13 @@
             @else
                 from your API wallet above.
             @endif
+        </p>
+        <p class="text-xs text-ink-400 mb-4">
+            <code class="font-mono bg-surface-muted px-1 py-0.5 rounded">POST /offers</code> and
+            <code class="font-mono bg-surface-muted px-1 py-0.5 rounded">POST /crm-contacts</code> accept an optional
+            <code class="font-mono bg-surface-muted px-1 py-0.5 rounded">Idempotency-Key</code> header to safely retry
+            a call. A read-only token can use every GET below but no write. A sandbox token never touches real
+            balances — see the token options above.
         </p>
         <div class="border border-line rounded-md overflow-hidden">
             <div class="overflow-x-auto">
@@ -336,6 +383,7 @@
                     <tr><td class="px-4 py-2">GET</td><td class="px-4 py-2">/generations/{{ '{id}' }}</td><td class="px-4 py-2 font-sans text-ink-600">A single piece of generated content</td></tr>
                     <tr><td class="px-4 py-2">GET</td><td class="px-4 py-2">/crm-contacts</td><td class="px-4 py-2 font-sans text-ink-600">List your CRM contacts</td></tr>
                     <tr><td class="px-4 py-2">POST</td><td class="px-4 py-2">/crm-contacts</td><td class="px-4 py-2 font-sans text-ink-600">Add a new contact</td></tr>
+                    <tr><td class="px-4 py-2">POST</td><td class="px-4 py-2">/crm-contacts/bulk</td><td class="px-4 py-2 font-sans text-ink-600">Add up to 100 contacts in one call</td></tr>
                     <tr><td class="px-4 py-2">PATCH</td><td class="px-4 py-2">/crm-contacts/{{ '{id}' }}</td><td class="px-4 py-2 font-sans text-ink-600">Update a contact</td></tr>
                     <tr><td class="px-4 py-2">GET</td><td class="px-4 py-2">/referrals/summary</td><td class="px-4 py-2 font-sans text-ink-600">Your referral link and commission totals</td></tr>
                 </tbody>

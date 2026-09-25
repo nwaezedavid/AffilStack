@@ -24,11 +24,24 @@ class ApiTokensTable
                 TextColumn::make('type')
                     ->badge()
                     ->color(fn (string $state) => $state === 'admin' ? 'danger' : 'gray'),
+                // API roadmap items #2/#5 — platform-wide oversight of which
+                // tokens are read-only or sandbox, alongside the existing
+                // admin/user type badge above.
+                TextColumn::make('scope')
+                    ->badge()
+                    ->color(fn (string $state) => $state === 'read_only' ? 'warning' : 'gray')
+                    ->formatStateUsing(fn (string $state) => $state === 'read_only' ? 'Read-only' : 'Full access'),
+                TextColumn::make('is_sandbox')
+                    ->label('Sandbox')
+                    ->badge()
+                    ->color(fn (bool $state) => $state ? 'info' : 'gray')
+                    ->formatStateUsing(fn (bool $state) => $state ? 'Sandbox' : 'Live'),
                 TextColumn::make('last_used_at')->dateTime()->sortable()->placeholder('Never'),
                 TextColumn::make('created_at')->dateTime()->sortable(),
             ])
             ->filters([
                 SelectFilter::make('type')->options(['user' => 'User', 'admin' => 'Admin']),
+                SelectFilter::make('scope')->options(['full' => 'Full access', 'read_only' => 'Read-only']),
             ])
             ->recordActions([
                 DeleteAction::make()->label('Revoke'),

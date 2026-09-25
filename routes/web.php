@@ -342,6 +342,8 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::post('/api-access/webhooks', [ApiAccessController::class, 'storeWebhook'])->name('api-access.webhooks.store');
     Route::patch('/api-access/webhooks/{webhook}/toggle', [ApiAccessController::class, 'toggleWebhook'])->name('api-access.webhooks.toggle');
     Route::delete('/api-access/webhooks/{webhook}', [ApiAccessController::class, 'destroyWebhook'])->name('api-access.webhooks.destroy');
+    // API roadmap item #10 — resend one past delivery as a new one.
+    Route::post('/api-access/webhooks/deliveries/{delivery}/replay', [ApiAccessController::class, 'replayWebhookDelivery'])->name('api-access.webhooks.deliveries.replay');
 
     // API usage prepay wallet — owner-only just like outbound webhooks
     // above (a seat's own metered API calls still draw from the owner's

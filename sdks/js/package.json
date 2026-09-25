@@ -1,0 +1,19 @@
+{
+  "name": "affilstack-sdk",
+  "version": "0.1.0",
+  "description": "Official AffilStack API client — offers, generated content, CRM contacts, and referrals.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "keywords": [
+    "affilstack",
+    "affiliate-marketing",
+    "api-client"
+  ]
+}

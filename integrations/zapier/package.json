@@ -1,0 +1,22 @@
+{
+  "name": "affilstack-zapier",
+  "version": "1.0.0",
+  "description": "AffilStack's Zapier Platform app — triggers on new offer research and new CRM contacts (via AffilStack's outbound webhooks), and creates offers/CRM contacts.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test",
+    "validate": "zapier validate"
+  },
+  "keywords": [
+    "affilstack",
+    "zapier"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "zapier-platform-core": "17.9.1"
+  },
+  "devDependencies": {
+    "zapier-platform-cli": "^17.9.1",
+    "zapier-platform-schema": "^17.9.1"
+  }
+}

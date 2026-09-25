@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 #[Fillable([
-    'user_id', 'name', 'company', 'title', 'email', 'phone', 'website',
+    'user_id', 'is_sandbox', 'name', 'company', 'title', 'email', 'phone', 'website',
     'source', 'location', 'notes', 'status', 'raw_data',
     'unsubscribe_token', 'unsubscribed_at',
 ])]
@@ -19,6 +19,7 @@ class CrmContact extends Model
     protected function casts(): array
     {
         return [
+            'is_sandbox' => 'boolean',
             'raw_data' => 'array',
             'unsubscribed_at' => 'datetime',
         ];

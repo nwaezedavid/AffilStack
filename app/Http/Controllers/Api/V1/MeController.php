@@ -33,6 +33,20 @@ class MeController extends Controller
             // through billableUser() so a team seat's own token reports the
             // balance its metered calls actually draw from.
             'api_wallet_balance_cents' => $user->billableUser()->api_wallet_balance_cents,
+            // API roadmap items #2/#5 — lets an SDK/integration introspect
+            // its own token's capabilities (e.g. to decide whether to even
+            // attempt a write, or to label sandbox-mode data in its own UI)
+            // without having to already know which token it was configured
+            // with.
+            'token' => (function () use ($request) {
+                $token = $request->attributes->get('apiToken');
+
+                return $token ? [
+                    'name' => $token->name,
+                    'scope' => $token->scope,
+                    'is_sandbox' => $token->is_sandbox,
+                ] : null;
+            })(),
         ]);
     }
 }

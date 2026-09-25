@@ -1,0 +1,484 @@
+openapi: 3.1.0
+info:
+  title: AffilStack API
+  version: "1.0.0"
+  description: |
+    The general-purpose AffilStack API — offers, generated content, CRM
+    contacts, and referral/earnings data, scoped to exactly what the
+    calling token's owner can already see in the dashboard.
+
+    ## Authentication
+    Every request (except this document itself) requires a bearer token,
+    minted from the dashboard's API Access page:
+
+    ```
+    Authorization: Bearer aff_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    ```
+
+    ## Token scopes
+    A token is either `full` (every endpoint below) or `read_only`
+    (GET only — any write returns 403). See `GET /v1/me`'s `token.scope`
+    to introspect which one a given token has.
+
+    ## Sandbox mode
+    A token created in sandbox mode never spends real wallet balance or
+    dashboard credits, and only ever sees/creates rows also flagged
+    sandbox — live and sandbox data are mutually invisible, mirroring
+    Stripe's test-mode/live-mode split. `POST /v1/offers` returns
+    deterministic canned research data immediately instead of queuing
+    real AI research. See `GET /v1/me`'s `token.is_sandbox`.
+
+    ## Idempotency
+    `POST /v1/offers` and `POST /v1/crm-contacts` accept an optional
+    `Idempotency-Key` header. Retrying the same request with the same key
+    returns the original response unchanged rather than creating a second
+    record; reusing a key with a different request body returns 422.
+
+    ## Rate limits
+    Requests are limited per token, per minute, based on the token
+    owner's plan (60/min on Starter and Growth, 120/min on Pro, 300/min
+    on Business and Agency). A 429 response includes `Retry-After`.
+
+    ## Errors
+    Every non-2xx response is a JSON object with at least a `message`
+    field; validation failures (422) additionally include an `errors`
+    object keyed by field name, matching Laravel's standard shape.
+  contact:
+    name: AffilStack API support
+    url: https://affilstack.example/support
+
+servers:
+  - url: /api
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Account
+  - name: Offers
+  - name: Generations
+  - name: CRM Contacts
+  - name: Referrals
+
+paths:
+  /v1/me:
+    get:
+      operationId: getMe
+      tags: [Account]
+      summary: Get the authenticated account
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/offers:
+    get:
+      operationId: listOffers
+      tags: [Offers]
+      summary: List offers visible to the calling token
+      parameters:
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOffers'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    post:
+      operationId: createOffer
+      tags: [Offers]
+      summary: Run offer research (metered — $0.75/call on a live token, free in sandbox)
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOfferRequest'
+      responses:
+        '201':
+          description: Created — 'queued' on a live token (research runs in the background), 'ready' immediately on a sandbox token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Offer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          description: Not enough dashboard credits, or not enough API wallet balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          $ref: '#/components/responses/ReadOnlyForbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /v1/offers/{offer}:
+    get:
+      operationId: getOffer
+      tags: [Offers]
+      summary: Get a single offer
+      parameters:
+        - $ref: '#/components/parameters/OfferId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Offer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/generations:
+    get:
+      operationId: listGenerations
+      tags: [Generations]
+      summary: List generated content visible to the calling token
+      parameters:
+        - $ref: '#/components/parameters/PerPage'
+        - name: offer_id
+          in: query
+          schema: { type: integer }
+        - name: module
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Laravel paginator wrapping Generation objects
+
+  /v1/generations/{generation}:
+    get:
+      operationId: getGeneration
+      tags: [Generations]
+      summary: Get a single generation
+      parameters:
+        - name: generation
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/crm-contacts:
+    get:
+      operationId: listCrmContacts
+      tags: [CRM Contacts]
+      summary: List the token owner's own CRM contacts
+      parameters:
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCrmContacts'
+    post:
+      operationId: createCrmContact
+      tags: [CRM Contacts]
+      summary: Create a CRM contact (free)
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrmContactInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrmContact'
+        '402':
+          description: Plan CRM contact limit reached
+        '403':
+          $ref: '#/components/responses/ReadOnlyForbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /v1/crm-contacts/bulk:
+    post:
+      operationId: bulkCreateCrmContacts
+      tags: [CRM Contacts]
+      summary: Create up to 100 CRM contacts in one call
+      description: |
+        Partial-success: every valid item is created even if others fail
+        validation or hit the plan's contact limit. Not wrapped by
+        Idempotency-Key — retry only the items listed in `failed`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contacts]
+              properties:
+                contacts:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    $ref: '#/components/schemas/CrmContactInput'
+      responses:
+        '200':
+          description: OK — see `failed` for any items that were not created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  created:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CrmContact'
+                  failed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index: { type: integer, description: 0-based position in the submitted `contacts` array }
+                        errors: { type: object }
+        '403':
+          $ref: '#/components/responses/ReadOnlyForbidden'
+        '422':
+          description: The top-level `contacts` array itself is missing, empty, or over 100 items
+
+  /v1/crm-contacts/{contact}:
+    get:
+      operationId: getCrmContact
+      tags: [CRM Contacts]
+      summary: Get a single CRM contact
+      parameters:
+        - name: contact
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateCrmContact
+      tags: [CRM Contacts]
+      summary: Update a CRM contact
+      parameters:
+        - name: contact
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/CrmContactInput'
+                - type: object
+                  properties:
+                    status:
+                      type: string
+                      enum: [new, contacted, qualified, customer, unqualified]
+      responses:
+        '200':
+          description: OK
+        '403':
+          $ref: '#/components/responses/ReadOnlyForbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /v1/referrals/summary:
+    get:
+      operationId: getReferralsSummary
+      tags: [Referrals]
+      summary: Get the token owner's referral/earnings summary
+      responses:
+        '200':
+          description: OK
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: "aff_..."
+
+  parameters:
+    PerPage:
+      name: per_page
+      in: query
+      description: Max 100, default 25
+      schema: { type: integer, default: 25, maximum: 100 }
+    OfferId:
+      name: offer
+      in: path
+      required: true
+      schema: { type: integer }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Up to 255 characters. See the top-level description for replay semantics.
+      schema: { type: string, maxLength: 255 }
+
+  responses:
+    Unauthorized:
+      description: Missing, invalid, or revoked bearer token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Not found, or not accessible to this token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ReadOnlyForbidden:
+      description: The token is scoped read_only
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message: { type: string }
+              errors: { type: object }
+    TooManyRequests:
+      description: Rate limit exceeded for this token's plan
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+
+    Me:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        is_seat: { type: boolean }
+        seat_role: { type: string, nullable: true }
+        on_shared_team_plan: { type: boolean }
+        credits_balance: { type: integer }
+        plan: { type: string, nullable: true }
+        api_wallet_balance_cents: { type: integer }
+        token:
+          type: object
+          nullable: true
+          properties:
+            name: { type: string }
+            scope: { type: string, enum: [full, read_only] }
+            is_sandbox: { type: boolean }
+
+    CreateOfferRequest:
+      type: object
+      required: [product_name, product_url, affiliate_network]
+      properties:
+        product_name: { type: string, maxLength: 255 }
+        product_url: { type: string, format: uri, maxLength: 2048 }
+        affiliate_network: { type: string, maxLength: 255 }
+        affiliate_link: { type: string, format: uri, maxLength: 2048, nullable: true }
+
+    Offer:
+      type: object
+      properties:
+        id: { type: integer }
+        is_sandbox: { type: boolean }
+        product_name: { type: string }
+        product_url: { type: string }
+        affiliate_network: { type: string }
+        affiliate_link: { type: string, nullable: true }
+        status: { type: string, enum: [queued, ready, failed] }
+        ideal_customer_summary: { type: string, nullable: true }
+        where_to_find: { type: string, nullable: true }
+        recommended_channel: { type: string, nullable: true }
+        recommended_angle: { type: string, nullable: true }
+        research_data: { type: object, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    PaginatedOffers:
+      type: object
+      description: Laravel's standard paginator envelope
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Offer' }
+        current_page: { type: integer }
+        last_page: { type: integer }
+        total: { type: integer }
+
+    CrmContactInput:
+      type: object
+      properties:
+        name: { type: string, maxLength: 255, nullable: true }
+        company: { type: string, maxLength: 255, nullable: true }
+        title: { type: string, maxLength: 255, nullable: true }
+        email: { type: string, format: email, maxLength: 255, nullable: true }
+        phone: { type: string, maxLength: 50, nullable: true }
+        website: { type: string, format: uri, maxLength: 2048, nullable: true }
+        location: { type: string, maxLength: 255, nullable: true }
+        notes: { type: string, nullable: true }
+
+    CrmContact:
+      allOf:
+        - $ref: '#/components/schemas/CrmContactInput'
+        - type: object
+          properties:
+            id: { type: integer }
+            is_sandbox: { type: boolean }
+            source: { type: string }
+            status: { type: string, enum: [new, contacted, qualified, customer, unqualified] }
+            created_at: { type: string, format: date-time }
+
+    PaginatedCrmContacts:
+      type: object
+      description: Laravel's standard paginator envelope
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/CrmContact' }
+        current_page: { type: integer }
+        last_page: { type: integer }
+        total: { type: integer }
