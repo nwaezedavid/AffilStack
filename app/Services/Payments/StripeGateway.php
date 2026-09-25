@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Models\PaymentGatewaySetting;
+use App\Models\PaymentMethod;
 use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -298,6 +299,13 @@ class StripeGateway implements PaymentGateway
                 'exp_month' => (int) ($paymentMethod['exp_month'] ?? 0),
                 'exp_year' => (int) ($paymentMethod['exp_year'] ?? 0),
                 'token' => (string) data_get($session, 'payment_intent.payment_method.id', ''),
+                // A Checkout Session's payment method is always attached to
+                // the customer it creates, so a later off-session charge
+                // against this same token (chargeSavedToken(), the API
+                // wallet's auto-recharge) must pass this customer id too —
+                // Stripe rejects payment_method-only reuse of a
+                // customer-attached method otherwise.
+                'gateway_customer_id' => (string) ($session['customer'] ?? ''),
             ] : null,
             'raw' => $session,
         ];
@@ -481,6 +489,52 @@ class StripeGateway implements PaymentGateway
             'amount' => ((float) ($dispute['amount'] ?? 0)) / 100,
             'currency' => strtoupper((string) ($dispute['currency'] ?? '')),
             'raw' => $dispute,
+        ];
+    }
+
+    /**
+     * @return array{success: bool, message: string, reference?: string, raw?: array<string, mixed>}
+     */
+    public function chargeSavedToken(PaymentMethod $method, int $amountCents, string $currency, string $description): array
+    {
+        if ($method->gateway_token === null || $method->gateway_token === '') {
+            return ['success' => false, 'message' => 'No saved Stripe payment method token on file.'];
+        }
+
+        $payload = [
+            'amount' => $amountCents,
+            'currency' => strtolower($currency),
+            'payment_method' => $method->gateway_token,
+            'off_session' => 'true',
+            'confirm' => 'true',
+            'description' => $description,
+        ];
+
+        // A payment method saved from a Checkout Session is attached to the
+        // customer that session created — see the note on gateway_customer_id
+        // in normalize() — so it must be charged in that same customer's
+        // context. A method saved some other way (none currently) may have
+        // no customer id at all, which off-session PaymentIntents also allow.
+        if (filled($method->gateway_customer_id)) {
+            $payload['customer'] = $method->gateway_customer_id;
+        }
+
+        $response = $this->client()->post('/payment_intents', $payload);
+        $data = $response->json();
+
+        if ($response->failed() || data_get($data, 'status') !== 'succeeded') {
+            return [
+                'success' => false,
+                'message' => data_get($data, 'error.message', 'Stripe declined the saved card: '.$response->body()),
+                'raw' => (array) $data,
+            ];
+        }
+
+        return [
+            'success' => true,
+            'reference' => (string) ($data['id'] ?? ''),
+            'message' => 'Charged successfully.',
+            'raw' => (array) $data,
         ];
     }
 

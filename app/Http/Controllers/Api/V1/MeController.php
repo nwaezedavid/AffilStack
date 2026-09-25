@@ -28,6 +28,11 @@ class MeController extends Controller
             'on_shared_team_plan' => $user->onSharedTeamPlan(),
             'credits_balance' => $user->billableUser()->credits_balance,
             'plan' => $user->billableUser()->activeSubscription?->plan?->name,
+            // The API usage prepay wallet (separate real-money balance from
+            // credits_balance above) — see ApiWalletManager. Also resolved
+            // through billableUser() so a team seat's own token reports the
+            // balance its metered calls actually draw from.
+            'api_wallet_balance_cents' => $user->billableUser()->api_wallet_balance_cents,
         ]);
     }
 }

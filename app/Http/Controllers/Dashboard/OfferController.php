@@ -54,6 +54,7 @@ class OfferController extends Controller
             'product_name' => 'required|string|max:255',
             'product_url' => 'required|url|max:2048',
             'affiliate_network' => 'required|string|max:255',
+            'affiliate_link' => 'nullable|url|max:2048',
             'clip_id' => 'nullable|integer',
         ]);
 
@@ -63,6 +64,7 @@ class OfferController extends Controller
                 $validated['product_name'],
                 $validated['product_url'],
                 $validated['affiliate_network'],
+                $validated['affiliate_link'] ?? null,
             );
         } catch (InsufficientCreditsException $e) {
             return back()->withInput()->with('error', 'Not enough credits for offer research. Upgrade your plan or buy a credit top-up.');

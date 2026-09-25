@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
 use App\Models\WebhookEndpoint;
+use App\Services\Payments\CheckoutCountryResolver;
+use App\Services\Payments\PaymentGatewayManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -28,10 +30,17 @@ use Illuminate\View\View;
  * tokens, webhook management is owner-only: referrals and earnings (two of
  * the four subscribable events) aren't something a team seat has its own
  * view of in the first place.
+ *
+ * The API usage prepay wallet (App\Services\ApiWallet\ApiWalletManager)
+ * lives on this page too, for the same reason — a third facet of "using the
+ * API" rather than a destination of its own. index() only gathers its view
+ * data; the wallet's own POST/PATCH actions are ApiWalletController, kept
+ * separate since payment/checkout logic is a meaningfully different concern
+ * from this controller's plain CRUD.
  */
 class ApiAccessController extends Controller
 {
-    public function index(): View
+    public function index(Request $request, PaymentGatewayManager $gateways, CheckoutCountryResolver $countries): View
     {
         $user = auth()->user();
 
@@ -40,7 +49,25 @@ class ApiAccessController extends Controller
             ? collect()
             : $user->webhookEndpoints()->with(['deliveries' => fn ($query) => $query->latest()->limit(5)])->latest()->get();
 
-        return view('dashboard.api-access.index', compact('tokens', 'webhookEndpoints'));
+        // API usage prepay wallet — owner-only, same reasoning as webhooks
+        // above: it belongs to whoever funds the account (billableUser()),
+        // not the token/seat that happens to trigger a metered call. See
+        // ApiWalletController.
+        $billable = $user->billableUser();
+        $walletBalanceCents = $billable->api_wallet_balance_cents;
+        $walletTransactions = $user->isSeat() ? collect() : $billable->apiWalletTransactions()->limit(10)->get();
+        // PayPal is excluded here, not just left unselected: PayPalGateway::
+        // chargeSavedToken() always returns unsupported, so offering it as
+        // an auto-recharge option would just be a card picker entry that
+        // can never actually work.
+        $walletPaymentMethods = $billable->paymentMethods->reject(fn ($method) => $method->type === 'paypal');
+        $walletEnabledGateways = $gateways->enabledForCountry($countries->isNigeria($request) ? 'NG' : 'US');
+        $walletTopupPresets = config('api_billing.topup_presets_cents', []);
+
+        return view('dashboard.api-access.index', compact(
+            'tokens', 'webhookEndpoints', 'billable', 'walletBalanceCents', 'walletTransactions',
+            'walletPaymentMethods', 'walletEnabledGateways', 'walletTopupPresets',
+        ));
     }
 
     public function createToken(Request $request): RedirectResponse

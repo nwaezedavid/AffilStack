@@ -91,7 +91,7 @@ class GoogleOAuthSettings extends Page
                             ->columnSpanFull(),
                     ]),
                 Section::make('Gmail sending (CRM nurture emails)')
-                    ->description('Lets a user connect their own Gmail account so their CRM nurture emails send from their address instead of AffilStack\'s — protects our shared sending domain\'s reputation. Uses the same client id/secret above, requesting the additional gmail.send scope. Google treats gmail.send as a restricted scope: it requires this OAuth consent screen to pass Google\'s security assessment before it works for anyone outside your own test users, even if "Continue with Google" above already works.')
+                    ->description($this->gmailStatusDescription())
                     ->columns(2)
                     ->components([
                         Toggle::make('gmail_sending_enabled')
@@ -141,6 +141,29 @@ class GoogleOAuthSettings extends Page
         return $settings->is_enabled
             ? '"Continue with Google" is live on the sign-in and signup pages.'
             : 'Configured but disabled — hidden from visitors.';
+    }
+
+    /**
+     * Surfaces the exact reason a user's Email Sending page might be
+     * showing "Gmail connections aren't available yet" instead of a
+     * "Connect Gmail" button — gmailSendingAvailable() depends on both the
+     * client id/secret above AND this section's own toggle, so an admin who
+     * only set one of the two otherwise has no direct signal which is
+     * missing. Prepended to the section's existing explanatory copy rather
+     * than replacing it — that explanation (restricted-scope review, shared
+     * credentials) still matters once the immediate blocker is fixed.
+     */
+    protected function gmailStatusDescription(): string
+    {
+        $settings = GoogleOauthSetting::current();
+
+        $status = match (true) {
+            ! $settings->credential('client_id') || ! $settings->credential('client_secret') => 'Not available to users yet — add a Client ID and secret in the Google OAuth section above first, then turn on the toggle below.',
+            ! $settings->gmail_sending_enabled => 'Configured but turned off — users currently see "use SMTP instead" on their Email Sending page. Turn on the toggle below to show them the Connect Gmail button.',
+            default => 'Live — the Connect Gmail button is showing on every user\'s Email Sending page.',
+        };
+
+        return $status.' Lets a user connect their own Gmail account so their CRM nurture emails send from their address instead of AffilStack\'s — protects our shared sending domain\'s reputation. Uses the same client id/secret above, requesting the additional gmail.send scope. Google treats gmail.send as a restricted scope: it requires this OAuth consent screen to pass Google\'s security assessment before it works for anyone outside your own test users, even if "Continue with Google" above already works.';
     }
 
     /**

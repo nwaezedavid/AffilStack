@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\RunOfferResearch;
 use App\Models\Offer;
 use App\Models\User;
 use App\Services\AI\AIProvider;
 use App\Services\Modules\OfferResearchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Queue;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
@@ -129,5 +131,102 @@ class OfferResearchServiceTest extends TestCase
         $generation = $offer->generations()->where('module', 'research')->first();
         $this->assertSame('failed', $generation->status);
         $this->assertSame(0, $generation->credits_spent);
+    }
+
+    public function test_queue_stores_the_optional_affiliate_link_on_the_created_offer(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['credits_balance' => 100]);
+
+        $offer = app(OfferResearchService::class)->queue(
+            $user,
+            'Acme Widget',
+            'https://example.com',
+            'ShareASale',
+            'https://network.example.com/track/me',
+        );
+
+        $this->assertSame('https://network.example.com/track/me', $offer->fresh()->affiliate_link);
+        Queue::assertPushed(RunOfferResearch::class);
+    }
+
+    public function test_queue_leaves_the_affiliate_link_null_when_not_supplied(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['credits_balance' => 100]);
+
+        $offer = app(OfferResearchService::class)->queue($user, 'Acme Widget', 'https://example.com', 'ShareASale');
+
+        $this->assertNull($offer->fresh()->affiliate_link);
+    }
+
+    public function test_research_persists_the_ais_suggested_google_maps_niche_and_location(): void
+    {
+        $user = User::factory()->create(['credits_balance' => 100]);
+        $offer = $this->queuedOffer($user);
+
+        $this->mock(AIProvider::class, function (MockInterface $mock) {
+            $mock->shouldReceive('generateJson')->once()->andReturn(array_merge($this->validResult(), [
+                'recommended_channel' => 'google_maps',
+                'suggested_maps_niche' => 'dentists',
+                'suggested_maps_location' => 'Austin, TX',
+            ]));
+        });
+
+        app(OfferResearchService::class)->research($offer);
+
+        $offer->refresh();
+        $this->assertSame('ready', $offer->status);
+        $this->assertSame('dentists', $offer->suggested_maps_niche);
+        $this->assertSame('Austin, TX', $offer->suggested_maps_location);
+    }
+
+    /**
+     * Regression test: validResult() predates the suggested_maps_niche/
+     * suggested_maps_location keys, and a legacy or slightly malformed AI
+     * response could omit them the same way. research() must leave the
+     * offer "ready" with both fields simply null rather than emitting an
+     * undefined-array-key warning (or worse) while updating it — see the
+     * `?? null` guard before `?:` in research()'s final update() call.
+     */
+    public function test_research_leaves_maps_suggestions_null_when_the_ai_response_omits_them(): void
+    {
+        $user = User::factory()->create(['credits_balance' => 100]);
+        $offer = $this->queuedOffer($user);
+
+        $this->mock(AIProvider::class, function (MockInterface $mock) {
+            $mock->shouldReceive('generateJson')->once()->andReturn($this->validResult());
+        });
+
+        app(OfferResearchService::class)->research($offer);
+
+        $offer->refresh();
+        $this->assertSame('ready', $offer->status);
+        $this->assertNull($offer->suggested_maps_niche);
+        $this->assertNull($offer->suggested_maps_location);
+    }
+
+    /**
+     * The AI is instructed to return "" for these two keys whenever the
+     * recommendation isn't google_maps, rather than omitting them — both
+     * shapes must end up null on the offer, never a stored empty string.
+     */
+    public function test_research_treats_empty_string_maps_suggestions_as_null(): void
+    {
+        $user = User::factory()->create(['credits_balance' => 100]);
+        $offer = $this->queuedOffer($user);
+
+        $this->mock(AIProvider::class, function (MockInterface $mock) {
+            $mock->shouldReceive('generateJson')->once()->andReturn(array_merge($this->validResult(), [
+                'suggested_maps_niche' => '',
+                'suggested_maps_location' => '',
+            ]));
+        });
+
+        app(OfferResearchService::class)->research($offer);
+
+        $offer->refresh();
+        $this->assertNull($offer->suggested_maps_niche);
+        $this->assertNull($offer->suggested_maps_location);
     }
 }

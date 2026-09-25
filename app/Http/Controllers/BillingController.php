@@ -193,6 +193,15 @@ class BillingController extends Controller
                     : 'Your credit top-up has been added to your account.');
             }
 
+            // API wallet top-up (ApiWalletController::checkout()) — falling
+            // through to the "plan is now active" branch below would show a
+            // subscription-activation message for a purchase that has
+            // nothing to do with the plan, and send the user to the wrong
+            // page to see it land.
+            if ($transaction->type === 'api_wallet_topup') {
+                return redirect()->route('api-access.index')->with('success', '$'.number_format($transaction->amount_cents / 100, 2).' has been added to your API wallet.');
+            }
+
             return redirect()->route('dashboard')->with('success', 'Your plan is now active. Welcome to AffilStack.');
         }
 

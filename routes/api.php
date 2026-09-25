@@ -31,7 +31,10 @@ Route::prefix('v1')->middleware(['api-token-auth', 'throttle:60,1'])->group(func
     Route::get('/me', [MeController::class, 'show'])->name('api.v1.me');
 
     Route::get('/offers', [OffersController::class, 'index'])->name('api.v1.offers.index');
-    Route::post('/offers', [OffersController::class, 'store'])->name('api.v1.offers.store');
+    // Metered — see config('api_billing.costs') and MeterApiUsage. The only
+    // /v1/* action that triggers real AI spend today; every read endpoint
+    // in this group stays free.
+    Route::post('/offers', [OffersController::class, 'store'])->middleware('meter-api-usage')->name('api.v1.offers.store');
     Route::get('/offers/{offer}', [OffersController::class, 'show'])->name('api.v1.offers.show');
 
     Route::get('/generations', [GenerationsController::class, 'index'])->name('api.v1.generations.index');

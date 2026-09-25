@@ -18,12 +18,38 @@ use Illuminate\View\View;
  */
 class LeadFinderController extends Controller
 {
-    public function index(): View
+    /**
+     * Reads niche/location off the query string so a link from the Offer
+     * Research "recommended next step" card (see offers/show.blade.php) can
+     * land here pre-filled with the AI's own suggested search — and, since
+     * both values already came from a real recommendation rather than a
+     * guess, runs that search immediately instead of making the user press
+     * "Search" again on an already-filled-in form. A search typed by hand
+     * still always goes through the explicit search() action below.
+     */
+    public function index(Request $request, GoogleMapsLeadService $service): View
     {
+        $niche = (string) $request->query('niche', '');
+        $location = (string) $request->query('location', '');
+        $results = [];
+        $importedPlaceIds = [];
+        $autoSearchError = null;
+
+        if ($niche !== '' && $location !== '' && auth()->user()->canUseChannel('google_maps')) {
+            try {
+                $results = $service->search($niche, $location);
+                $importedPlaceIds = $this->importedPlaceIds();
+            } catch (GoogleMapsException $e) {
+                $autoSearchError = $e->getMessage();
+            }
+        }
+
         return view('dashboard.leads.index', [
-            'results' => [],
-            'niche' => '',
-            'location' => '',
+            'results' => $results,
+            'importedPlaceIds' => $importedPlaceIds,
+            'niche' => $niche,
+            'location' => $location,
+            'autoSearchError' => $autoSearchError,
         ]);
     }
 
@@ -44,22 +70,31 @@ class LeadFinderController extends Controller
             return back()->withInput()->with('error', $e->getMessage());
         }
 
-        // Businesses already imported (by Google's own place_id, not name —
-        // two different chains can share a name) are marked rather than
-        // hidden, so re-running a search doesn't look broken.
-        $importedPlaceIds = auth()->user()->crmContacts()
+        return view('dashboard.leads.index', [
+            'results' => $results,
+            'importedPlaceIds' => $this->importedPlaceIds(),
+            'niche' => $validated['niche'],
+            'location' => $validated['location'],
+            'autoSearchError' => null,
+        ]);
+    }
+
+    /**
+     * Businesses already imported (by Google's own place_id, not name — two
+     * different chains can share a name) are marked rather than hidden, so
+     * re-running a search doesn't look broken. Shared by index()'s
+     * auto-search and search() so both mark results identically.
+     *
+     * @return array<int, string>
+     */
+    protected function importedPlaceIds(): array
+    {
+        return auth()->user()->crmContacts()
             ->where('source', 'google_maps')
             ->get()
             ->map(fn (CrmContact $c) => $c->raw_data['google_place_id'] ?? null)
             ->filter()
             ->all();
-
-        return view('dashboard.leads.index', [
-            'results' => $results,
-            'importedPlaceIds' => $importedPlaceIds,
-            'niche' => $validated['niche'],
-            'location' => $validated['location'],
-        ]);
     }
 
     public function import(Request $request, GoogleMapsLeadService $service): RedirectResponse

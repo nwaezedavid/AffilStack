@@ -7,6 +7,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Agents\SamAgentService;
+use App\Services\ApiWallet\ApiWalletManager;
 use App\Services\Credits\CreditManager;
 use App\Services\Referrals\ReferralService;
 use Carbon\Carbon;
@@ -27,6 +28,7 @@ class PaymentProcessor
         protected ReferralService $referrals,
         protected SamAgentService $sam,
         protected PaymentMethodRecorder $paymentMethods,
+        protected ApiWalletManager $apiWallet,
     ) {}
 
     /**
@@ -92,7 +94,41 @@ class PaymentProcessor
             $this->grantCreditTopup($transaction, $gateway, $result);
         }
 
+        if ($transaction->type === 'api_wallet_topup') {
+            $this->grantApiWalletTopup($transaction, $gateway, $result);
+        }
+
         return $transaction;
+    }
+
+    /**
+     * API usage prepay wallet — a plain "pay $X, wallet balance goes up by
+     * $X" top-up (see ApiWalletController::checkout()), no package/bonus
+     * tiers to look up unlike credit_topup's CreditPackage. Also records
+     * the payment method exactly like every other purchase type: this is
+     * how a card actually gets onto file for a user to later pick as their
+     * auto-recharge method (see User::apiWalletPaymentMethod()) — "bind
+     * your card" IS "pay with it once," there's no separate save-a-card
+     * flow in this app.
+     *
+     * @param  array<string, mixed>  $result
+     */
+    protected function grantApiWalletTopup(PaymentTransaction $transaction, string $gateway, array $result): void
+    {
+        if (! $transaction->user_id) {
+            Log::error('API wallet top-up payment succeeded but user could not be resolved', ['gateway' => $gateway, 'tx_ref' => $transaction->tx_ref]);
+
+            return;
+        }
+
+        $this->paymentMethods->record($transaction->user, $gateway, $result);
+
+        $this->apiWallet->topUp(
+            $transaction->user,
+            $transaction->amount_cents,
+            'api_wallet_topup_purchase',
+            $transaction
+        );
     }
 
     /**

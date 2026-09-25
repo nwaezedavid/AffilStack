@@ -11,6 +11,16 @@
             <a href="{{ route('billing.index') }}" class="text-xs text-brand-600 hover:text-brand-700 underline">Upgrade to unlock it &rarr;</a>
         </div>
     @else
+        @if (request()->query('niche') && request()->query('location') && empty($autoSearchError))
+            <div class="bg-navy-50 border border-line rounded-lg px-4 py-2.5 mb-4 text-xs text-ink-700">
+                Showing businesses matching your Offer Research recommendation — adjust the search below any time.
+            </div>
+        @endif
+
+        @if ($autoSearchError)
+            <div class="bg-red-50 text-red-700 rounded-lg px-4 py-2.5 mb-4 text-sm">{{ $autoSearchError }}</div>
+        @endif
+
         <form method="POST" action="{{ route('leads.search') }}" class="bg-surface border border-line rounded-lg p-5 mb-6 grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
             @csrf
             <div>

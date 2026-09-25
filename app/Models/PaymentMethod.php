@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'user_id', 'gateway', 'type', 'brand', 'last4', 'exp_month', 'exp_year',
-    'label', 'gateway_customer_id', 'gateway_token', 'is_default', 'last_used_at',
+    'label', 'country', 'gateway_customer_id', 'gateway_token', 'is_default', 'last_used_at',
 ])]
 class PaymentMethod extends Model
 {

@@ -40,6 +40,12 @@
                        placeholder="e.g. PartnerStack, Impact, ShareASale"
                        class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
             </div>
+            <div>
+                <label for="affiliate_link" class="block text-sm font-medium text-ink-900 mb-1">Your affiliate link <span class="font-normal text-ink-400">(optional — add it later if you don't have it yet)</span></label>
+                <input id="affiliate_link" name="affiliate_link" type="url" value="{{ old('affiliate_link', request('affiliate_link')) }}"
+                       placeholder="https://network.example.com/track/you"
+                       class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
             <button type="submit" class="w-full rounded-md bg-navy-900 text-white text-sm font-medium py-2.5 hover:bg-navy-800 transition">
                 Run research
             </button>

@@ -135,7 +135,11 @@ class ApiV1EndpointsTest extends TestCase
     public function test_creating_an_offer_via_the_api_queues_research_and_charges_credits(): void
     {
         Queue::fake();
-        $user = User::factory()->create(['credits_balance' => 1000]);
+        // api_wallet_balance_cents covers MeterApiUsage's separate $0.75
+        // per-call fee (config('api_billing.costs')) — a completely
+        // different balance from credits_balance, see ApiWalletMeteringTest
+        // for that gate's own dedicated coverage.
+        $user = User::factory()->create(['credits_balance' => 1000, 'api_wallet_balance_cents' => 1000]);
         $user->assignRole('user');
 
         $response = $this->postJson('/api/v1/offers', [
@@ -150,7 +154,11 @@ class ApiV1EndpointsTest extends TestCase
 
     public function test_creating_an_offer_via_the_api_without_enough_credits_returns_402(): void
     {
-        $user = User::factory()->create(['credits_balance' => 0]);
+        // A healthy API wallet balance here isolates this test to the
+        // *credits* gate specifically — with a $0 wallet too, this would
+        // still return 402, but for MeterApiUsage's insufficient-balance
+        // reason instead, which is covered on its own in ApiWalletMeteringTest.
+        $user = User::factory()->create(['credits_balance' => 0, 'api_wallet_balance_cents' => 1000]);
         $user->assignRole('user');
 
         $response = $this->postJson('/api/v1/offers', [
@@ -159,7 +167,7 @@ class ApiV1EndpointsTest extends TestCase
             'affiliate_network' => 'ShareASale',
         ], $this->authHeaders($this->tokenFor($user)));
 
-        $response->assertStatus(402);
+        $response->assertStatus(402)->assertJson(['message' => 'Not enough credits for offer research.']);
     }
 
     // --- Generations: read-only, same scoping -----------------------------

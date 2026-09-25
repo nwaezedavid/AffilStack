@@ -29,7 +29,7 @@ class OfferResearchService
         protected CreditManager $credits,
     ) {}
 
-    public function queue(User $user, string $productName, string $productUrl, string $affiliateNetwork): Offer
+    public function queue(User $user, string $productName, string $productUrl, string $affiliateNetwork, ?string $affiliateLink = null): Offer
     {
         $cost = (int) config('credits.costs.research');
 
@@ -50,6 +50,7 @@ class OfferResearchService
             'product_name' => $productName,
             'product_url' => $productUrl,
             'affiliate_network' => $affiliateNetwork,
+            'affiliate_link' => $affiliateLink,
             'status' => 'queued',
         ]);
 
@@ -96,13 +97,16 @@ class OfferResearchService
             - "ideal_customer_summary": 2-3 sentences describing the ideal buyer (role, company size or life stage, budget, what pain drives them to search for this).
             - "pain_points": array of 3-5 short strings, the specific problems this buyer has that the product solves.
             - "where_to_find": array of 4-6 short strings naming concrete, specific places to find this buyer (named subreddits, named Facebook/LinkedIn groups, named forums, search terms, hashtags, or event/community types — not generic advice like "social media").
-            - "recommended_channel": one of "linkedin", "blog", "youtube", "ugc", "pinterest", "google_maps".
-            - "recommended_channel_reason": 2-3 sentences on why that channel beats the other five for this specific product and buyer.
+            - "recommended_channel": one of "linkedin", "blog", "youtube", "ugc", "pinterest", "google_maps", "x", "tiktok".
+            - "recommended_channel_reason": 2-3 sentences on why that channel beats the other seven for this specific product and buyer.
             - "recommended_angle": one sharp promotional angle/hook a total beginner could copy today.
-            - "secondary_channel": one of the same six channel values, the second-best option.
+            - "secondary_channel": one of the same eight channel values, the second-best option.
+            - "suggested_maps_niche": ONLY when "recommended_channel" or "secondary_channel" is "google_maps" — a short 2-4 word Google-Maps-ready search keyword for the kind of LOCAL BUSINESS most likely to buy this as a client/referral source (e.g. "dentists", "real estate agents", "coffee shops"), not the end consumer. Empty string "" when local outreach doesn't fit this product at all.
+            - "suggested_maps_location": ONLY when a suggested_maps_niche is given — a single plausible city/region to search first (e.g. "Austin, TX"), your best generic guess since no location was provided. Empty string "" otherwise.
             PROMPT;
 
-        $userPrompt = "Product name: {$offer->product_name}\nOfficial URL: {$offer->product_url}\nAffiliate network: {$offer->affiliate_network}";
+        $affiliateLinkLine = $offer->affiliate_link ? "\nAffiliate link: {$offer->affiliate_link}" : '';
+        $userPrompt = "Product name: {$offer->product_name}\nOfficial URL: {$offer->product_url}\nAffiliate network: {$offer->affiliate_network}{$affiliateLinkLine}";
 
         try {
             $result = $this->ai->generateJson($system, $userPrompt);
@@ -150,6 +154,13 @@ class OfferResearchService
                     'recommended_channel' => $result['recommended_channel'] ?? null,
                     'recommended_angle' => $result['recommended_angle'] ?? null,
                     'research_data' => $result,
+                    // ?? before ?: matters here: the AI response schema promises
+                    // these keys but a test fixture or an older cached response
+                    // may omit them entirely, and `$result['x'] ?: null` alone
+                    // still emits an undefined-array-key warning on a missing
+                    // key (unlike `??`) before falling back.
+                    'suggested_maps_niche' => ($result['suggested_maps_niche'] ?? null) ?: null,
+                    'suggested_maps_location' => ($result['suggested_maps_location'] ?? null) ?: null,
                 ]);
 
                 $generation = $offer->generations()->create([

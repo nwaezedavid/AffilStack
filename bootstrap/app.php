@@ -4,6 +4,7 @@ use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Middleware\CachePublicPage;
 use App\Http\Middleware\EnsureAccountNotSuspended;
 use App\Http\Middleware\EnsureAdminApiToken;
+use App\Http\Middleware\MeterApiUsage;
 use App\Http\Middleware\RestrictAffiliateOnlyAccounts;
 use App\Http\Middleware\RestrictAgencySeats;
 use App\Http\Middleware\SecurityHeaders;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'not-suspended' => EnsureAccountNotSuspended::class,
             'api-token-auth' => ApiTokenAuth::class,
             'admin-api-token' => EnsureAdminApiToken::class,
+            'meter-api-usage' => MeterApiUsage::class,
             'cache-public-page' => CachePublicPage::class,
         ]);
     })

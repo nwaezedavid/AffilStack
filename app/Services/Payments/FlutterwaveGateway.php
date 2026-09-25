@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Models\PaymentGatewaySetting;
+use App\Models\PaymentMethod;
 use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -315,9 +316,32 @@ class FlutterwaveGateway implements PaymentGateway
                 // gateway. Safe until the year 2100.
                 'exp_year' => 2000 + ((int) (explode('/', (string) ($flwData['card']['expiry'] ?? '/'))[1] ?? 0)),
                 'token' => (string) $flwData['card']['token'],
+                // Needed for a later tokenized (auto-recharge) charge — see
+                // chargeSavedToken(). Only meaningful alongside a token, so
+                // nested in the same conditional rather than a top-level key.
+                'country' => $this->extractCountryCode($flwData['card']['country'] ?? null),
             ] : null,
             'raw' => $flwData,
         ];
+    }
+
+    /**
+     * Flutterwave reports a card's issuing country as "NIGERIA NG" — the
+     * full country name and its 2-letter ISO code space-separated in one
+     * string — where chargeSavedToken()'s tokenized-charge call needs just
+     * the code. Returns null for anything that doesn't end in a clean
+     * 2-letter code rather than guessing.
+     */
+    protected function extractCountryCode(?string $rawCountry): ?string
+    {
+        if (! $rawCountry) {
+            return null;
+        }
+
+        $parts = preg_split('/\s+/', trim($rawCountry));
+        $code = strtoupper((string) end($parts));
+
+        return preg_match('/^[A-Z]{2}$/', $code) ? $code : null;
     }
 
     /**
@@ -360,6 +384,75 @@ class FlutterwaveGateway implements PaymentGateway
             'message' => 'Transfer accepted by Flutterwave — pending bank settlement.',
             'raw' => (array) $data,
         ];
+    }
+
+    /**
+     * @return array{success: bool, message: string, reference?: string, raw?: array<string, mixed>}
+     */
+    public function chargeSavedToken(PaymentMethod $method, int $amountCents, string $currency, string $description): array
+    {
+        if ($method->gateway_token === null || $method->gateway_token === '') {
+            return ['success' => false, 'message' => 'No saved Flutterwave card token on file.'];
+        }
+
+        // country is required by /tokenized-charges (see extractCountryCode()
+        // above) but wasn't captured for any card saved before this feature
+        // existed — an honest failure here beats guessing a country and
+        // risking Flutterwave rejecting or misrouting the charge.
+        if (! $method->country) {
+            return ['success' => false, 'message' => 'This saved card is missing its billing country, which Flutterwave requires for an automatic charge — reconnect the card via a fresh payment to enable auto-recharge.'];
+        }
+
+        $user = $method->user;
+        [$firstName, $lastName] = $this->splitName($user?->name ?? '');
+        $txRef = 'affilstack_tokenized_'.Str::uuid();
+
+        $response = Http::withToken($this->secretKey())
+            ->baseUrl($this->baseUrl())
+            ->post('/tokenized-charges', [
+                'token' => $method->gateway_token,
+                'currency' => $currency,
+                'country' => $method->country,
+                'amount' => $amountCents / 100,
+                'email' => $user?->email,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'tx_ref' => $txRef,
+                'narration' => $description,
+            ]);
+
+        $data = $response->json();
+        // The outer envelope's status only means "the charge request was
+        // accepted" — the actual charge outcome is data.status, which comes
+        // back "pending" rather than "successful" whenever Flutterwave wants
+        // further authentication (OTP/redirect/3DS) that nothing unattended
+        // can complete, so that must fail here too, not just a flat decline.
+        $innerStatus = data_get($data, 'data.status');
+
+        if ($response->failed() || data_get($data, 'status') !== 'success' || $innerStatus !== 'successful') {
+            $message = $innerStatus === 'pending'
+                ? 'Flutterwave needs additional verification (OTP/3DS) for this card, which an automatic recharge can\'t complete — top up manually instead.'
+                : data_get($data, 'message', 'Flutterwave declined the saved card: '.$response->body());
+
+            return ['success' => false, 'message' => $message, 'raw' => (array) $data];
+        }
+
+        return [
+            'success' => true,
+            'reference' => (string) data_get($data, 'data.id', $txRef),
+            'message' => 'Charged successfully.',
+            'raw' => (array) $data,
+        ];
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    protected function splitName(string $fullName): array
+    {
+        $parts = preg_split('/\s+/', trim($fullName), 2);
+
+        return [$parts[0] ?: 'Customer', $parts[1] ?? ''];
     }
 
     public function verifyCredentials(): array

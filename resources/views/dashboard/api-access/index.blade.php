@@ -53,6 +53,167 @@
         @endif
     </div>
 
+    {{-- API usage prepay wallet — owner-only, see ApiWalletController --}}
+    @if (! auth()->user()->isSeat())
+        <div class="bg-surface border border-line rounded-lg p-5 mb-6">
+            <div class="flex items-start justify-between gap-4 flex-wrap mb-4">
+                <div>
+                    <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">API wallet</h3>
+                    <p class="text-sm text-ink-600 max-w-md">
+                        A prepaid balance just for pay-per-call API usage — separate from your plan's monthly
+                        credits above. Right now only <code class="font-mono text-xs bg-surface-muted px-1 py-0.5 rounded">POST /offers</code>
+                        draws from it, at $0.75 a call.
+                    </p>
+                </div>
+                <div class="text-right shrink-0">
+                    <div class="text-xs uppercase tracking-wide text-ink-400 font-mono">Balance</div>
+                    <div class="font-mono text-2xl font-semibold text-navy-900">${{ number_format($walletBalanceCents / 100, 2) }}</div>
+                </div>
+            </div>
+
+            @if ($walletBalanceCents <= config('api_billing.low_balance_threshold_cents'))
+                <div class="bg-amber-50 text-amber-800 text-xs rounded-md px-3 py-2 mb-4">
+                    Running low — top up below, or turn on auto-recharge so metered calls don't start getting blocked.
+                </div>
+            @endif
+
+            @if (session('success') && str_contains(session('success'), 'wallet'))
+                <div class="bg-emerald-50 text-emerald-800 text-xs rounded-md px-3 py-2 mb-4">{{ session('success') }}</div>
+            @endif
+            @if (session('error'))
+                <div class="bg-red-50 text-red-700 text-xs rounded-md px-3 py-2 mb-4">{{ session('error') }}</div>
+            @endif
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
+                {{-- Top up --}}
+                <div>
+                    <h4 class="text-xs font-semibold uppercase tracking-wide text-ink-500 mb-2">Top up</h4>
+                    @if (empty($walletEnabledGateways))
+                        <p class="text-sm text-ink-400">Payments are temporarily unavailable — please try again shortly.</p>
+                    @else
+                        <form method="POST" action="{{ route('api-access.wallet.checkout') }}" class="space-y-3">
+                            @csrf
+                            <div class="flex flex-wrap gap-2">
+                                @foreach ($walletTopupPresets as $preset)
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="amount_cents" value="{{ $preset }}" class="peer sr-only" {{ $loop->first ? 'checked' : '' }} required>
+                                        <span class="block rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 peer-checked:bg-navy-900 peer-checked:text-white peer-checked:border-navy-900 transition">
+                                            ${{ number_format($preset / 100) }}
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @if (count($walletEnabledGateways) > 1)
+                                <select name="gateway" class="w-full rounded-md border border-line px-2 py-1.5 text-xs">
+                                    @foreach ($walletEnabledGateways as $gateway)
+                                        <option value="{{ $gateway->key() }}">{{ $gateway->label() }}</option>
+                                    @endforeach
+                                </select>
+                            @elseif (count($walletEnabledGateways) === 1)
+                                <input type="hidden" name="gateway" value="{{ $walletEnabledGateways[0]->key() }}">
+                            @endif
+                            <button class="rounded-md bg-navy-900 text-white text-sm px-4 py-2 hover:bg-navy-800 transition">
+                                Add to wallet
+                            </button>
+                            <p class="text-xs text-ink-400">Paying with a new card saves it automatically — pick it below to enable auto-recharge.</p>
+                        </form>
+                    @endif
+                </div>
+
+                {{-- Auto-recharge --}}
+                <div>
+                    <h4 class="text-xs font-semibold uppercase tracking-wide text-ink-500 mb-2">Auto-recharge</h4>
+                    @if ($walletPaymentMethods->isEmpty())
+                        <p class="text-sm text-ink-400">Top up once with a card above to unlock automatic recharging.</p>
+                    @else
+                        <form method="POST" action="{{ route('api-access.wallet.settings') }}" class="space-y-3">
+                            @csrf
+                            @method('PATCH')
+                            <label class="flex items-center gap-2 text-sm text-ink-700">
+                                <input type="checkbox" name="auto_recharge_enabled" value="1" {{ $billable->api_wallet_auto_recharge_enabled ? 'checked' : '' }}>
+                                Automatically top up when balance runs low
+                            </label>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs text-ink-500 mb-1">When balance drops below</label>
+                                    <select name="auto_recharge_threshold_cents" class="w-full rounded-md border border-line px-2 py-1.5 text-xs">
+                                        @foreach ([100 => '$1', 200 => '$2', 500 => '$5', 1000 => '$10', 2500 => '$25', 5000 => '$50', 10000 => '$100'] as $cents => $label)
+                                            <option value="{{ $cents }}" {{ (int) $billable->api_wallet_auto_recharge_threshold_cents === $cents ? 'selected' : '' }}>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-ink-500 mb-1">Recharge this much</label>
+                                    <select name="auto_recharge_amount_cents" class="w-full rounded-md border border-line px-2 py-1.5 text-xs">
+                                        @foreach ([1000 => '$10', 2500 => '$25', 5000 => '$50', 10000 => '$100', 25000 => '$250', 50000 => '$500'] as $cents => $label)
+                                            <option value="{{ $cents }}" {{ (int) $billable->api_wallet_auto_recharge_amount_cents === $cents ? 'selected' : '' }}>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-ink-500 mb-1">Card to charge</label>
+                                <select name="payment_method_id" class="w-full rounded-md border border-line px-2 py-1.5 text-xs">
+                                    @foreach ($walletPaymentMethods as $method)
+                                        <option value="{{ $method->id }}" {{ $billable->api_wallet_payment_method_id === $method->id ? 'selected' : '' }}>{{ $method->display() }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <button class="rounded-md border border-line text-ink-900 text-sm px-4 py-2 hover:bg-surface-muted transition">
+                                Save auto-recharge settings
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Recent activity --}}
+            @if ($walletTransactions->isNotEmpty())
+                <div>
+                    <h4 class="text-xs font-semibold uppercase tracking-wide text-ink-500 mb-2">Recent activity</h4>
+                    <div class="border border-line rounded-md overflow-hidden">
+                        <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
+                                <tr>
+                                    <th class="text-left px-4 py-2">Type</th>
+                                    <th class="text-left px-4 py-2">Description</th>
+                                    <th class="text-right px-4 py-2">Amount</th>
+                                    <th class="text-right px-4 py-2">Balance after</th>
+                                    <th class="text-left px-4 py-2">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-line">
+                                @foreach ($walletTransactions as $transaction)
+                                    <tr>
+                                        <td class="px-4 py-2.5">
+                                            <span @class([
+                                                'text-xs font-mono px-2 py-0.5 rounded',
+                                                'bg-red-50 text-red-700' => $transaction->type === 'usage',
+                                                'bg-emerald-50 text-emerald-700' => in_array($transaction->type, ['topup', 'auto_recharge'], true),
+                                                'bg-surface-muted text-ink-500' => $transaction->type === 'refund',
+                                            ])>{{ $transaction->type === 'topup' ? 'Top-up' : ucfirst(str_replace('_', ' ', $transaction->type)) }}</span>
+                                        </td>
+                                        <td class="px-4 py-2.5 text-ink-600">{{ $transaction->description ?? '—' }}</td>
+                                        <td class="px-4 py-2.5 text-right font-mono {{ $transaction->amount_cents < 0 ? 'text-red-600' : 'text-emerald-700' }}">
+                                            {{ $transaction->amount_cents < 0 ? '-' : '+' }}${{ number_format(abs($transaction->amount_cents) / 100, 2) }}
+                                        </td>
+                                        <td class="px-4 py-2.5 text-right font-mono text-ink-600">${{ number_format($transaction->balance_after_cents / 100, 2) }}</td>
+                                        <td class="px-4 py-2.5 text-ink-500">{{ $transaction->created_at->diffForHumans() }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+    @endif
+
     {{-- Outbound webhooks (audit gap #7) — owner-only, see ApiAccessController --}}
     @if (! auth()->user()->isSeat())
         <div class="bg-surface border border-line rounded-lg p-5 mb-6">
@@ -146,6 +307,15 @@
             Base URL: <code class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">{{ url('/api/v1') }}</code>
             &middot; Auth header: <code class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">Authorization: Bearer &lt;token&gt;</code>
             &middot; 60 requests/minute per token.
+        </p>
+        <p class="text-xs text-ink-400 mb-4">
+            Everything below is free except <code class="font-mono bg-surface-muted px-1 py-0.5 rounded">POST /offers</code>,
+            which costs $0.75 a call
+            @if (auth()->user()->isSeat())
+                from the account's API wallet — ask the account owner to keep it topped up.
+            @else
+                from your API wallet above.
+            @endif
         </p>
         <div class="border border-line rounded-md overflow-hidden">
             <div class="overflow-x-auto">

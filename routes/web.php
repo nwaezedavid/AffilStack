@@ -10,6 +10,7 @@ use App\Http\Controllers\CreativeTaskPreviewController;
 use App\Http\Controllers\CreditTopupController;
 use App\Http\Controllers\CrmEmailTrackingController;
 use App\Http\Controllers\Dashboard\ApiAccessController;
+use App\Http\Controllers\Dashboard\ApiWalletController;
 use App\Http\Controllers\Dashboard\BlogController;
 use App\Http\Controllers\Dashboard\CompetitorAngleController;
 use App\Http\Controllers\Dashboard\ContentCalendarController;
@@ -341,6 +342,15 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::post('/api-access/webhooks', [ApiAccessController::class, 'storeWebhook'])->name('api-access.webhooks.store');
     Route::patch('/api-access/webhooks/{webhook}/toggle', [ApiAccessController::class, 'toggleWebhook'])->name('api-access.webhooks.toggle');
     Route::delete('/api-access/webhooks/{webhook}', [ApiAccessController::class, 'destroyWebhook'])->name('api-access.webhooks.destroy');
+
+    // API usage prepay wallet — owner-only just like outbound webhooks
+    // above (a seat's own metered API calls still draw from the owner's
+    // wallet automatically — see ApiWalletManager's billableUser()
+    // resolution — so only the owner should fund or configure it),
+    // deliberately NOT added to config('agency.seat_allowed_routes')
+    // either, same reasoning as the webhook routes.
+    Route::post('/api-access/wallet/checkout', [ApiWalletController::class, 'checkout'])->name('api-access.wallet.checkout');
+    Route::patch('/api-access/wallet/settings', [ApiWalletController::class, 'updateSettings'])->name('api-access.wallet.settings');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

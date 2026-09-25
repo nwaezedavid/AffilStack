@@ -113,4 +113,37 @@ class ApiAccessPageTest extends TestCase
 
         $this->actingAs($seat)->get(route('api-access.index'))->assertOk();
     }
+
+    // --- API wallet section (see ApiWalletManagerTest/ApiWalletControllerTest for the feature's own logic) ---
+
+    public function test_the_page_shows_the_owners_api_wallet_balance(): void
+    {
+        $user = User::factory()->create(['api_wallet_balance_cents' => 1234]);
+        $user->assignRole('user');
+
+        $this->actingAs($user)->get(route('api-access.index'))->assertOk()->assertSee('$12.34');
+    }
+
+    public function test_a_seat_does_not_see_the_owners_wallet_section(): void
+    {
+        $plan = Plan::factory()->sharedTeamPlan()->create();
+        $owner = User::factory()->create(['api_wallet_balance_cents' => 1234]);
+        $owner->assignRole('user');
+        Subscription::factory()->create(['user_id' => $owner->id, 'plan_id' => $plan->id]);
+        $seat = User::factory()->create(['agency_owner_id' => $owner->id, 'seat_role' => 'member']);
+        $seat->assignRole('user');
+
+        // "API wallet" itself still appears in the endpoint pricing note
+        // (context-adjusted for a seat — see the view), so assert against
+        // the wallet section's own controls instead, which stay owner-only.
+        $this->actingAs($seat)->get(route('api-access.index'))->assertOk()->assertDontSee('Auto-recharge');
+    }
+
+    public function test_the_page_shows_a_low_balance_warning_at_or_below_the_threshold(): void
+    {
+        $user = User::factory()->create(['api_wallet_balance_cents' => 500]);
+        $user->assignRole('user');
+
+        $this->actingAs($user)->get(route('api-access.index'))->assertOk()->assertSee('Running low');
+    }
 }

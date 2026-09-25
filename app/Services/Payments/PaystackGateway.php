@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Models\PaymentGatewaySetting;
+use App\Models\PaymentMethod;
 use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -296,6 +297,51 @@ class PaystackGateway implements PaymentGateway
                 'token' => (string) data_get($data, 'authorization.authorization_code'),
             ] : null,
             'raw' => $data,
+        ];
+    }
+
+    /**
+     * @return array{success: bool, message: string, reference?: string, raw?: array<string, mixed>}
+     */
+    public function chargeSavedToken(PaymentMethod $method, int $amountCents, string $currency, string $description): array
+    {
+        if ($method->gateway_token === null || $method->gateway_token === '') {
+            return ['success' => false, 'message' => 'No saved Paystack authorization code on file.'];
+        }
+
+        // Paystack always settles in NGN regardless of what's being charged
+        // — same conversion checkout()/initiateOneTimeCheckout() already
+        // apply, since $amountCents/$currency here arrive in the wallet's
+        // own USD terms, not kobo.
+        $amountKobo = strtoupper($currency) === 'NGN'
+            ? $amountCents
+            : (int) round(($amountCents / 100) * $this->exchangeRate() * 100);
+
+        $response = Http::withToken($this->secretKey())
+            ->baseUrl($this->baseUrl())
+            ->post('/transaction/charge_authorization', [
+                'authorization_code' => $method->gateway_token,
+                'email' => $method->user?->email,
+                'amount' => $amountKobo,
+                'currency' => 'NGN',
+            ]);
+
+        $data = $response->json();
+        $status = data_get($data, 'data.status');
+
+        if ($response->failed() || data_get($data, 'status') !== true || $status !== 'success') {
+            return [
+                'success' => false,
+                'message' => data_get($data, 'data.gateway_response', data_get($data, 'message', 'Paystack declined the saved card: '.$response->body())),
+                'raw' => (array) $data,
+            ];
+        }
+
+        return [
+            'success' => true,
+            'reference' => (string) data_get($data, 'data.reference', ''),
+            'message' => 'Charged successfully.',
+            'raw' => (array) $data,
         ];
     }
 

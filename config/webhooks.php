@@ -17,6 +17,9 @@ return [
         'crm_contact.created' => 'New CRM contact created',
         'referral.converted' => 'Referral converted',
         'earning.recorded' => 'Earning recorded',
+        // API usage prepay wallet — see ApiWalletManager.
+        'api_wallet.low_balance' => 'API wallet balance running low',
+        'api_wallet.topped_up' => 'API wallet topped up',
     ],
 
     /*

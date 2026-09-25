@@ -10,9 +10,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'user_id', 'product_name', 'product_url', 'affiliate_network', 'status',
+    'user_id', 'product_name', 'product_url', 'affiliate_network', 'affiliate_link', 'status',
     'ideal_customer_summary', 'where_to_find', 'recommended_channel',
     'recommended_angle', 'research_data', 'disclosure_country',
+    'suggested_maps_niche', 'suggested_maps_location',
 ])]
 class Offer extends Model
 {

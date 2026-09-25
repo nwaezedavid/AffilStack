@@ -40,6 +40,7 @@ class OffersController extends Controller
             'product_name' => 'required|string|max:255',
             'product_url' => 'required|url|max:2048',
             'affiliate_network' => 'required|string|max:255',
+            'affiliate_link' => 'nullable|url|max:2048',
         ]);
 
         try {
@@ -48,6 +49,7 @@ class OffersController extends Controller
                 $validated['product_name'],
                 $validated['product_url'],
                 $validated['affiliate_network'],
+                $validated['affiliate_link'] ?? null,
             );
         } catch (InsufficientCreditsException) {
             return response()->json(['message' => 'Not enough credits for offer research.'], 402);

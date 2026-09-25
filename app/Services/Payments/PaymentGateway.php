@@ -2,6 +2,7 @@
 
 namespace App\Services\Payments;
 
+use App\Models\PaymentMethod;
 use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -96,4 +97,19 @@ interface PaymentGateway
      * @return array{success: bool, message: string}
      */
     public function verifyCredentials(): array;
+
+    /**
+     * Charges $amountCents/$currency against an already-saved PaymentMethod
+     * with no browser redirect involved — the API wallet's auto-recharge
+     * (ApiWalletManager::attemptAutoRecharge()) and any future "charge this
+     * card again, right now" need. Never throws: a gateway/account that
+     * can't do this at all (see PayPalGateway, which has no reusable-token
+     * mechanism integrated) returns success=false with an explanatory
+     * message, exactly like a real decline, so callers can treat
+     * "unsupported" and "attempted and declined" identically — fall back to
+     * telling the user to top up manually.
+     *
+     * @return array{success: bool, message: string, reference?: string, raw?: array<string, mixed>}
+     */
+    public function chargeSavedToken(PaymentMethod $method, int $amountCents, string $currency, string $description): array;
 }

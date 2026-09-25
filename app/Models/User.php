@@ -27,7 +27,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role', 'refund_policy_accepted_at', 'is_affiliate_only'])]
+#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role', 'refund_policy_accepted_at', 'is_affiliate_only', 'api_wallet_balance_cents', 'api_wallet_auto_recharge_enabled', 'api_wallet_auto_recharge_threshold_cents', 'api_wallet_auto_recharge_amount_cents', 'api_wallet_payment_method_id'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
@@ -42,6 +42,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'password' => 'hashed',
             'is_suspended' => 'boolean',
             'is_affiliate_only' => 'boolean',
+            'api_wallet_auto_recharge_enabled' => 'boolean',
             'notify_email_on_completion' => 'boolean',
             'last_active_at' => 'datetime',
             'payout_details' => 'encrypted:array',
@@ -443,6 +444,28 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function defaultPaymentMethod(): ?PaymentMethod
     {
         return $this->paymentMethods()->where('is_default', true)->first();
+    }
+
+    /**
+     * The card API wallet auto-recharges bill — deliberately separate from
+     * defaultPaymentMethod() above: a user may want their subscription on
+     * one saved card and unattended API auto-recharges on another. See
+     * ApiWalletManager::attemptAutoRecharge().
+     */
+    public function apiWalletPaymentMethod(): BelongsTo
+    {
+        return $this->belongsTo(PaymentMethod::class, 'api_wallet_payment_method_id');
+    }
+
+    /**
+     * Every signed movement in the API usage prepay wallet (item: API usage
+     * fee) — see ApiWalletTransaction and ApiWalletManager, its one choke
+     * point. Kept in sync with api_wallet_balance_cents, mirroring how
+     * creditLedger()/credits_balance relate.
+     */
+    public function apiWalletTransactions(): HasMany
+    {
+        return $this->hasMany(ApiWalletTransaction::class)->latest();
     }
 
     public function hasPayoutMethodOnFile(): bool

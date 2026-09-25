@@ -20,6 +20,9 @@
         <div class="text-sm text-ink-600 mt-1">
             <a href="{{ $offer->product_url }}" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700">{{ $offer->product_url }}</a>
             · {{ $offer->affiliate_network }}
+            @if ($offer->affiliate_link)
+                · <a href="{{ $offer->affiliate_link }}" target="_blank" rel="noopener" class="text-brand-600 hover:text-brand-700">Your affiliate link</a>
+            @endif
         </div>
     </div>
 
@@ -47,6 +50,25 @@
     </div>
 
     @if ($offer->status === 'ready')
+        @php
+            // Maps each AI-recommendable channel to the label/anchor of its
+            // matching card further down this page, so the CTA below and the
+            // "Recommended"/"Good alternative" badges on each card can point
+            // at the same source of truth. google_maps has no generate-content
+            // card on this page at all — Local Leads (leads.index) is a
+            // separate tool — so it gets an external link instead of an anchor.
+            $channelMeta = [
+                'linkedin' => ['label' => 'LinkedIn', 'anchor' => 'linkedin-card'],
+                'blog' => ['label' => 'Blog / Medium article', 'anchor' => 'blog-card'],
+                'youtube' => ['label' => 'YouTube', 'anchor' => 'youtube-card'],
+                'ugc' => ['label' => 'UGC', 'anchor' => 'ugc-card'],
+                'pinterest' => ['label' => 'Pinterest', 'anchor' => 'pinterest-card'],
+                'x' => ['label' => 'X (Twitter)', 'anchor' => 'x-card'],
+                'tiktok' => ['label' => 'TikTok', 'anchor' => 'tiktok-card'],
+                'google_maps' => ['label' => 'local business leads on Google Maps', 'anchor' => null],
+            ];
+            $recommendedMeta = $channelMeta[$offer->recommended_channel] ?? null;
+        @endphp
         {{-- Research summary --}}
         <div class="bg-surface border border-line rounded-lg p-6 mb-8">
             <h3 class="font-display font-semibold text-sm text-navy-900 mb-3">Who to sell to & how</h3>
@@ -85,12 +107,39 @@
                     </div>
                 </div>
             </dl>
+
+            @if ($recommendedMeta)
+                <div class="mt-5 pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">
+                    <p class="text-sm text-ink-900">
+                        <span class="font-medium">Ready to start?</span>
+                        <span class="text-ink-600">We'd begin with {{ $recommendedMeta['label'] }}.</span>
+                    </p>
+                    @if ($offer->recommended_channel === 'google_maps')
+                        <a href="{{ route('leads.index', array_filter(['niche' => $offer->suggested_maps_niche, 'location' => $offer->suggested_maps_location])) }}"
+                           class="rounded-md bg-navy-900 text-white text-sm font-medium px-4 py-2 hover:bg-navy-800 transition whitespace-nowrap">
+                            Find local leads on Google Maps &rarr;
+                        </a>
+                    @else
+                        <a href="#{{ $recommendedMeta['anchor'] }}"
+                           class="rounded-md bg-navy-900 text-white text-sm font-medium px-4 py-2 hover:bg-navy-800 transition whitespace-nowrap">
+                            Jump to {{ $recommendedMeta['label'] }} &darr;
+                        </a>
+                    @endif
+                </div>
+            @endif
         </div>
 
         {{-- Generate content --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-            <div class="bg-surface border border-line rounded-lg p-5">
-                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">Blog / Medium article</h3>
+            <div id="blog-card" class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1 flex items-center gap-2">
+                    Blog / Medium article
+                    @if ($offer->recommended_channel === 'blog')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-gold-100 text-gold-800">⭐ Recommended</span>
+                    @elseif (($offer->research_data['secondary_channel'] ?? null) === 'blog')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-surface-muted text-ink-500">Good alternative</span>
+                    @endif
+                </h3>
                 <p class="text-xs text-ink-600 mb-3">SEO-optimized, formatted to convert. <span class="font-mono text-ink-400">({{ config('credits.costs.blog_article') }} credits)</span></p>
                 <form method="POST" action="{{ route('offers.blog.store', $offer) }}" class="flex gap-2">
                     @csrf
@@ -108,8 +157,15 @@
                 </form>
             </div>
 
-            <div class="bg-surface border border-line rounded-lg p-5">
-                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">LinkedIn</h3>
+            <div id="linkedin-card" class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1 flex items-center gap-2">
+                    LinkedIn
+                    @if ($offer->recommended_channel === 'linkedin')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-gold-100 text-gold-800">⭐ Recommended</span>
+                    @elseif (($offer->research_data['secondary_channel'] ?? null) === 'linkedin')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-surface-muted text-ink-500">Good alternative</span>
+                    @endif
+                </h3>
                 <p class="text-xs text-ink-600 mb-3">Content only — you send it. AffilStack never DMs or posts for you.</p>
                 <div class="flex flex-wrap gap-2">
                     <form method="POST" action="{{ route('offers.linkedin.keywords', $offer) }}">
@@ -132,8 +188,15 @@
                 </div>
             </div>
 
-            <div class="bg-surface border border-line rounded-lg p-5">
-                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">YouTube</h3>
+            <div id="youtube-card" class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1 flex items-center gap-2">
+                    YouTube
+                    @if ($offer->recommended_channel === 'youtube')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-gold-100 text-gold-800">⭐ Recommended</span>
+                    @elseif (($offer->research_data['secondary_channel'] ?? null) === 'youtube')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-surface-muted text-ink-500">Good alternative</span>
+                    @endif
+                </h3>
                 @if (auth()->user()->canUseChannel('youtube'))
                     @php
                         $hasYoutubeScript = $offer->generations->where('module', 'youtube_script')->where('status', 'completed')->isNotEmpty();
@@ -158,8 +221,15 @@
                 @endif
             </div>
 
-            <div class="bg-surface border border-line rounded-lg p-5">
-                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">UGC</h3>
+            <div id="ugc-card" class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1 flex items-center gap-2">
+                    UGC
+                    @if ($offer->recommended_channel === 'ugc')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-gold-100 text-gold-800">⭐ Recommended</span>
+                    @elseif (($offer->research_data['secondary_channel'] ?? null) === 'ugc')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-surface-muted text-ink-500">Good alternative</span>
+                    @endif
+                </h3>
                 @if (auth()->user()->canUseChannel('ugc'))
                     <p class="text-xs text-ink-600 mb-3">Get angle ideas, pick one below, then get a script plus a per-platform posting pack.</p>
                     <form method="POST" action="{{ route('offers.ugc.angles', $offer) }}">
@@ -172,8 +242,15 @@
                 @endif
             </div>
 
-            <div class="bg-surface border border-line rounded-lg p-5">
-                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">X (Twitter)</h3>
+            <div id="x-card" class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1 flex items-center gap-2">
+                    X (Twitter)
+                    @if ($offer->recommended_channel === 'x')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-gold-100 text-gold-800">⭐ Recommended</span>
+                    @elseif (($offer->research_data['secondary_channel'] ?? null) === 'x')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-surface-muted text-ink-500">Good alternative</span>
+                    @endif
+                </h3>
                 @if (auth()->user()->canUseChannel('x'))
                     <p class="text-xs text-ink-600 mb-3">A full thread plus alternative opening hooks to test.</p>
                     <form method="POST" action="{{ route('offers.x.thread', $offer) }}">
@@ -186,8 +263,15 @@
                 @endif
             </div>
 
-            <div class="bg-surface border border-line rounded-lg p-5">
-                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">TikTok</h3>
+            <div id="tiktok-card" class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1 flex items-center gap-2">
+                    TikTok
+                    @if ($offer->recommended_channel === 'tiktok')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-gold-100 text-gold-800">⭐ Recommended</span>
+                    @elseif (($offer->research_data['secondary_channel'] ?? null) === 'tiktok')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-surface-muted text-ink-500">Good alternative</span>
+                    @endif
+                </h3>
                 @if (auth()->user()->canUseChannel('tiktok'))
                     <p class="text-xs text-ink-600 mb-3">Script, on-screen text cues, and caption in one pass.</p>
                     <form method="POST" action="{{ route('offers.tiktok.video', $offer) }}">
@@ -200,8 +284,15 @@
                 @endif
             </div>
 
-            <div class="bg-surface border border-line rounded-lg p-5">
-                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1">Pinterest</h3>
+            <div id="pinterest-card" class="bg-surface border border-line rounded-lg p-5">
+                <h3 class="font-display font-semibold text-sm text-navy-900 mb-1 flex items-center gap-2">
+                    Pinterest
+                    @if ($offer->recommended_channel === 'pinterest')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-gold-100 text-gold-800">⭐ Recommended</span>
+                    @elseif (($offer->research_data['secondary_channel'] ?? null) === 'pinterest')
+                        <span class="text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-surface-muted text-ink-500">Good alternative</span>
+                    @endif
+                </h3>
                 @if (auth()->user()->canUseChannel('pinterest'))
                     <p class="text-xs text-ink-600 mb-3">3 pin variants to test — title, description, and an image prompt for each.</p>
                     <form method="POST" action="{{ route('offers.pinterest.pins', $offer) }}">

@@ -3,6 +3,7 @@
 namespace App\Services\Payments;
 
 use App\Models\PaymentGatewaySetting;
+use App\Models\PaymentMethod;
 use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -429,6 +430,25 @@ class PayPalGateway implements PaymentGateway
             'reference' => (string) data_get($data, 'batch_header.payout_batch_id', $reference),
             'message' => 'Payout accepted by PayPal — batch status: '.data_get($data, 'batch_header.batch_status', 'PENDING').'.',
             'raw' => (array) $data,
+        ];
+    }
+
+    /**
+     * PayPal has no reusable-card/vault mechanism integrated in this app —
+     * every PayPal "payment method" saved here (see normalize() below) is
+     * just a payer email/account, not a chargeable token, so there is
+     * nothing to charge again without the payer approving a brand new order
+     * in their browser. Always returns unsupported rather than pretending
+     * to try — see PaymentGateway::chargeSavedToken()'s docblock for why
+     * that's the contract every caller can rely on.
+     *
+     * @return array{success: bool, message: string}
+     */
+    public function chargeSavedToken(PaymentMethod $method, int $amountCents, string $currency, string $description): array
+    {
+        return [
+            'success' => false,
+            'message' => 'PayPal doesn\'t support automatic recharges on this platform — top up manually, or add a card via Stripe, Flutterwave, or Paystack to enable auto-recharge.',
         ];
     }
 

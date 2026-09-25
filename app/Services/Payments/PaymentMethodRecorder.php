@@ -47,6 +47,11 @@ class PaymentMethodRecorder
             'exp_month' => $data['exp_month'] ?? null,
             'exp_year' => $data['exp_year'] ?? null,
             'label' => $data['label'] ?? null,
+            // Flutterwave-only today (see FlutterwaveGateway::normalize()/
+            // extractCountryCode()) — needed for chargeSavedToken()'s
+            // tokenized-charge call. null for every other gateway's cards,
+            // which don't need it.
+            'country' => $data['country'] ?? null,
             'gateway_customer_id' => $data['gateway_customer_id'] ?? null,
             'gateway_token' => $data['token'] ?? null,
         ], fn ($value) => $value !== null && $value !== '' && $value !== 0);

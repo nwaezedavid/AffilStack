@@ -45,10 +45,14 @@ class PaymentTransactionsTable
                     'renewal' => 'Renewal',
                     'credit_topup' => 'Credit top-up',
                     'addon' => 'Add-on',
+                    'api_wallet_topup' => 'API wallet top-up',
+                    'api_wallet_auto_recharge' => 'API wallet auto-recharge',
                 ]),
                 SelectFilter::make('gateway')->options([
                     'stripe' => 'Stripe',
                     'flutterwave' => 'Flutterwave',
+                    'paystack' => 'Paystack',
+                    'paypal' => 'PayPal',
                 ]),
             ])
             ->recordActions([])
