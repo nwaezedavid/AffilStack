@@ -107,8 +107,9 @@ class AnthropicClientTest extends TestCase
         $this->assertStringContainsString('act_123', $result['transcript']);
 
         Http::assertSent(function ($request) {
-            return $request->hasHeader('anthropic-beta', 'mcp-client-2025-04-04')
+            return $request->hasHeader('anthropic-beta', 'mcp-client-2025-11-20')
                 && $request['mcp_servers'][0]['url'] === 'https://mcp.example.com/meta-ads'
+                && $request['tools'][0] === ['type' => 'mcp_toolset', 'mcp_server_name' => $request['mcp_servers'][0]['name']]
                 && $request['mcp_servers'][0]['authorization_token'] === 'mcp-token-abc';
         });
     }

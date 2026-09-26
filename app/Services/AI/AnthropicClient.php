@@ -17,9 +17,10 @@ use Throwable;
  * bound as a long-lived singleton (same reasoning as GoogleOAuthService).
  *
  * runAgenticCampaignAction() additionally attaches a remote MCP server via
- * the Messages API's MCP connector (the `mcp_servers` parameter, beta
- * header `mcp-client-2025-04-04`): Anthropic's own infrastructure calls the
- * MCP server's tools on Claude's behalf as part of that single request, so
+ * the Messages API's MCP connector (the `mcp_servers` parameter plus a
+ * matching `mcp_toolset` entry in `tools`, beta header
+ * `mcp-client-2025-11-20` — the 2025-04-04 version is deprecated):
+ * Anthropic's own infrastructure calls the MCP server's tools on Claude's behalf as part of that single request, so
  * no client-side tool-execution loop is needed here for the Meta Ads MCP
  * actions themselves. This is a beta surface — if Anthropic changes the
  * exact request/response shape, this is the one class that needs updating.
@@ -30,7 +31,7 @@ class AnthropicClient
 
     protected const API_VERSION = '2023-06-01';
 
-    protected const MCP_BETA = 'mcp-client-2025-04-04';
+    protected const MCP_BETA = 'mcp-client-2025-11-20';
 
     public function __construct(
         protected string $apiKey,
@@ -133,6 +134,12 @@ class AnthropicClient
                         'url' => $mcpUrl,
                         'authorization_token' => $mcpToken,
                     ], fn ($v) => $v !== null)],
+                    // Required by this beta version: every server listed in
+                    // mcp_servers must be referenced by exactly one toolset.
+                    'tools' => [[
+                        'type' => 'mcp_toolset',
+                        'mcp_server_name' => $mcpServerName,
+                    ]],
                 ]);
         } catch (Throwable $e) {
             return ['success' => false, 'message' => 'Could not reach Anthropic/the MCP server: '.$e->getMessage(), 'transcript' => ''];
