@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Throwable;
 
 /**
  * Tom, the Security Agent. Runs a fixed set of real checks (never invented
@@ -156,7 +157,16 @@ class SecurityScanService
      */
     protected function checkComposerAudit(): array
     {
-        $result = Process::path(base_path())->run('composer audit --format=json --no-interaction');
+        // Shared hosts (Hostinger's default php.ini among them) often
+        // disable proc_open; a scan that can't shell out skips this check
+        // rather than failing the whole daily scan.
+        try {
+            $result = Process::path(base_path())->run('composer audit --format=json --no-interaction');
+        } catch (Throwable $e) {
+            Log::warning('Security scan: composer audit could not run on this server.', ['error' => $e->getMessage()]);
+
+            return [];
+        }
 
         // composer audit exits non-zero precisely when it finds something
         // (1 = vulnerable, 2 = abandoned, 3 = both), so the exit code can't

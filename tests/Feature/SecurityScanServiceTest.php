@@ -9,6 +9,7 @@ use App\Services\AI\AIProvider;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Process;
+use Symfony\Component\Process\Exception\LogicException;
 use Tests\TestCase;
 
 /**
@@ -70,6 +71,17 @@ class SecurityScanServiceTest extends TestCase
         $this->assertTrue($finding->isFixable());
         $this->assertSame('env_set', $finding->fix_action['type']);
         $this->assertSame('APP_DEBUG', $finding->fix_action['params']['key']);
+    }
+
+    public function test_the_scan_still_completes_when_the_host_has_disabled_proc_open(): void
+    {
+        config(['app.env' => 'production', 'app.debug' => true]);
+        Process::fake(['composer audit*' => fn () => throw new LogicException('The Process class relies on proc_open, which is not available on your PHP installation.')]);
+
+        app(SecurityScanService::class)->scan();
+
+        $this->assertTrue(SecurityFinding::where('title', 'like', 'Debug mode%')->exists());
+        $this->assertFalse(SecurityFinding::where('category', 'dependency')->exists());
     }
 
     public function test_it_does_not_flag_debug_mode_when_disabled_or_outside_production(): void
