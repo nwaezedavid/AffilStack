@@ -24,7 +24,7 @@ function setStatus(message, kind) {
 
 async function getConfig() {
   const { apiBaseUrl, apiToken } = await chrome.storage.local.get(['apiBaseUrl', 'apiToken']);
-  return { apiBaseUrl, apiToken };
+  return { apiBaseUrl: apiBaseUrl || AFFILSTACK_DEFAULT_API_BASE_URL, apiToken };
 }
 
 async function apiFetch(path, options = {}) {

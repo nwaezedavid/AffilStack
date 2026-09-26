@@ -20,7 +20,8 @@ account, so you're not copy-pasting URLs and screenshots by hand.
    own, so you can revoke one without affecting the others).
 2. Click the AffilStack icon in Chrome, then open its options (or
    right-click the icon → **Options**).
-3. Paste in your AffilStack API URL and the token, then **Save & verify**.
+3. Paste in the token, then **Save & verify**. The API URL is already filled
+   in (under **Advanced**); leave it as it is.
 
 ## Use it
 

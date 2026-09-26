@@ -22,6 +22,21 @@ use ZipArchive;
  */
 class ExtensionController extends Controller
 {
+    /**
+     * The API address baked into resources/browser-extension/config.js —
+     * the Chrome Web Store build uses it as-is.
+     */
+    public const STORE_BUILD_API_BASE_URL = 'https://affilstack.com/api';
+
+    /**
+     * This site's API address, from APP_URL rather than the request host,
+     * so a visit through www. or a proxy can't change what gets baked in.
+     */
+    public static function apiBaseUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/api';
+    }
+
     public function index(): View
     {
         $user = auth()->user();
@@ -109,6 +124,19 @@ class ExtensionController extends Controller
             }
 
             $relativePath = 'affilstack-extension/'.substr($file->getPathname(), strlen($sourceDir) + 1);
+
+            // Point the downloaded copy at this site, so customers only
+            // paste a token — no API URL to type in.
+            if ($file->getFilename() === 'config.js') {
+                $zip->addFromString($relativePath, str_replace(
+                    self::STORE_BUILD_API_BASE_URL,
+                    self::apiBaseUrl(),
+                    (string) file_get_contents($file->getPathname()),
+                ));
+
+                continue;
+            }
+
             $zip->addFile($file->getPathname(), $relativePath);
         }
 

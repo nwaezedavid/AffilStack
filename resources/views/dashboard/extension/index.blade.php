@@ -11,15 +11,28 @@
     {{-- Install --}}
     <div class="bg-surface border border-line rounded-lg p-5 mb-6">
         <h3 class="font-display font-semibold text-sm text-navy-900 mb-2">1. Install the extension</h3>
-        <ol class="text-sm text-ink-600 space-y-1.5 list-decimal list-inside mb-4">
-            <li>Download the extension below and unzip it.</li>
-            <li>In Chrome, go to <span class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">chrome://extensions</span> and turn on Developer mode (top right).</li>
-            <li>Click "Load unpacked" and select the unzipped <span class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">affilstack-extension</span> folder.</li>
-            <li>Click the extension icon, open its options, and paste in a token from the box below.</li>
-        </ol>
-        <a href="{{ route('extension.download') }}" class="inline-flex items-center rounded-md bg-navy-900 text-white text-sm font-medium px-4 py-2 hover:bg-navy-800 transition">
-            Download extension (.zip)
-        </a>
+        @if (config('extension.store_url'))
+            <ol class="text-sm text-ink-600 space-y-1.5 list-decimal list-inside mb-4">
+                <li>Add AffilStack Research Capture from the Chrome Web Store.</li>
+                <li>Click the extension icon, open its options, and paste in a token from the box below.</li>
+            </ol>
+            <div class="flex items-center gap-4 flex-wrap">
+                <a href="{{ config('extension.store_url') }}" target="_blank" rel="noopener" class="inline-flex items-center rounded-md bg-navy-900 text-white text-sm font-medium px-4 py-2 hover:bg-navy-800 transition">
+                    Add to Chrome
+                </a>
+                <a href="{{ route('extension.download') }}" class="text-sm text-brand-600 hover:text-brand-700">or download it to install manually (.zip)</a>
+            </div>
+        @else
+            <ol class="text-sm text-ink-600 space-y-1.5 list-decimal list-inside mb-4">
+                <li>Download the extension below and unzip it.</li>
+                <li>In Chrome, go to <span class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">chrome://extensions</span> and turn on Developer mode (top right).</li>
+                <li>Click "Load unpacked" and select the unzipped <span class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">affilstack-extension</span> folder.</li>
+                <li>Click the extension icon, open its options, and paste in a token from the box below. The API URL (<span class="font-mono text-xs bg-surface-muted px-1.5 py-0.5 rounded">{{ \App\Http\Controllers\Dashboard\ExtensionController::apiBaseUrl() }}</span>) is already filled in.</li>
+            </ol>
+            <a href="{{ route('extension.download') }}" class="inline-flex items-center rounded-md bg-navy-900 text-white text-sm font-medium px-4 py-2 hover:bg-navy-800 transition">
+                Download extension (.zip)
+            </a>
+        @endif
     </div>
 
     {{-- Tokens --}}

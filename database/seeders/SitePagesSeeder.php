@@ -127,10 +127,11 @@ class SitePagesSeeder extends Seeder
                     <h2>1. Information we collect</h2>
                     <ul>
                         <li><strong>Account information:</strong> name, email address, and password (stored encrypted) when you complete a purchase and set up your account.</li>
-                        <li><strong>Payment information:</strong> billing details are collected and processed by our payment processors (Stripe and/or Flutterwave) — we do not store your full card number on our servers.</li>
+                        <li><strong>Payment information:</strong> billing details are collected and processed by our payment processors (Paystack, Flutterwave, Stripe and PayPal) — we do not store your full card number on our servers.</li>
                         <li><strong>Usage data:</strong> the content you generate, links you create, contacts you save, and how you interact with the Platform, so we can operate and improve the service.</li>
                         <li><strong>Communications:</strong> messages you send us through the Contact form, support tickets, or email.</li>
                         <li><strong>Technical data:</strong> IP address, browser type, and device information, collected automatically for security and analytics purposes.</li>
+                        <li><strong>Browser extension (optional):</strong> if you install AffilStack Research Capture, it sends us the address, title, and any text you have highlighted on a page — only when you open the extension and click Save on that page. It stores your extension token in your browser, never your password, and does not read or track any other browsing.</li>
                     </ul>
 
                     <h2>2. How we use your information</h2>
@@ -145,7 +146,7 @@ class SitePagesSeeder extends Seeder
                     <h2>3. How we share your information</h2>
                     <p>We do not sell your personal data. We share data only with:</p>
                     <ul>
-                        <li>Payment processors (Stripe, Flutterwave) to process your subscription.</li>
+                        <li>Payment processors (Paystack, Flutterwave, Stripe, PayPal) to process your subscription.</li>
                         <li>AI service providers (such as Anthropic, OpenAI, and Google) as needed to generate the content you request, limited to what each request requires.</li>
                         <li>Infrastructure and email-delivery providers that host the Platform and deliver transactional email on our behalf.</li>
                         <li>Law enforcement or regulators where required by law.</li>

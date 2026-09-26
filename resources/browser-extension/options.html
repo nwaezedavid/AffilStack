@@ -38,6 +38,7 @@
     #status.error { color: #b42318; }
     #status.success { color: #027a48; }
     .hint { font-size: 12px; color: #667085; margin-top: 20px; }
+    summary { font-size: 12px; color: #667085; cursor: pointer; margin-bottom: 6px; }
   </style>
 </head>
 <body>
@@ -45,20 +46,22 @@
   <p class="lead">Paste in a token generated from your AffilStack dashboard's Browser Extension page.</p>
 
   <div class="field">
-    <label for="apiBaseUrl">AffilStack API URL</label>
-    <input type="text" id="apiBaseUrl" placeholder="https://your-affilstack-domain.com/api">
-  </div>
-
-  <div class="field">
     <label for="apiToken">API token</label>
     <input type="password" id="apiToken" placeholder="aff_...">
   </div>
+
+  <details class="field">
+    <summary>Advanced</summary>
+    <label for="apiBaseUrl">AffilStack API URL — leave as it is</label>
+    <input type="text" id="apiBaseUrl" placeholder="https://affilstack.com/api">
+  </details>
 
   <button id="save">Save &amp; verify</button>
   <div id="status"></div>
 
   <p class="hint">Generate a token from AffilStack under Browser Extension. Each token is tied to one device — revoke it there any time.</p>
 
+  <script src="config.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

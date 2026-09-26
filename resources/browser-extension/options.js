@@ -14,16 +14,16 @@ function setStatus(message, kind) {
 
 async function restore() {
   const { apiBaseUrl, apiToken } = await chrome.storage.local.get(['apiBaseUrl', 'apiToken']);
-  if (apiBaseUrl) apiBaseUrlEl.value = apiBaseUrl;
+  apiBaseUrlEl.value = apiBaseUrl || AFFILSTACK_DEFAULT_API_BASE_URL;
   if (apiToken) apiTokenEl.value = apiToken;
 }
 
 document.getElementById('save').addEventListener('click', async () => {
-  const apiBaseUrl = apiBaseUrlEl.value.trim().replace(/\/+$/, '');
+  const apiBaseUrl = (apiBaseUrlEl.value.trim() || AFFILSTACK_DEFAULT_API_BASE_URL).replace(/\/+$/, '');
   const apiToken = apiTokenEl.value.trim();
 
-  if (!apiBaseUrl || !apiToken) {
-    setStatus('Both fields are required.', 'error');
+  if (!apiToken) {
+    setStatus('Paste your API token first.', 'error');
 
     return;
   }

@@ -14,4 +14,9 @@ return [
         'linkedin_post' => 'LinkedIn post',
         'other' => 'Other',
     ],
+
+    // The extension's Chrome Web Store listing, once published. When set,
+    // the dashboard offers a one-click "Add to Chrome" instead of the
+    // developer-mode install steps.
+    'store_url' => env('CHROME_EXTENSION_STORE_URL'),
 ];
