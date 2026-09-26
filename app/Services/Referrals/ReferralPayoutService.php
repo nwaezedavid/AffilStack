@@ -35,33 +35,39 @@ class ReferralPayoutService
             throw new InvalidArgumentException('Add your payout details before requesting a payout.');
         }
 
-        if ($user->hasOpenPayoutRequest($currency)) {
-            throw new RuntimeException($currency
-                ? "You already have a {$currency} payout request being processed."
-                : 'You already have a payout request being processed.');
-        }
+        // Everything below runs under a lock on the affiliate's own row, so
+        // two simultaneous "Request payout" clicks can't both pass the
+        // open-request check and both claim the same commissions.
+        return DB::transaction(function () use ($user, $currency) {
+            User::whereKey($user->id)->lockForUpdate()->first();
 
-        $claimable = ReferralEvent::whereHas('referral', fn ($query) => $query->where('referrer_id', $user->id))
-            ->where('status', 'approved')
-            ->whereNull('referral_payout_id')
-            ->get();
+            if ($user->hasOpenPayoutRequest($currency)) {
+                throw new RuntimeException($currency
+                    ? "You already have a {$currency} payout request being processed."
+                    : 'You already have a payout request being processed.');
+            }
 
-        if ($claimable->isEmpty()) {
-            throw new InvalidArgumentException('You have no approved commissions to pay out yet.');
-        }
+            $claimable = ReferralEvent::whereHas('referral', fn ($query) => $query->where('referrer_id', $user->id))
+                ->where('status', 'approved')
+                ->whereNull('referral_payout_id')
+                ->lockForUpdate()
+                ->get();
 
-        $byCurrency = $claimable->groupBy('currency');
-        $currency ??= $byCurrency->map->sum('amount_cents')->sortDesc()->keys()->first();
+            if ($claimable->isEmpty()) {
+                throw new InvalidArgumentException('You have no approved commissions to pay out yet.');
+            }
 
-        $events = $byCurrency->get($currency, collect());
-        $total = $events->sum('amount_cents');
+            $byCurrency = $claimable->groupBy('currency');
+            $currency ??= $byCurrency->map->sum('amount_cents')->sortDesc()->keys()->first();
 
-        if ($total < (int) config('referrals.minimum_payout_cents')) {
-            $minimum = number_format(config('referrals.minimum_payout_cents') / 100, 2);
-            throw new InvalidArgumentException("You need at least {$minimum} {$currency} in approved commissions to request a payout.");
-        }
+            $events = $byCurrency->get($currency, collect());
+            $total = $events->sum('amount_cents');
 
-        return DB::transaction(function () use ($user, $events, $total, $currency) {
+            if ($total < (int) config('referrals.minimum_payout_cents')) {
+                $minimum = number_format(config('referrals.minimum_payout_cents') / 100, 2);
+                throw new InvalidArgumentException("You need at least {$minimum} {$currency} in approved commissions to request a payout.");
+            }
+
             $payout = ReferralPayout::create([
                 'user_id' => $user->id,
                 'amount_cents' => $total,
@@ -72,7 +78,13 @@ class ReferralPayoutService
                 'requested_at' => now(),
             ]);
 
-            ReferralEvent::whereIn('id', $events->pluck('id'))->update(['referral_payout_id' => $payout->id]);
+            $claimed = ReferralEvent::whereIn('id', $events->pluck('id'))
+                ->whereNull('referral_payout_id')
+                ->update(['referral_payout_id' => $payout->id]);
+
+            if ($claimed !== $events->count()) {
+                throw new RuntimeException('Your commissions changed while this request was being made — please try again.');
+            }
 
             return $payout;
         });
@@ -86,21 +98,28 @@ class ReferralPayoutService
      */
     public function processPayout(ReferralPayout $payout, User $admin, string $reference, ?string $note = null): void
     {
-        if (! $payout->isRequested()) {
-            throw new InvalidArgumentException('Only a requested payout can be marked paid.');
-        }
-
         DB::transaction(function () use ($payout, $admin, $reference, $note) {
-            $payout->update([
-                'status' => 'paid',
-                'reference' => $reference,
-                'note' => $note,
-                'processed_at' => now(),
-                'processed_by_id' => $admin->id,
-            ]);
+            // Conditional transition — two admins (or a replayed request)
+            // can't both mark it paid, and a concurrent reject can't
+            // release commissions that are simultaneously being paid.
+            $updated = ReferralPayout::whereKey($payout->id)
+                ->whereIn('status', ['requested', 'disbursing'])
+                ->update([
+                    'status' => 'paid',
+                    'reference' => $reference,
+                    'note' => $note,
+                    'processed_at' => now(),
+                    'processed_by_id' => $admin->id,
+                ]);
+
+            if ($updated !== 1) {
+                throw new InvalidArgumentException('Only a requested payout can be marked paid.');
+            }
 
             $payout->events()->update(['status' => 'paid']);
         });
+
+        $payout->refresh();
 
         $payout->user->notify(new ReferralPayoutProcessed($payout));
     }
@@ -113,20 +132,24 @@ class ReferralPayoutService
      */
     public function rejectPayout(ReferralPayout $payout, User $admin, string $note): void
     {
-        if (! $payout->isRequested()) {
-            throw new InvalidArgumentException('Only a requested payout can be rejected.');
-        }
-
         DB::transaction(function () use ($payout, $admin, $note) {
-            $payout->events()->update(['referral_payout_id' => null]);
+            $updated = ReferralPayout::whereKey($payout->id)
+                ->where('status', 'requested')
+                ->update([
+                    'status' => 'rejected',
+                    'note' => $note,
+                    'processed_at' => now(),
+                    'processed_by_id' => $admin->id,
+                ]);
 
-            $payout->update([
-                'status' => 'rejected',
-                'note' => $note,
-                'processed_at' => now(),
-                'processed_by_id' => $admin->id,
-            ]);
+            if ($updated !== 1) {
+                throw new InvalidArgumentException('Only a requested payout can be rejected.');
+            }
+
+            $payout->events()->update(['referral_payout_id' => null]);
         });
+
+        $payout->refresh();
 
         $payout->user->notify(new ReferralPayoutRejected($payout));
     }

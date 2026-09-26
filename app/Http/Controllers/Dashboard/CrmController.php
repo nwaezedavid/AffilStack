@@ -126,12 +126,12 @@ class CrmController extends Controller
 
     public function export()
     {
-        $contacts = auth()->user()->crmContacts()->get();
+        $contacts = auth()->user()->crmContacts()->where('is_sandbox', false)->get();
 
         $csv = "Name,Company,Title,Email,Phone,Website,Location,Status,Source\n";
         foreach ($contacts as $c) {
             $csv .= collect([$c->name, $c->company, $c->title, $c->email, $c->phone, $c->website, $c->location, $c->status, $c->source])
-                ->map(fn ($v) => '"'.str_replace('"', '""', (string) $v).'"')
+                ->map(fn ($v) => '"'.str_replace('"', '""', $this->neutralizeFormula((string) $v)).'"')
                 ->implode(',')."\n";
         }
 
@@ -139,5 +139,15 @@ class CrmController extends Controller
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="affilstack-contacts.csv"',
         ]);
+    }
+
+    /**
+     * Contacts come from Google Maps listings and user input; a cell that
+     * starts with = + - @ (or a tab/CR) is run as a formula when the export
+     * is opened in Excel/Sheets. A leading apostrophe keeps it plain text.
+     */
+    protected function neutralizeFormula(string $value): string
+    {
+        return $value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true) ? "'".$value : $value;
     }
 }

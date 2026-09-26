@@ -24,7 +24,7 @@
             [&_h3]:font-display [&_h3]:font-semibold [&_h3]:text-navy-900 [&_h3]:mt-6 [&_h3]:mb-2
             [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-4 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-4 [&_ol]:space-y-1
             [&_a]:text-brand-600 [&_a]:underline [&_strong]:text-navy-900">
-            {!! $page->content !!}
+            {!! \App\Support\SafeHtml::clean($page->content) !!}
         </div>
     </article>
 @endsection

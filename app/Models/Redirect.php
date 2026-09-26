@@ -24,12 +24,27 @@ class Redirect extends Model
      */
     public static function forPath(string $path): ?self
     {
-        $row = Cache::rememberForever(
-            'redirect:'.ltrim($path, '/'),
-            fn () => static::where('from_path', ltrim($path, '/'))->first()?->getAttributes()
-        );
+        // Only hits are cached. Caching the miss stored a permanent row for
+        // every junk URL a bot tried (null is never served back from cache
+        // anyway), and the raw path as a key overflowed the cache table's
+        // key column on long URLs — a 500. Hence the hash.
+        $key = static::cacheKey($path);
+        $row = Cache::get($key);
+
+        if ($row === null) {
+            $row = static::where('from_path', ltrim($path, '/'))->first()?->getAttributes();
+
+            if ($row !== null) {
+                Cache::forever($key, $row);
+            }
+        }
 
         return $row ? (new static)->newFromBuilder($row) : null;
+    }
+
+    public static function cacheKey(string $path): string
+    {
+        return 'redirect:'.sha1(ltrim($path, '/'));
     }
 
     /**
@@ -130,15 +145,15 @@ class Redirect extends Model
     protected static function booted(): void
     {
         static::saved(function (self $redirect): void {
-            Cache::forget('redirect:'.ltrim($redirect->from_path, '/'));
+            Cache::forget(static::cacheKey($redirect->from_path));
 
             $originalFromPath = $redirect->getOriginal('from_path');
 
             if ($originalFromPath && $originalFromPath !== $redirect->from_path) {
-                Cache::forget('redirect:'.ltrim($originalFromPath, '/'));
+                Cache::forget(static::cacheKey($originalFromPath));
             }
         });
 
-        static::deleted(fn (self $redirect) => Cache::forget('redirect:'.ltrim($redirect->from_path, '/')));
+        static::deleted(fn (self $redirect) => Cache::forget(static::cacheKey($redirect->from_path)));
     }
 }

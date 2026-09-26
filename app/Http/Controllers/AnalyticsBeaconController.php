@@ -38,8 +38,11 @@ class AnalyticsBeaconController extends Controller
 
         $view = PageView::create([
             'path' => $path === '' ? '/' : $path,
-            'source' => $source,
-            'referrer_host' => $referrerHost,
+            // Clamped to the column sizes: a long utm_source/utm_medium made
+            // "Campaign: …" exceed source's 40 characters, and MariaDB's
+            // strict mode rejected the whole insert (a 500 per such visit).
+            'source' => Str::limit((string) $source, 40, ''),
+            'referrer_host' => $referrerHost ? Str::limit($referrerHost, 255, '') : null,
             'user_id' => Auth::id(),
             'session_id' => $request->session()->getId(),
         ]);

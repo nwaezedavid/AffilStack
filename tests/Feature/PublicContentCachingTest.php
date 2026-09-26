@@ -150,7 +150,9 @@ class PublicContentCachingTest extends TestCase
         $response = $this->get('/about');
 
         $response->assertOk();
-        $this->assertStringContainsString('public', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('max-age=300', (string) $response->headers->get('Cache-Control'));
+        // Never 'public': the response carries this visitor's session cookie.
+        $this->assertStringContainsString('private', (string) $response->headers->get('Cache-Control'));
     }
 
     public function test_cache_public_page_does_not_cache_a_response_carrying_a_flash_message(): void

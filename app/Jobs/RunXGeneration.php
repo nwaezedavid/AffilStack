@@ -17,6 +17,12 @@ class RunXGeneration implements ShouldQueue
 
     public int $tries = 1;
 
+    /**
+     * Above OpenAI's own 90s request timeout (config/ai.php) so the worker
+     * never kills a generation mid-call and leaves it stuck "processing".
+     */
+    public int $timeout = 180;
+
     public function __construct(public Generation $generation) {}
 
     public function handle(XService $service): void

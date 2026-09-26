@@ -138,7 +138,9 @@ class UgcVideoServiceTest extends TestCase
         $video->refresh();
         $this->assertSame('completed', $video->status);
         $this->assertSame(100, $video->credits_spent);
-        Storage::disk('public')->assertExists('ugc-videos/'.$video->id.'.mp4');
+        $files = Storage::disk('public')->files('ugc-videos');
+        $this->assertCount(1, $files);
+        $this->assertMatchesRegularExpression('#^ugc-videos/'.$video->id.'-[A-Za-z0-9]{32}\.mp4$#', $files[0]);
         $this->assertSame(150 - 100, $user->fresh()->credits_balance);
     }
 

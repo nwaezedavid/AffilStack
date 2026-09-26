@@ -7,11 +7,13 @@ use App\Models\PendingSignup;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\Auth\GoogleOAuthService;
+use App\Services\Payments\CheckoutCountryResolver;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Referrals\ReferralService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -113,13 +115,33 @@ class GoogleAuthController extends Controller
             ?? User::where('email', $profile['email'])->first();
 
         if ($user) {
+            $message = 'Signed in with Google.';
+
             if (! $user->google_id) {
-                $user->update(['google_id' => $profile['sub']]);
+                // First Google sign-in for an account created with a
+                // password. Signup never proves ownership of the email
+                // (anyone can pay for a plan under someone else's address),
+                // so whoever set that password may not be this Google
+                // account's owner. Google has now proven ownership — retire
+                // the old password and sign out every other session, so a
+                // pre-registered account can't be shared with an intruder.
+                $user->forceFill([
+                    'google_id' => $profile['sub'],
+                    'password' => Hash::make(Str::random(64)),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                if (config('session.driver') === 'database') {
+                    DB::table(config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
+                }
+
+                $message = 'Signed in with Google. For your security your previous password was retired — keep using Google, or use "Forgot password" to set a new one.';
             }
 
             Auth::login($user);
+            $request->session()->regenerate();
 
-            return redirect()->route('dashboard')->with('success', 'Signed in with Google.');
+            return redirect()->route('dashboard')->with('success', $message);
         }
 
         if (($intent['type'] ?? null) !== 'signup') {
@@ -142,15 +164,24 @@ class GoogleAuthController extends Controller
             return redirect()->route('registration.pricing')->with('error', 'That plan is no longer available.');
         }
 
+        // A deactivated account (30-day grace period) still owns this email —
+        // taking payment for a new one would fail on the unique email after
+        // the customer had already paid.
+        if (User::withTrashed()->where('email', $profile['email'])->exists()) {
+            return redirect()->route('login')->with('error', 'This email belongs to a deactivated account — contact support to restore it.');
+        }
+
         $billingCycle = $intent['billing_cycle'] ?? 'monthly';
 
-        $enabledGateways = $gateways->enabled();
+        // Same country-aware choice as the password signup form — a
+        // Nigerian card can't be sent to a USD-only gateway and vice versa.
+        $enabledGateways = $gateways->enabledForCountry(app(CheckoutCountryResolver::class)->isNigeria($request) ? 'NG' : 'US');
 
         if (empty($enabledGateways)) {
             return redirect()->route('registration.form', $plan)->with('error', 'Payments are temporarily unavailable — please try again shortly.');
         }
 
-        $gateway = $enabledGateways[0];
+        $gateway = collect($enabledGateways)->first(fn ($g) => $g->key() === ($intent['gateway'] ?? null)) ?? $enabledGateways[0];
 
         // A previous abandoned checkout with this email shouldn't block a
         // retry — same rule as the password signup flow.
@@ -184,13 +215,20 @@ class GoogleAuthController extends Controller
 
         $pending->update(['tx_ref' => $checkout['tx_ref']]);
 
+        $request->session()->put(RegistrationController::SESSION_PENDING_SIGNUP_KEY, $pending->id);
+
         PaymentTransaction::create([
             'pending_signup_id' => $pending->id,
             'type' => 'signup',
             'gateway' => $gateway->key(),
             'tx_ref' => $checkout['tx_ref'],
-            'amount_cents' => $billingCycle === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents,
-            'currency' => $plan->currency,
+            'plan_id' => $plan->id,
+            'billing_cycle' => $billingCycle,
+            // What the gateway will actually charge — Paystack converts to
+            // naira, so the plan's USD price here made every Paystack
+            // Google signup fail verification after the customer had paid.
+            'amount_cents' => $checkout['amount_cents'],
+            'currency' => $checkout['currency'],
             'status' => 'pending',
         ]);
 

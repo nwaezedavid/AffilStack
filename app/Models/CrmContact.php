@@ -34,6 +34,11 @@ class CrmContact extends Model
     protected static function booted(): void
     {
         static::created(function (CrmContact $contact) {
+            // Sandbox API test data never triggers real webhooks.
+            if ($contact->is_sandbox) {
+                return;
+            }
+
             app(WebhookDispatcher::class)->dispatch($contact->user, 'crm_contact.created', [
                 'contact_id' => $contact->id,
                 'name' => $contact->name,

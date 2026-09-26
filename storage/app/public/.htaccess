@@ -1,0 +1,11 @@
+# Public uploads are served as files only — never executed as code, whatever
+# their name.
+<FilesMatch "\.(php[0-9]?|phtml|phar|pht|shtml|cgi|pl|py|sh)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

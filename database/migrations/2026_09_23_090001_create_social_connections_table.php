@@ -21,7 +21,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('provider'); // 'linkedin' | 'youtube' | 'tiktok' | 'instagram'
-            $table->json('credentials')->nullable(); // encrypted at rest — see SocialConnection casts
+            $table->text('credentials')->nullable(); // encrypted:array cast stores ciphertext, not JSON — a json column rejects it on MariaDB/MySQL // encrypted at rest — see SocialConnection casts
             $table->string('account_name')->nullable();
             $table->string('account_id')->nullable();
             $table->timestamp('connected_at')->nullable();

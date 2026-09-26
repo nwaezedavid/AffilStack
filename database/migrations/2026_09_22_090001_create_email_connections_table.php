@@ -22,7 +22,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
             $table->string('provider'); // 'gmail' | 'smtp'
-            $table->json('credentials')->nullable(); // encrypted at rest — see EmailConnection casts
+            $table->text('credentials')->nullable(); // encrypted:array cast stores ciphertext, not JSON — a json column rejects it on MariaDB/MySQL // encrypted at rest — see EmailConnection casts
             $table->string('connected_email')->nullable();
             $table->timestamp('verified_at')->nullable();
             $table->string('verification_status')->nullable();

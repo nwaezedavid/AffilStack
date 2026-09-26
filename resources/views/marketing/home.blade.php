@@ -157,7 +157,7 @@
                 <div class="marquee-track flex items-center gap-12">
                     @foreach ($brandLogos->concat($brandLogos) as $logo)
                         @php $img = '<img src="'.e($logo->logoUrl()).'" alt="'.e($logo->name).'" class="h-8 w-auto object-contain grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition" loading="lazy">'; @endphp
-                        @if ($logo->url)
+                        @if ($logo->url && \App\Support\SafeHtml::isSafeUrl($logo->url))
                             <a href="{{ $logo->url }}" target="_blank" rel="noopener sponsored" class="shrink-0">{!! $img !!}</a>
                         @else
                             <span class="shrink-0">{!! $img !!}</span>

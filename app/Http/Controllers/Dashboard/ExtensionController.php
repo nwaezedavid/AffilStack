@@ -95,11 +95,9 @@ class ExtensionController extends Controller
     public function download(): BinaryFileResponse
     {
         $sourceDir = resource_path('browser-extension');
-        $zipPath = storage_path('app/affilstack-extension.zip');
-
-        if (file_exists($zipPath)) {
-            unlink($zipPath);
-        }
+        // A fresh file per download, so two simultaneous downloads can't
+        // overwrite or delete each other's zip mid-send.
+        $zipPath = tempnam(sys_get_temp_dir(), 'affilstack-extension-');
 
         $zip = new ZipArchive;
         $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);

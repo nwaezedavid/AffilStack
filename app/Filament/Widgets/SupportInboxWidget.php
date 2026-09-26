@@ -8,6 +8,12 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class SupportInboxWidget extends StatsOverviewWidget
 {
+    /** Ticket subjects are support information. */
+    public static function canView(): bool
+    {
+        return auth()->user()?->canAccessDepartment('support') ?? false;
+    }
+
     protected function getStats(): array
     {
         $open = SupportTicket::whereIn('status', ['open', 'pending'])->count();

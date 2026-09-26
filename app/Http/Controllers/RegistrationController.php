@@ -29,6 +29,8 @@ class RegistrationController extends Controller
 {
     use PasswordValidationRules;
 
+    public const SESSION_PENDING_SIGNUP_KEY = 'signup.pending_signup_id';
+
     public function pricing(): View
     {
         // Audit item #7 (caching/performance) — see Plan::activePublicList().
@@ -73,7 +75,10 @@ class RegistrationController extends Controller
             'accepts_refund_policy.accepted' => 'You must accept the Refund & Cancellation Policy to continue.',
         ])->validate();
 
-        if (User::where('email', $validated['email'])->exists()) {
+        // withTrashed: a deactivated account (30-day grace period) still owns
+        // its email — letting a new signup pay for it would end in a unique-
+        // key failure after the money was already taken.
+        if (User::withTrashed()->where('email', $validated['email'])->exists()) {
             return back()->withInput()->withErrors([
                 'email' => 'An account with this email already exists. Try signing in instead.',
             ]);
@@ -114,11 +119,17 @@ class RegistrationController extends Controller
 
         $pending->update(['tx_ref' => $checkout['tx_ref']]);
 
+        // Only the browser that started this signup gets logged in by the
+        // callback — see callback().
+        $request->session()->put(self::SESSION_PENDING_SIGNUP_KEY, $pending->id);
+
         PaymentTransaction::create([
             'pending_signup_id' => $pending->id,
             'type' => 'signup',
             'gateway' => $gateway->key(),
             'tx_ref' => $checkout['tx_ref'],
+            'plan_id' => $plan->id,
+            'billing_cycle' => $validated['billing_cycle'],
             // From the gateway itself, not assumed from the plan — a
             // gateway that settles in a different currency (Paystack/NGN)
             // reports the converted amount here. See PaymentGateway interface.
@@ -143,9 +154,22 @@ class RegistrationController extends Controller
         $transaction = $processor->process($gatewayKey, $result);
 
         if ($transaction && $transaction->status === 'successful' && $transaction->user_id) {
-            Auth::login($transaction->user);
+            // This URL is replayable (browser history, logs, a guessable
+            // Flutterwave transaction id), so it must never act as a login
+            // link on its own: only the session that started this exact
+            // signup is signed in. Anyone else — including the real
+            // customer finishing on another device — signs in normally.
+            $startedHere = $transaction->pending_signup_id
+                && (int) $request->session()->pull(self::SESSION_PENDING_SIGNUP_KEY) === (int) $transaction->pending_signup_id;
 
-            return redirect()->route('dashboard')->with('success', 'Payment received — welcome to AffilStack.');
+            if ($startedHere && $transaction->user && ! $transaction->user->is_suspended) {
+                Auth::login($transaction->user);
+                $request->session()->regenerate();
+
+                return redirect()->route('dashboard')->with('success', 'Payment received — welcome to AffilStack.');
+            }
+
+            return redirect()->route('login')->with('success', 'Payment received — your account is ready. Sign in to get started.');
         }
 
         return redirect()->route('registration.pricing')->with('error', 'We could not verify that payment. No account was created.');

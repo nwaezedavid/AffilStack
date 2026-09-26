@@ -33,6 +33,16 @@ class BrainAgentSettings extends Page
 
     protected static string $department = 'ai_agents';
 
+    /**
+     * Super-admin only: this key and MCP server are what Brain uses to spend
+     * real ad money, so pointing them elsewhere is as consequential as the
+     * launch approval itself.
+     */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
 
     protected static string|\UnitEnum|null $navigationGroup = 'AI Agents';
@@ -143,15 +153,37 @@ class BrainAgentSettings extends Page
      */
     protected function persist(array $data): void
     {
-        BrainAgentSetting::current()->update([
+        $settings = BrainAgentSetting::current();
+        $existing = $settings->credentials ?? [];
+
+        // Secret fields load blank (never sent to the browser), so a blank
+        // submission means "keep what's stored" — the old array_filter()
+        // version silently erased the Anthropic key and MCP token on every
+        // save or Verify click that didn't retype them.
+        $credentials = $this->mergeMaskedCredentials($existing, [
+            'anthropic_api_key' => $data['anthropic_api_key'] ?? null,
+            'anthropic_model' => $data['anthropic_model'] ?? null,
+            'meta_mcp_url' => $data['meta_mcp_url'] ?? null,
+            'meta_mcp_token' => $data['meta_mcp_token'] ?? null,
+        ], ['anthropic_api_key', 'meta_mcp_token']);
+
+        $updates = [
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
-            'credentials' => array_filter([
-                'anthropic_api_key' => $data['anthropic_api_key'] ?? null,
-                'anthropic_model' => $data['anthropic_model'] ?? null,
-                'meta_mcp_url' => $data['meta_mcp_url'] ?? null,
-                'meta_mcp_token' => $data['meta_mcp_token'] ?? null,
-            ], fn ($value) => $value !== null && $value !== ''),
-        ]);
+            'credentials' => $credentials,
+        ];
+
+        // A changed key or server must be re-verified before Brain may
+        // spend real ad money against it.
+        if (($credentials['anthropic_api_key'] ?? null) !== ($existing['anthropic_api_key'] ?? null)) {
+            $updates += ['anthropic_verified_at' => null, 'anthropic_verification_status' => null, 'anthropic_verification_message' => null];
+        }
+
+        if (($credentials['meta_mcp_url'] ?? null) !== ($existing['meta_mcp_url'] ?? null)
+            || ($credentials['meta_mcp_token'] ?? null) !== ($existing['meta_mcp_token'] ?? null)) {
+            $updates += ['meta_mcp_verified_at' => null, 'meta_mcp_verification_status' => null, 'meta_mcp_verification_message' => null];
+        }
+
+        $settings->update($updates);
     }
 
     public function save(): void

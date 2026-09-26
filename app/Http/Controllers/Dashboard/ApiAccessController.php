@@ -7,6 +7,7 @@ use App\Jobs\SendWebhookDelivery;
 use App\Models\ApiToken;
 use App\Models\WebhookDelivery;
 use App\Models\WebhookEndpoint;
+use App\Rules\PublicUrl;
 use App\Services\Payments\CheckoutCountryResolver;
 use App\Services\Payments\PaymentGatewayManager;
 use Illuminate\Http\RedirectResponse;
@@ -124,7 +125,7 @@ class ApiAccessController extends Controller
         abort_if($request->user()->isSeat(), 403);
 
         $validated = $request->validate([
-            'url' => ['required', 'url', 'max:2048'],
+            'url' => ['required', 'url', 'max:2048', new PublicUrl],
             'events' => ['required', 'array', 'min:1'],
             'events.*' => ['string', Rule::in(array_keys(config('webhooks.events')))],
         ]);

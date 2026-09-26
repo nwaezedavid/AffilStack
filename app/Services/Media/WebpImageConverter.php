@@ -83,6 +83,14 @@ class WebpImageConverter
      */
     protected function encodeToWebp(string $contents): ?string
     {
+        // Refuse images whose decoded size could exhaust memory (a small
+        // file can declare enormous dimensions) — kept as the original.
+        $size = @getimagesizefromstring($contents);
+
+        if (! $size || ($size[0] * $size[1]) > 40_000_000) {
+            return null;
+        }
+
         $image = @imagecreatefromstring($contents);
 
         if ($image === false) {

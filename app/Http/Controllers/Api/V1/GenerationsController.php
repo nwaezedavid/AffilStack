@@ -18,7 +18,12 @@ class GenerationsController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        // Sandbox tokens only ever see sandbox rows (and live tokens only
+        // live ones) — a generation belongs to whichever its offer is.
+        $isSandbox = (bool) $request->attributes->get('apiToken')?->is_sandbox;
+
         $generations = $request->user()->visibleGenerations()
+            ->whereHas('offer', fn ($query) => $query->where('is_sandbox', $isSandbox))
             ->when($request->filled('offer_id'), fn ($query) => $query->where('offer_id', $request->integer('offer_id')))
             ->when($request->filled('module'), fn ($query) => $query->where('module', $request->string('module')))
             ->latest()
@@ -30,6 +35,7 @@ class GenerationsController extends Controller
     public function show(Request $request, Generation $generation): JsonResponse
     {
         abort_unless($generation->offer?->isAccessibleBy($request->user()), 404);
+        abort_unless((bool) $generation->offer->is_sandbox === (bool) $request->attributes->get('apiToken')?->is_sandbox, 404);
 
         return response()->json($generation);
     }

@@ -82,7 +82,22 @@ class BrainAgentService
             throw new RuntimeException('Brain cannot launch live campaigns yet — verify both the Anthropic and Meta Ads MCP connections in AI Agents > Brain Settings first.');
         }
 
-        $campaign->update(['approved_by_id' => $admin->id, 'approved_at' => now()]);
+        // Claimed atomically before any money can move: a double-click, a
+        // second admin, or a retry after the request was cut off finds it
+        // no longer a draft instead of creating a second live campaign.
+        $claimed = MarketingCampaign::whereKey($campaign->id)
+            ->where('status', MarketingCampaign::STATUS_DRAFT)
+            ->update([
+                'status' => MarketingCampaign::STATUS_APPROVED,
+                'approved_by_id' => $admin->id,
+                'approved_at' => now(),
+            ]);
+
+        if ($claimed !== 1) {
+            throw new InvalidArgumentException('This campaign is already being launched.');
+        }
+
+        $campaign->refresh();
 
         $result = $this->anthropicFor($settings)->runAgenticCampaignAction(
             systemPrompt: $this->launchSystemPrompt(),
@@ -94,7 +109,9 @@ class BrainAgentService
         $campaign->update([
             'status' => $result['success'] ? MarketingCampaign::STATUS_RUNNING : MarketingCampaign::STATUS_FAILED,
             'launch_transcript' => $result['transcript'],
-            'failure_reason' => $result['success'] ? null : $result['message'],
+            // A failed or timed-out call may still have created objects on
+            // Meta before it stopped — say so, so nobody relaunches blind.
+            'failure_reason' => $result['success'] ? null : 'Launch not confirmed — check Meta Ads Manager for anything already created before trying again. '.$result['message'],
             'meta_campaign_ref' => $result['success']
                 ? ($this->extractCampaignRef($result['transcript']) ?? $campaign->meta_campaign_ref)
                 : $campaign->meta_campaign_ref,

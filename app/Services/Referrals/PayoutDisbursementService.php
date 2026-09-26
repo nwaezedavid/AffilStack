@@ -6,7 +6,7 @@ use App\Models\ReferralPayout;
 use App\Models\User;
 use App\Services\Payments\FlutterwaveGateway;
 use App\Services\Payments\PayPalGateway;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 
 /**
@@ -59,32 +59,62 @@ class PayoutDisbursementService
                 : 'This payout method can\'t be auto-disbursed — use "Mark paid" once you\'ve sent it manually.');
         }
 
+        // One disbursement per currency at a time, so two payouts can't both
+        // pass the balance check against the same wallet money.
+        Cache::lock('payout-wallet-disburse:'.$payout->currency, 120)->block(15, function () use ($payout, $admin) {
+            $this->sendClaimed($payout, $admin);
+        });
+    }
+
+    protected function sendClaimed(ReferralPayout $payout, User $admin): void
+    {
         if (! $this->wallet->hasSufficientBalance($payout->currency, $payout->amount_cents)) {
             $balance = number_format($this->wallet->balance($payout->currency) / 100, 2);
             throw new InvalidArgumentException("Insufficient {$payout->currency} wallet balance (currently {$balance}) — top up the wallet first.");
         }
 
-        $reference = 'wallet_payout_'.Str::uuid();
+        // Claim it before any money moves: a double-click, a second admin,
+        // or a replayed Livewire request now finds it already "disbursing"
+        // instead of sending a second transfer.
+        $claimed = ReferralPayout::whereKey($payout->id)->where('status', 'requested')->update(['status' => 'disbursing']);
 
-        $result = $payout->payout_method === 'paypal'
-            ? $this->paypal->payout(
-                $payout->payout_details['paypal_email'],
-                $payout->amount_cents,
-                $payout->currency,
-                $reference,
-                'AffilStack affiliate commission payout',
-            )
-            : $this->flutterwave->transfer(
-                $payout->payout_details['bank_code'],
-                $payout->payout_details['account_number'],
-                $payout->payout_details['account_name'] ?? $payout->user->name,
-                $payout->amount_cents,
-                $payout->currency,
-                $reference,
-                'AffilStack affiliate commission payout',
-            );
+        if ($claimed !== 1) {
+            throw new InvalidArgumentException('This payout is already being processed.');
+        }
+
+        // Deterministic per payout, so even a retry after an unclear
+        // failure is rejected by PayPal/Flutterwave as a duplicate rather
+        // than paid twice.
+        $reference = 'affilstack_payout_'.$payout->id;
+
+        try {
+            $result = $payout->payout_method === 'paypal'
+                ? $this->paypal->payout(
+                    $payout->payout_details['paypal_email'],
+                    $payout->amount_cents,
+                    $payout->currency,
+                    $reference,
+                    'AffilStack affiliate commission payout',
+                )
+                : $this->flutterwave->transfer(
+                    $payout->payout_details['bank_code'],
+                    $payout->payout_details['account_number'],
+                    $payout->payout_details['account_name'] ?? $payout->user->name,
+                    $payout->amount_cents,
+                    $payout->currency,
+                    $reference,
+                    'AffilStack affiliate commission payout',
+                );
+        } catch (\Throwable $e) {
+            // Outcome unknown (timeout mid-request) — leave it "disbursing"
+            // for a human to reconcile against the gateway dashboard rather
+            // than risk paying twice.
+            throw new InvalidArgumentException('The payout request to the gateway did not complete ('.$e->getMessage().'). Check the gateway dashboard for reference '.$reference.' before trying again.');
+        }
 
         if (! $result['success']) {
+            ReferralPayout::whereKey($payout->id)->where('status', 'disbursing')->update(['status' => 'requested']);
+
             throw new InvalidArgumentException($result['message']);
         }
 

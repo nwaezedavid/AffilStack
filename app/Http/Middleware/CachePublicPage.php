@@ -35,7 +35,11 @@ class CachePublicPage
             return $response;
         }
 
-        $response->headers->set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
+        // private, not public: every response also carries this visitor's
+        // session cookie, and a shared cache (LiteSpeed Cache, a CDN) that
+        // honoured "public" could hand one visitor's session to everyone.
+        // The browser still reuses the page for a few minutes.
+        $response->headers->set('Cache-Control', 'private, max-age=300');
 
         return $response;
     }

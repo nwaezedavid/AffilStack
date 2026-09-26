@@ -47,6 +47,16 @@ class PaymentGatewaySettings extends Page
 
     protected static string $department = 'billing';
 
+    /**
+     * Super-admin only: swapping in another merchant account's keys (and
+     * webhook secret) would keep checkout working while every payment lands
+     * in someone else's account.
+     */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Billing';

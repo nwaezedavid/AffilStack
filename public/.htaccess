@@ -17,6 +17,13 @@
 # header HawkScan flagged as missing on them is set here instead.
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
+
+    # Anything that could render as a page or run script if opened directly
+    # (an old SVG logo, a stray HTML file under /storage) is sandboxed: no
+    # script, no access to the site's cookies or origin.
+    <FilesMatch "\.(svg|svgz|html?|xhtml|xml)$">
+        Header set Content-Security-Policy "sandbox; default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'"
+    </FilesMatch>
 </IfModule>
 
 <IfModule mod_rewrite.c>

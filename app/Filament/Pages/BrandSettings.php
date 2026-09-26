@@ -141,7 +141,10 @@ class BrandSettings extends Page
                         Repeater::make('menu_items')
                             ->schema([
                                 TextInput::make('label')->required(),
-                                TextInput::make('url')->required()->helperText('e.g. /pricing or https://...'),
+                                TextInput::make('url')->required()->helperText('e.g. /pricing or https://...')
+                                    // Site-relative paths or http(s) only — never javascript:/data:.
+                                    ->regex('#^(/(?![/\\\\])|https?://)#i')
+                                    ->validationMessages(['regex' => 'Use a site path like /pricing or a full https:// link.']),
                             ])
                             ->columns(2)
                             ->addActionLabel('Add menu item')

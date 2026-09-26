@@ -46,9 +46,17 @@ class SitePage extends Model
      */
     public static function published(string $slug): ?self
     {
-        $row = Cache::rememberForever("site_page:{$slug}", function () use ($slug) {
-            return static::where('slug', $slug)->where('is_published', true)->first()?->getAttributes();
-        });
+        // Hits only — a cached miss is never served back anyway and would
+        // leave a permanent cache row per slug a bot tries.
+        $row = Cache::get("site_page:{$slug}");
+
+        if ($row === null) {
+            $row = static::where('slug', $slug)->where('is_published', true)->first()?->getAttributes();
+
+            if ($row !== null) {
+                Cache::forever("site_page:{$slug}", $row);
+            }
+        }
 
         return $row ? (new static)->newFromBuilder($row) : null;
     }

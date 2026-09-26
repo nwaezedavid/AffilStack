@@ -7,7 +7,9 @@ use App\Models\PaymentTransaction;
 use App\Models\User;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Webhooks\WebhookDispatcher;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -52,7 +54,19 @@ class ApiWalletManager
         $billable = $user->billableUser();
 
         if (! $this->hasEnough($billable, $amountCents)) {
-            $this->attemptAutoRecharge($billable);
+            // Serialized per user: N concurrent low-balance calls must make
+            // at most one off-session card charge, not N. Whoever waits on
+            // the lock re-checks the balance the winner just topped up.
+            try {
+                Cache::lock('api-wallet-recharge:'.$billable->id, 60)->block(20, function () use ($billable, $amountCents) {
+                    if (! $this->hasEnough($billable, $amountCents)) {
+                        $this->attemptAutoRecharge($billable->fresh());
+                    }
+                });
+            } catch (LockTimeoutException) {
+                // Another recharge is still in flight — fall through to the
+                // normal balance check below.
+            }
         }
 
         return DB::transaction(function () use ($billable, $amountCents, $reason, $reference) {

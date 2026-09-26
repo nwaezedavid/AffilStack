@@ -29,7 +29,7 @@ class AdminApiController extends Controller
             ->whereNull('agency_owner_id')
             ->with('activeSubscription.plan:id,name')
             ->latest()
-            ->paginate(min((int) $request->integer('per_page', 25), 100));
+            ->paginate($this->perPage($request));
 
         return response()->json($users);
     }
@@ -41,9 +41,11 @@ class AdminApiController extends Controller
 
     public function referralPayouts(Request $request): JsonResponse
     {
+        // payout_details (bank account / PayPal email) never leaves the panel.
         $payouts = ReferralPayout::with('user:id,name,email')
+            ->select(['id', 'user_id', 'amount_cents', 'currency', 'status', 'payout_method', 'reference', 'requested_at', 'processed_at'])
             ->latest('requested_at')
-            ->paginate(min((int) $request->integer('per_page', 25), 100));
+            ->paginate($this->perPage($request));
 
         return response()->json($payouts);
     }
@@ -60,16 +62,27 @@ class AdminApiController extends Controller
             ->selectRaw("SUM(CASE WHEN billing_cycle = 'yearly' THEN plans.price_yearly_cents / 12 ELSE plans.price_monthly_cents END) as mrr_cents")
             ->value('mrr_cents') ?? 0;
 
-        $revenueThisMonthCents = PaymentTransaction::where('status', 'successful')
-            ->whereMonth('processed_at', now()->month)
-            ->whereYear('processed_at', now()->year)
-            ->sum('amount_cents');
+        // Per currency — Paystack settles in NGN kobo, which must never be
+        // added to USD cents.
+        $revenueByCurrency = PaymentTransaction::where('status', 'successful')
+            ->where('processed_at', '>=', now()->startOfMonth())
+            ->groupBy('currency')
+            ->selectRaw('currency, SUM(amount_cents) as total_cents')
+            ->pluck('total_cents', 'currency')
+            ->map(fn ($cents) => (int) $cents);
 
         return response()->json([
             'mrr_cents' => (int) $mrrCents,
-            'revenue_this_month_cents' => (int) $revenueThisMonthCents,
+            'revenue_this_month_cents' => (int) ($revenueByCurrency['USD'] ?? 0),
+            'revenue_this_month_by_currency_cents' => $revenueByCurrency,
             'active_subscriptions' => Subscription::where('status', 'active')->count(),
             'total_users' => User::whereNull('agency_owner_id')->count(),
         ]);
+    }
+
+    /** 1–100; a zero or negative per_page must never mean "every row". */
+    protected function perPage(Request $request): int
+    {
+        return max(1, min((int) $request->integer('per_page', 25), 100));
     }
 }

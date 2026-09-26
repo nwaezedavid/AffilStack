@@ -23,6 +23,16 @@ use Filament\Tables\Table;
  */
 class MessagesRelationManager extends RelationManager
 {
+    /**
+     * Filament makes relation managers read-only on a View page by default,
+     * which silently disabled the Reply action — staff had no way to answer
+     * a ticket at all.
+     */
+    public function isReadOnly(): bool
+    {
+        return false;
+    }
+
     protected static string $relationship = 'messages';
 
     protected static ?string $title = 'Conversation';

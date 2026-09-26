@@ -181,8 +181,8 @@
                     @foreach ($referrals as $referral)
                         <tr>
                             <td class="px-4 py-3 text-ink-900">
-                                {{ $referral->referredUser->name }}
-                                <div class="text-xs text-ink-500">{{ $referral->referredUser->email }}</div>
+                                {{ $referral->referredUser?->name ?? 'Deleted account' }}
+                                <div class="text-xs text-ink-500">{{ $referral->referredUser?->email }}</div>
                             </td>
                             <td class="px-4 py-3">
                                 <span class="text-xs rounded-full px-2 py-0.5 {{ $referral->status === 'converted' ? 'bg-green-100 text-green-800' : 'bg-surface-muted text-ink-600' }}">

@@ -38,7 +38,17 @@ class UserResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereDoesntHave('roles', fn ($query) => $query->where('name', 'admin_sub'));
+        $query = parent::getEloquentQuery()->whereDoesntHave('roles', fn ($query) => $query->where('name', 'admin_sub'));
+
+        // Only the super-admin may see (and so edit, suspend, delete, or
+        // reset the password/email of) other staff accounts. Before this, a
+        // 'users_access' sub-admin or any plain admin could change the
+        // super-admin's password or email and take the account over.
+        if (! auth()->user()?->isSuperAdmin()) {
+            $query->whereDoesntHave('roles', fn ($query) => $query->whereIn('name', ['admin', 'support', 'super-admin']));
+        }
+
+        return $query;
     }
 
     public static function form(Schema $schema): Schema

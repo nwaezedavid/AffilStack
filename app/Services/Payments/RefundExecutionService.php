@@ -2,7 +2,6 @@
 
 namespace App\Services\Payments;
 
-use App\Models\CreditLedger;
 use App\Models\PaymentTransaction;
 use App\Models\RefundRequest;
 use App\Models\User;
@@ -70,8 +69,9 @@ class RefundExecutionService
             'raw' => $result['raw'],
         ]);
 
-        $this->cancelSubscription($transaction);
-        $this->clawBackCredits($user, $transaction);
+        // RefundProcessor::process() above also cancels the subscription
+        // (locally and at Stripe) and claws back the credits it granted —
+        // the same path a gateway-initiated refund takes.
 
         return RefundRequest::create([
             'user_id' => $user->id,
@@ -98,40 +98,5 @@ class RefundExecutionService
             'paypal' => $this->paypal->refund((string) $transaction->gateway_tx_id, $transaction->amount_cents, $transaction->currency),
             default => ['success' => false, 'message' => "No refund support for gateway '{$transaction->gateway}'.", 'raw' => []],
         };
-    }
-
-    protected function cancelSubscription(PaymentTransaction $transaction): void
-    {
-        $subscription = $transaction->subscription;
-
-        if ($subscription && $subscription->status !== 'canceled') {
-            $subscription->update(['status' => 'canceled', 'canceled_at' => now()]);
-        }
-    }
-
-    /**
-     * Claws back exactly the credits this refunded subscription granted —
-     * never a blanket reset to zero — found by the same reference_type/
-     * reference_id CreditManager::grant() stamped on the ledger row.
-     * Eligibility already guarantees zero usage, so the full granted amount
-     * is guaranteed to still be sitting in the balance untouched.
-     */
-    protected function clawBackCredits(User $user, PaymentTransaction $transaction): void
-    {
-        $subscription = $transaction->subscription;
-
-        if (! $subscription) {
-            return;
-        }
-
-        $granted = (int) CreditLedger::where('user_id', $user->id)
-            ->where('reference_type', $subscription->getMorphClass())
-            ->where('reference_id', $subscription->id)
-            ->where('amount', '>', 0)
-            ->sum('amount');
-
-        if ($granted > 0) {
-            $this->credits->spend($user, $granted, 'refund_clawback', $subscription);
-        }
     }
 }

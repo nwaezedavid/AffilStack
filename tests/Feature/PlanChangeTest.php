@@ -153,7 +153,9 @@ class PlanChangeTest extends TestCase
         $subscription->refresh();
         $this->assertSame($newPlan->id, $subscription->plan_id);
         $this->assertNull($subscription->pending_plan_id);
-        $this->assertSame(500, CreditLedger::where('user_id', $user->id)->where('reason', 'plan_change_grant')->sole()->amount);
+        // Nothing was paid at period end on a one-time-charge gateway, so no
+        // credits — the new plan's allowance comes with the next checkout.
+        $this->assertFalse(CreditLedger::where('user_id', $user->id)->where('reason', 'plan_change_grant')->exists());
     }
 
     public function test_apply_pending_downgrades_command_ignores_stripe_and_unexpired_periods(): void
@@ -189,7 +191,22 @@ class PlanChangeTest extends TestCase
             'gateway_subscription_id' => 'sub_test_1',
         ]);
         $subscription = $user->activeSubscription;
+
+        Http::fake([
+            'api.stripe.com/v1/subscriptions/sub_test_1' => Http::sequence()
+                ->push(['id' => 'sub_test_1', 'items' => ['data' => [['id' => 'si_1', 'price' => ['product' => 'prod_1']]]]])
+                ->push(['id' => 'sub_test_1']),
+        ]);
+
         app(PlanChangeService::class)->scheduleDowngrade($subscription, $newPlan, 'monthly');
+
+        // The new price is set on Stripe itself (from the next invoice on,
+        // no proration) — otherwise Stripe would keep billing the old plan.
+        Http::assertSent(fn ($request) => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/subscriptions/sub_test_1')
+            && $request['proration_behavior'] === 'none'
+            && (int) $request['items'][0]['price_data']['unit_amount'] === 6000
+            && $request['items'][0]['price_data']['product'] === 'prod_1');
 
         app(SubscriptionRenewalService::class)->handleStripeEvent([
             'kind' => 'renewed',

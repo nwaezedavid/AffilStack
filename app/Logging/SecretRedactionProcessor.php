@@ -70,6 +70,20 @@ class SecretRedactionProcessor implements ProcessorInterface
             return $this->redactString($value);
         }
 
+        // Laravel logs every error as ['exception' => $e], and Monolog's
+        // formatter writes that object's message (and any previous one)
+        // AFTER processors run — so it would bypass redaction entirely.
+        // Flatten it here, redacted, keeping the trace for debugging.
+        if ($value instanceof \Throwable) {
+            $text = '';
+
+            for ($e = $value; $e !== null; $e = $e->getPrevious()) {
+                $text .= ($text === '' ? '' : "\nCaused by: ").get_class($e).': '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine();
+            }
+
+            return $this->redactString($text."\n".$value->getTraceAsString());
+        }
+
         // Never risk calling __toString() on an object we don't own here —
         // it could recurse, throw, or be expensive. Monolog's own formatter
         // normalizes objects after processors run; leave it to that.

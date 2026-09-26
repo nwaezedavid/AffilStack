@@ -65,13 +65,36 @@ class BillingController extends Controller
             'billing_cycle' => 'required|in:monthly,yearly',
         ]);
 
+        if (! $plan->is_active) {
+            return redirect()->route('billing.index')->with('error', 'That plan is no longer available.');
+        }
+
         $subscription = auth()->user()->activeSubscription;
 
+        // Same plan and cycle as the active subscription = a renewal: full
+        // price, and the new period starts where the current one ends (see
+        // PaymentProcessor::activateSubscription). It must never go through
+        // the upgrade proration below — that charged only the "unused time"
+        // difference yet granted a whole new month of credits.
+        $isRenewal = $subscription
+            && $subscription->plan_id === $plan->id
+            && $subscription->billing_cycle === $validated['billing_cycle'];
+
+        if ($isRenewal && $subscription->gateway === 'stripe') {
+            return redirect()->route('billing.index')->with('success', 'Your plan renews automatically — there is nothing to pay right now.');
+        }
+
         if ($subscription
-            && ($subscription->plan_id !== $plan->id || $subscription->billing_cycle !== $validated['billing_cycle'])
+            && ! $isRenewal
             && ! $planChanges->isUpgrade($subscription, $plan, $validated['billing_cycle'])
         ) {
-            $planChanges->scheduleDowngrade($subscription, $plan, $validated['billing_cycle']);
+            try {
+                $planChanges->scheduleDowngrade($subscription, $plan, $validated['billing_cycle']);
+            } catch (\RuntimeException $e) {
+                report($e);
+
+                return redirect()->route('billing.index')->with('error', 'We could not schedule that plan change right now. Please try again in a moment.');
+            }
 
             $when = $subscription->current_period_end?->format('M j, Y') ?? 'your next renewal';
 
@@ -88,9 +111,9 @@ class BillingController extends Controller
 
         $overrideAmountCents = null;
 
-        if ($subscription) {
+        if ($subscription && ! $isRenewal) {
             $fullPriceCents = $validated['billing_cycle'] === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents;
-            $credit = $planChanges->prorationCreditCents($subscription, $plan, $validated['billing_cycle']);
+            $credit = $planChanges->prorationCreditCents($subscription, $plan, $validated['billing_cycle'], $gateway->key());
             $overrideAmountCents = max(0, $fullPriceCents - $credit);
 
             if ($overrideAmountCents <= 0) {
@@ -102,6 +125,8 @@ class BillingController extends Controller
                     'type' => 'subscription',
                     'gateway' => $subscription->gateway,
                     'tx_ref' => 'planchange_'.Str::uuid(),
+                    'plan_id' => $plan->id,
+                    'billing_cycle' => $validated['billing_cycle'],
                     'amount_cents' => 0,
                     'currency' => $plan->currency,
                     'status' => 'successful',
@@ -125,6 +150,8 @@ class BillingController extends Controller
             'type' => 'subscription',
             'gateway' => $gateway->key(),
             'tx_ref' => $checkout['tx_ref'],
+            'plan_id' => $plan->id,
+            'billing_cycle' => $validated['billing_cycle'],
             // From the gateway itself, not assumed from the plan — see
             // PaymentGateway interface docblock.
             'amount_cents' => $checkout['amount_cents'],
@@ -144,7 +171,13 @@ class BillingController extends Controller
         $subscription = auth()->user()->activeSubscription;
 
         if ($subscription) {
-            $planChanges->cancelScheduledChange($subscription);
+            try {
+                $planChanges->cancelScheduledChange($subscription);
+            } catch (\RuntimeException $e) {
+                report($e);
+
+                return redirect()->route('billing.index')->with('error', 'We could not cancel the scheduled change right now. Please try again in a moment.');
+            }
         }
 
         return redirect()->route('billing.index')->with('success', 'Scheduled plan change canceled — you\'ll stay on your current plan.');

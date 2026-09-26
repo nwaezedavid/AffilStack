@@ -99,6 +99,21 @@ class InstagramPublishingService implements SocialPublishProvider
 
         $userAccessToken = (string) $token->json('access_token');
 
+        // Swap the ~1-hour user token for a long-lived one first: a Page
+        // token read with a short-lived user token expires with it (so
+        // publishing silently broke about an hour after connecting), while
+        // one read with a long-lived user token doesn't expire.
+        $longLived = Http::get(self::TOKEN_ENDPOINT, [
+            'grant_type' => 'fb_exchange_token',
+            'client_id' => $this->appId(),
+            'client_secret' => $this->appSecret(),
+            'fb_exchange_token' => $userAccessToken,
+        ]);
+
+        if ($longLived->successful() && $longLived->json('access_token')) {
+            $userAccessToken = (string) $longLived->json('access_token');
+        }
+
         // Find the first connected Page that has a linked Instagram
         // professional account — that account, not the Facebook user
         // itself, is what actually publishes.

@@ -63,7 +63,8 @@ class ListCreativeTasks extends ListRecords
                             $data['kind'],
                             $data['brief'],
                             auth()->user(),
-                            $data['target_id'] ?: null,
+                            // Hidden (and so absent) for Branding drafts.
+                            ($data['target_id'] ?? null) ?: null,
                         );
                     } catch (Throwable $e) {
                         Notification::make()->title("Tony couldn't draft that.")->body($e->getMessage())->danger()->send();

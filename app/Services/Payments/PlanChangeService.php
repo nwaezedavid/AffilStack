@@ -52,9 +52,12 @@ class PlanChangeService
      * than just this once. Every other gateway is a one-time charge with
      * no such recurring object to worry about.
      */
-    public function prorationCreditCents(Subscription $subscription, Plan $newPlan, string $newCycle): int
+    public function prorationCreditCents(Subscription $subscription, Plan $newPlan, string $newCycle, ?string $newGateway = null): int
     {
-        if ($subscription->gateway === 'stripe') {
+        // What matters is the gateway the NEW plan will be billed on: a
+        // discounted Stripe checkout becomes that subscription's recurring
+        // price forever, no matter which gateway the old plan used.
+        if ($subscription->gateway === 'stripe' || $newGateway === 'stripe') {
             return 0;
         }
 
@@ -62,18 +65,26 @@ class PlanChangeService
             return 0;
         }
 
-        $totalDays = max(1, $subscription->current_period_start->diffInDays($subscription->current_period_end));
-        $remainingDays = max(0, (int) now()->diffInDays($subscription->current_period_end, false));
-
-        if ($remainingDays <= 0) {
+        if (! $subscription->current_period_end->isFuture()) {
             return 0;
         }
 
-        $currentPaidCents = $this->priceCents($subscription->plan, $subscription->billing_cycle);
-        $unusedCents = (int) round(($remainingDays / $totalDays) * $currentPaidCents);
+        $unusedCents = $this->unusedValueCents($subscription);
         $newPriceCents = $this->priceCents($newPlan, $newCycle);
 
         return max(0, min($unusedCents, $newPriceCents));
+    }
+
+    protected function unusedValueCents(Subscription $subscription): int
+    {
+        if (! $subscription->plan || ! $subscription->current_period_start || ! $subscription->current_period_end) {
+            return 0;
+        }
+
+        $totalDays = max(1, $subscription->current_period_start->diffInDays($subscription->current_period_end));
+        $remainingDays = max(0, (int) now()->diffInDays($subscription->current_period_end, false));
+
+        return (int) round(($remainingDays / $totalDays) * $this->priceCents($subscription->plan, $subscription->billing_cycle));
     }
 
     /**
@@ -84,20 +95,43 @@ class PlanChangeService
      */
     public function applyImmediateUpgrade(Subscription $subscription, Plan $newPlan, string $newCycle): void
     {
-        $subscription->loadMissing('user');
+        $subscription->loadMissing('user', 'plan');
+
+        // The banked credit is converted into time on the new plan at the
+        // new plan's price — keeping the old period end would hand out, say,
+        // eleven months of a monthly plan for the price of one.
+        $newPriceCents = max(1, $this->priceCents($newPlan, $newCycle));
+        $cycleDays = $newCycle === 'yearly' ? 365 : 30;
+        $unusedCents = $this->unusedValueCents($subscription);
+        $days = max($cycleDays, (int) floor(($unusedCents / $newPriceCents) * $cycleDays));
 
         $subscription->update([
             'plan_id' => $newPlan->id,
             'billing_cycle' => $newCycle,
+            'current_period_start' => now(),
+            'current_period_end' => now()->addDays($days),
+            'pending_plan_id' => null,
+            'pending_billing_cycle' => null,
         ]);
 
         if ($subscription->user) {
             $this->credits->grant($subscription->user, $newPlan->credits_per_month, 'plan_change_grant', $subscription);
+            $subscription->update(['last_credit_grant_at' => now()]);
         }
     }
 
+    /**
+     * @throws \RuntimeException when Stripe can't be re-priced — the caller
+     *                           must not tell the customer it's scheduled
+     */
     public function scheduleDowngrade(Subscription $subscription, Plan $newPlan, string $newCycle): void
     {
+        // Stripe bills on its own schedule, so the new price has to be set
+        // on the Stripe subscription itself (from the next invoice onward).
+        if ($subscription->gateway === 'stripe' && $subscription->gateway_subscription_id) {
+            app(StripeGateway::class)->updateSubscriptionPrice($subscription->gateway_subscription_id, $newPlan, $newCycle);
+        }
+
         $subscription->update([
             'pending_plan_id' => $newPlan->id,
             'pending_billing_cycle' => $newCycle,
@@ -106,6 +140,12 @@ class PlanChangeService
 
     public function cancelScheduledChange(Subscription $subscription): void
     {
+        $subscription->loadMissing('plan');
+
+        if ($subscription->pending_plan_id && $subscription->gateway === 'stripe' && $subscription->gateway_subscription_id && $subscription->plan) {
+            app(StripeGateway::class)->updateSubscriptionPrice($subscription->gateway_subscription_id, $subscription->plan, $subscription->billing_cycle);
+        }
+
         $subscription->update(['pending_plan_id' => null, 'pending_billing_cycle' => null]);
     }
 
@@ -114,7 +154,7 @@ class PlanChangeService
      * swaps in the pending plan and grants its credit allotment. A no-op
      * when nothing is scheduled.
      */
-    public function applyPendingChange(Subscription $subscription): void
+    public function applyPendingChange(Subscription $subscription, bool $grantCredits = true): void
     {
         if (! $subscription->pending_plan_id) {
             return;
@@ -136,8 +176,12 @@ class PlanChangeService
             'pending_billing_cycle' => null,
         ]);
 
-        if ($subscription->user) {
+        // Only a paid renewal (Stripe's invoice.paid) grants the new plan's
+        // credits here. On the one-time-charge gateways nothing was paid at
+        // period end — the credits come with the customer's next checkout.
+        if ($grantCredits && $subscription->user) {
             $this->credits->grant($subscription->user, $newPlan->credits_per_month, 'plan_change_grant', $subscription);
+            $subscription->update(['last_credit_grant_at' => now()]);
         }
     }
 }

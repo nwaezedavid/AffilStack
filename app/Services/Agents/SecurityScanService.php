@@ -158,11 +158,14 @@ class SecurityScanService
     {
         $result = Process::path(base_path())->run('composer audit --format=json --no-interaction');
 
-        if (! $result->successful()) {
+        // composer audit exits non-zero precisely when it finds something
+        // (1 = vulnerable, 2 = abandoned, 3 = both), so the exit code can't
+        // gate this — only unparseable output means the audit didn't run.
+        $data = json_decode($result->output(), true);
+
+        if (! is_array($data)) {
             return [];
         }
-
-        $data = json_decode($result->output(), true);
         $advisories = $data['advisories'] ?? [];
 
         $findings = [];

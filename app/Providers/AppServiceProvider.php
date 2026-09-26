@@ -49,6 +49,19 @@ class AppServiceProvider extends ServiceProvider
         // middleware like ApiTokenAuth even when ApiTokenAuth is listed
         // first in routes/api.php's own group array — so the attribute
         // isn't reliably set yet by the time this closure runs.
+        // Features that call a paid third-party API on every request
+        // (Google Places, OpenAI) without always charging credits first —
+        // capped per user so a script can't run up the platform's bill.
+        RateLimiter::for('paid-lookups', fn (Request $request) => [
+            Limit::perMinute(20)->by('paid-lookups-min:'.($request->user()?->id ?? $request->ip())),
+            Limit::perDay(400)->by('paid-lookups-day:'.($request->user()?->id ?? $request->ip())),
+        ]);
+
+        RateLimiter::for('support-chat', fn (Request $request) => [
+            Limit::perMinute(20)->by('support-chat-min:'.($request->user()?->id ?? $request->ip())),
+            Limit::perDay(200)->by('support-chat-day:'.($request->user()?->id ?? $request->ip())),
+        ]);
+
         RateLimiter::for('api', function (Request $request) {
             $token = $request->attributes->get('apiToken')
                 ?? ApiToken::findByPlainText((string) $request->bearerToken());

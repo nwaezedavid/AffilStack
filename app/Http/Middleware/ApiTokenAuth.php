@@ -37,9 +37,24 @@ class ApiTokenAuth
             return response()->json(['message' => 'Invalid or revoked token.'], 401);
         }
 
+        $user = $token->user;
+
+        // A soft-deleted owner resolves to null — reject cleanly instead of
+        // failing somewhere downstream with a 500.
+        if (! $user) {
+            return response()->json(['message' => 'Invalid or revoked token.'], 401);
+        }
+
+        // Suspension is the platform's main abuse control; the dashboard
+        // enforces it (EnsureAccountNotSuspended) but tokens bypassed it.
+        // A seat is also blocked when the account paying for it is.
+        if ($user->is_suspended || $user->billableUser()->is_suspended) {
+            return response()->json(['message' => 'This account is suspended.'], 403);
+        }
+
         $token->update(['last_used_at' => now()]);
 
-        $request->setUserResolver(fn () => $token->user);
+        $request->setUserResolver(fn () => $user);
         $request->attributes->set('apiToken', $token);
 
         return $next($request);

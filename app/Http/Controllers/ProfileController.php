@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Payments\StripeGateway;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,6 +44,28 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        // Stop everything that keeps running without a browser session:
+        // Stripe would otherwise keep charging a deactivated account every
+        // month, bearer tokens would keep working until the 30-day purge,
+        // and team seats would keep using the owner's plan.
+        $subscription = $user->activeSubscription;
+
+        if ($subscription) {
+            if ($subscription->gateway === 'stripe' && $subscription->gateway_subscription_id) {
+                try {
+                    app(StripeGateway::class)->cancelSubscription($subscription->gateway_subscription_id);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
+            $subscription->update(['status' => 'canceled', 'canceled_at' => now()]);
+        }
+
+        $user->apiTokens()->delete();
+        $user->seats()->update(['is_suspended' => true]);
+
         $user->delete();
 
         Auth::guard('web')->logout();

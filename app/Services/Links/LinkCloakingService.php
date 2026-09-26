@@ -44,14 +44,15 @@ class LinkCloakingService
      */
     public function recordClick(TrackedLink $link, Request $request): LinkClick
     {
-        $userAgent = (string) $request->userAgent();
+        // Clamped: header sizes are attacker-chosen on this public route.
+        $userAgent = Str::limit((string) $request->userAgent(), 500, '');
 
         $click = $link->clicks()->create([
             'ip_address' => $request->ip(),
             'user_agent' => $userAgent,
             'device_type' => $this->classifyDevice($userAgent),
             'browser' => $this->classifyBrowser($userAgent),
-            'referrer' => $request->header('referer'),
+            'referrer' => Str::limit((string) $request->header('referer'), 1000, '') ?: null,
             'clicked_at' => now(),
         ]);
 

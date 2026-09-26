@@ -3,6 +3,7 @@
 namespace App\Services\Crm;
 
 use App\Models\EmailConnection;
+use App\Support\OutboundUrlGuard;
 use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 use RuntimeException;
@@ -33,8 +34,17 @@ class PersonalEmailSender
 
     protected function sendViaSmtp(EmailConnection $connection, string $toEmail, string $subject, string $htmlBody): void
     {
+        // Re-checked at send time: the hostname's DNS could have been
+        // re-pointed at a private address since it was saved.
+        try {
+            OutboundUrlGuard::resolveSafeHost((string) $connection->credential('host'));
+        } catch (InvalidArgumentException $e) {
+            throw new RuntimeException('SMTP send refused: '.$e->getMessage(), previous: $e);
+        }
+
         $transport = Mail::createSymfonyTransport([
             'transport' => 'smtp',
+            'timeout' => 15,
             'host' => $connection->credential('host'),
             'port' => (int) $connection->credential('port'),
             'username' => $connection->credential('username'),

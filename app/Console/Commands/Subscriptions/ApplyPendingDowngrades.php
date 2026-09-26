@@ -25,12 +25,13 @@ class ApplyPendingDowngrades extends Command
         $subscriptions = Subscription::query()
             ->whereNotNull('pending_plan_id')
             ->where('gateway', '!=', 'stripe')
+            ->where('status', 'active')
             ->whereNotNull('current_period_end')
             ->where('current_period_end', '<=', now())
             ->get();
 
         foreach ($subscriptions as $subscription) {
-            $planChanges->applyPendingChange($subscription);
+            $planChanges->applyPendingChange($subscription, grantCredits: false);
         }
 
         $this->info("Applied {$subscriptions->count()} scheduled downgrade(s).");

@@ -10,6 +10,12 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class RevenueOverview extends StatsOverviewWidget
 {
+    /** Revenue and subscription counts are billing information. */
+    public static function canView(): bool
+    {
+        return auth()->user()?->canAccessDepartment('billing') ?? false;
+    }
+
     protected function getStats(): array
     {
         $mrr = Subscription::query()
@@ -20,10 +26,18 @@ class RevenueOverview extends StatsOverviewWidget
             ")
             ->value('mrr_cents') ?? 0;
 
-        $revenueThisMonth = PaymentTransaction::where('status', 'successful')
-            ->whereMonth('processed_at', now()->month)
-            ->whereYear('processed_at', now()->year)
-            ->sum('amount_cents');
+        // Summed per currency: Paystack settles in naira kobo, so adding
+        // it to USD cents inflated "revenue" by the exchange rate.
+        $revenueByCurrency = PaymentTransaction::where('status', 'successful')
+            ->where('processed_at', '>=', now()->startOfMonth())
+            ->groupBy('currency')
+            ->selectRaw('currency, SUM(amount_cents) as total_cents')
+            ->pluck('total_cents', 'currency');
+
+        $revenueThisMonth = (int) ($revenueByCurrency['USD'] ?? 0);
+        $otherCurrencies = $revenueByCurrency->except('USD')
+            ->map(fn ($cents, $currency) => $currency.' '.number_format($cents / 100, 2))
+            ->implode(' + ');
 
         $activeSubs = Subscription::where('status', 'active')->count();
         $totalUsers = User::count();
@@ -34,7 +48,7 @@ class RevenueOverview extends StatsOverviewWidget
                 ->description('Monthly recurring revenue, active subscriptions')
                 ->color('success'),
             Stat::make('Revenue this month', '$'.number_format($revenueThisMonth / 100, 2))
-                ->description('Successful Flutterwave transactions')
+                ->description($otherCurrencies !== '' ? 'USD payments, plus '.$otherCurrencies : 'Successful USD payments')
                 ->color('success'),
             Stat::make('Active subscriptions', number_format($activeSubs))
                 ->description($totalUsers.' total users'),

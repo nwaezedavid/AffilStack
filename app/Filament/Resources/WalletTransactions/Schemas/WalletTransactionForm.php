@@ -30,8 +30,10 @@ class WalletTransactionForm
                     ->minValue(0.01)
                     ->step(0.01)
                     ->required()
-                    ->helperText('The amount you actually deposited into your Flutterwave/PayPal balance elsewhere — this just records it here so the wallet can draw against it.')
-                    ->dehydrated(false),
+                    // Must stay dehydrated: CreateWalletTransaction reads
+                    // $data['amount'] (it isn't a model column, it's
+                    // converted to amount_cents there).
+                    ->helperText('The amount you actually deposited into your Flutterwave/PayPal balance elsewhere — this just records it here so the wallet can draw against it.'),
                 TextInput::make('reference')
                     ->label('Reference (optional)')
                     ->maxLength(255)

@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('repo_name')->nullable();
             $table->string('branch')->default('main');
             $table->boolean('is_enabled')->default(false);
-            $table->json('credentials')->nullable();
+            $table->text('credentials')->nullable(); // encrypted:array cast stores ciphertext, not JSON — a json column rejects it on MariaDB/MySQL
             $table->string('last_sync_status')->nullable();
             $table->timestamp('last_sync_at')->nullable();
             $table->string('last_sync_commit_sha')->nullable();

@@ -23,7 +23,7 @@ class RunUgcVideoGeneration implements ShouldQueue
 
     public int $tries = 1;
 
-    public int $timeout = 600;
+    public int $timeout = 780; // up to 8 min of HeyGen polling + a 2 min download, with headroom (< queue retry_after 900)
 
     public function __construct(public Generation $generation) {}
 

@@ -58,20 +58,24 @@ class RedirectsAndNotFoundMonitorTest extends TestCase
         $this->assertSame(3, NotFoundLog::where('path', 'dead-link')->value('hits_count'));
     }
 
-    public function test_the_404_log_stops_growing_once_it_hits_its_cap_but_still_increments_existing_paths(): void
+    public function test_the_404_log_stays_at_its_cap_by_evicting_the_stalest_entry(): void
     {
-        $now = now();
         $rows = [];
         for ($i = 0; $i < 500; $i++) {
-            $rows[] = ['path' => "bot-scan-{$i}", 'hits_count' => 1, 'first_seen_at' => $now, 'last_seen_at' => $now];
+            $seen = now()->subMinutes(1000 - $i);
+            $rows[] = ['path' => "bot-scan-{$i}", 'hits_count' => 1, 'first_seen_at' => $seen, 'last_seen_at' => $seen];
         }
         NotFoundLog::insert($rows);
 
-        $this->get('/bot-scan-0');
+        $this->get('/bot-scan-10');
         $this->get('/a-brand-new-path-past-the-cap');
 
-        $this->assertSame(2, NotFoundLog::where('path', 'bot-scan-0')->value('hits_count'));
-        $this->assertSame(0, NotFoundLog::where('path', 'a-brand-new-path-past-the-cap')->count());
+        // Existing paths still count; a new broken link is still recorded
+        // (a burst of bot junk can no longer freeze the monitor), and the
+        // stalest entry made room for it.
+        $this->assertSame(2, NotFoundLog::where('path', 'bot-scan-10')->value('hits_count'));
+        $this->assertSame(1, NotFoundLog::where('path', 'a-brand-new-path-past-the-cap')->count());
+        $this->assertSame(0, NotFoundLog::where('path', 'bot-scan-0')->count());
         $this->assertSame(500, NotFoundLog::count());
     }
 

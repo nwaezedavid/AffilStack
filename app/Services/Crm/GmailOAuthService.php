@@ -42,6 +42,23 @@ class GmailOAuthService
         return $this->settings->gmailSendingAvailable();
     }
 
+    /**
+     * Best-effort revocation on disconnect — never blocks the disconnect
+     * itself (the token may already be revoked or expired).
+     */
+    public function revoke(string $token): void
+    {
+        if ($token === '') {
+            return;
+        }
+
+        try {
+            Http::asForm()->timeout(10)->post('https://oauth2.googleapis.com/revoke', ['token' => $token]);
+        } catch (\Throwable) {
+            // Revocation is advisory; the local copy is deleted regardless.
+        }
+    }
+
     protected function clientId(): string
     {
         return (string) $this->settings->credential('client_id');

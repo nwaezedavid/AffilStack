@@ -101,13 +101,16 @@ class UsersTable
                     ->icon('heroicon-o-no-symbol')
                     ->color(fn (User $record) => $record->is_suspended ? 'success' : 'danger')
                     ->requiresConfirmation()
-                    ->visible(fn (User $record) => ! $record->trashed())
+                    // Never on your own account — a super-admin suspending
+                    // themselves would lock the only approver out.
+                    ->visible(fn (User $record) => ! $record->trashed() && $record->id !== auth()->id())
                     ->action(fn (User $record) => $record->update(['is_suspended' => ! $record->is_suspended])),
                 // Audit gap #4 — the only way to undo a self-service account
                 // deletion within its 30-day grace period (see
                 // ProfileController::destroy() / PurgeDeletedAccounts).
                 RestoreAction::make(),
-                ForceDeleteAction::make(),
+                ForceDeleteAction::make()
+                    ->visible(fn (User $record) => $record->trashed() && $record->id !== auth()->id()),
                 EditAction::make()
                     ->visible(fn (User $record) => ! $record->trashed()),
             ])

@@ -38,6 +38,7 @@ class ReferralPayoutsTable
                     ->badge()
                     ->colors([
                         'warning' => 'requested',
+                        'info' => 'disbursing',
                         'success' => 'paid',
                         'danger' => 'rejected',
                     ]),
@@ -48,6 +49,7 @@ class ReferralPayoutsTable
             ->filters([
                 SelectFilter::make('status')->options([
                     'requested' => 'Requested',
+                    'disbursing' => 'Disbursing (confirm in gateway)',
                     'paid' => 'Paid',
                     'rejected' => 'Rejected',
                 ]),
@@ -86,7 +88,9 @@ class ReferralPayoutsTable
                 Action::make('markPaid')
                     ->label('Mark paid')
                     ->color('success')
-                    ->visible(fn (ReferralPayout $record) => $record->isRequested())
+                    // Also offered on "disbursing" — a transfer whose outcome
+                    // was unclear, once confirmed in the gateway dashboard.
+                    ->visible(fn (ReferralPayout $record) => in_array($record->status, ['requested', 'disbursing'], true))
                     ->form([
                         TextInput::make('reference')
                             ->label('Payment reference')

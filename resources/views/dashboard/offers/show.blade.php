@@ -712,7 +712,7 @@
                                         @elseif (! $nurtureContact->email)
                                             <span class="text-xs text-ink-400">No email address on file for {{ $nurtureContact->name }}.</span>
                                         @else
-                                            <form method="POST" action="{{ route('generations.nurture.send', $gen) }}" onsubmit="return confirm('Send this email to {{ $nurtureContact->name }} now?')">
+                                            <form method="POST" action="{{ route('generations.nurture.send', $gen) }}" onsubmit="return confirm({{ \Illuminate\Support\Js::from('Send this email to '.$nurtureContact->name.' now?') }})">
                                                 @csrf
                                                 <input type="hidden" name="step" value="{{ $email['step'] ?? '' }}">
                                                 <button class="text-xs rounded-md border border-line px-2.5 py-1.5 hover:bg-surface-muted transition">

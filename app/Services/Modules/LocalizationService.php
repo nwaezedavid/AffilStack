@@ -9,6 +9,7 @@ use App\Services\AI\AIGenerationException;
 use App\Services\AI\AIProvider;
 use App\Services\Credits\CreditManager;
 use App\Services\Credits\InsufficientCreditsException;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
@@ -137,13 +138,22 @@ class LocalizationService
             return;
         }
 
-        $generation->update([
-            'output' => json_encode($result),
-            'output_meta' => $result,
-            'credits_spent' => $cost,
-            'status' => 'completed',
-        ]);
+        // Save and charge together: if the charge fails (another request
+        // spent the last credits during the AI call), the output must not be
+        // left behind as a free completed result.
+        try {
+            DB::transaction(function () use ($generation, $result, $cost, $user) {
+                $this->credits->spend($user, $cost, self::COST_KEY, $generation);
 
-        $this->credits->spend($user, $cost, self::COST_KEY, $generation);
+                $generation->update([
+                    'output' => json_encode($result),
+                    'output_meta' => $result,
+                    'credits_spent' => $cost,
+                    'status' => 'completed',
+                ]);
+            });
+        } catch (InsufficientCreditsException) {
+            $generation->update(['status' => 'failed', 'error_message' => 'Insufficient credits at processing time.']);
+        }
     }
 }

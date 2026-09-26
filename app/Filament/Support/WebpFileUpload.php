@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Services\Media\WebpImageConverter;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
+use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 /**
@@ -28,6 +29,20 @@ class WebpFileUpload
     {
         return FileUpload::make($name)->saveUploadedFileUsing(
             function (BaseFileUpload $component, TemporaryUploadedFile $file): ?string {
+                // Raster images only, checked by content AND extension: ->image()
+                // accepts any image/* including SVG (which can carry script and
+                // is served straight from /storage), and a PNG saved under a
+                // .html name would be served as a web page.
+                $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+                if (! in_array($file->getMimeType(), $allowedMimes, true)
+                    || ! in_array(strtolower($file->getClientOriginalExtension()), $allowedExtensions, true)) {
+                    throw ValidationException::withMessages([
+                        $component->getStatePath() => 'Upload a JPG, PNG, GIF or WebP image.',
+                    ]);
+                }
+
                 $path = $component->saveUploadedFile($file);
 
                 if ($path === null) {

@@ -28,5 +28,10 @@ class RolesSeeder extends Seeder
         foreach (array_keys(config('admin.departments')) as $department) {
             Permission::findOrCreate("department.{$department}", 'web');
         }
+
+        // The 'support' role can sign in to the panel but, having no
+        // department of its own, could only ever see an empty dashboard —
+        // give it the one department its name promises.
+        Role::findByName('support', 'web')->givePermissionTo('department.support');
     }
 }

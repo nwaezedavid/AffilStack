@@ -30,7 +30,8 @@ class PaymentGatewaySettingsPageTest extends TestCase
 
         $this->seed(RolesSeeder::class);
         $this->admin = User::factory()->create();
-        $this->admin->assignRole('admin');
+        // Gateway credentials are super-admin only.
+        $this->admin->assignRole(['admin', 'super-admin']);
     }
 
     public function test_admin_can_enable_a_gateway_and_save_its_credentials(): void

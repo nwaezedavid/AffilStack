@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\WebhookEndpoint;
+use App\Rules\PublicUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -30,7 +31,7 @@ class ZapierSubscriptionsController extends Controller
         abort_if($request->user()->isSeat(), 403);
 
         $validated = $request->validate([
-            'target_url' => ['required', 'url', 'max:2048'],
+            'target_url' => ['required', 'url', 'max:2048', new PublicUrl],
             'event' => ['required', 'string', Rule::in(array_keys(config('webhooks.events')))],
         ]);
 

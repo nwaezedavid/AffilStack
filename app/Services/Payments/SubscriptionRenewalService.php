@@ -117,6 +117,7 @@ class SubscriptionRenewalService
 
         if ($subscription->plan && $subscription->user) {
             $this->credits->grant($subscription->user, $subscription->plan->credits_per_month, 'renewal_grant', $subscription);
+            $subscription->update(['last_credit_grant_at' => now()]);
         }
     }
 

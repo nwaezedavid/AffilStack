@@ -25,8 +25,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
+            // Server-to-server gateway webhooks — each controller verifies
+            // the gateway's own signature before trusting anything. Paystack
+            // and PayPal were missing here, so every one of their webhooks
+            // got a 419 in production (CSRF is skipped under unit tests).
             'webhooks/flutterwave',
             'webhooks/stripe',
+            'webhooks/paystack',
+            'webhooks/paypal',
             'internal/analytics/view',
             'internal/analytics/duration',
         ]);

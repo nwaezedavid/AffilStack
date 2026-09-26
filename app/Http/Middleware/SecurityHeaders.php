@@ -62,15 +62,29 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        // Allow-lists the third parties the site genuinely loads: the
+        // admin-configured GA/GTM/Meta/TikTok tags (partials/tracking-*),
+        // YouTube thumbnails and embeds (hero/feature/tutorial videos), and
+        // externally hosted images/video. The previous self-only policy
+        // silently blocked every one of those in production.
         $response->headers->set('Content-Security-Policy', implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://analytics.tiktok.com",
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data:",
+            "img-src 'self' data: blob: https:",
+            "media-src 'self' blob: https:",
             "font-src 'self' data:",
-            "connect-src 'self'",
+            "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://analytics.tiktok.com",
+            "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.googletagmanager.com",
             "frame-ancestors 'self'",
+            "base-uri 'self'",
+            "object-src 'none'",
         ]));
+        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+
+        if ($request->isSecure()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        }
 
         foreach ($response->headers->getCookies() as $cookie) {
             if ($cookie->isHttpOnly()) {

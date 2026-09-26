@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\EmailConnection;
 use App\Services\Crm\GmailOAuthService;
 use App\Services\Crm\PersonalEmailSender;
+use App\Support\OutboundUrlGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use RuntimeException;
 
@@ -86,8 +88,17 @@ class EmailConnectionController extends Controller
     public function storeSmtp(Request $request, PersonalEmailSender $sender): RedirectResponse
     {
         $validated = $request->validate([
-            'host' => ['required', 'string', 'max:255'],
-            'port' => ['required', 'integer', 'min:1', 'max:65535'],
+            // A real outgoing-mail server on the public internet: without
+            // this the connection test could be pointed at the platform's own
+            // private network to probe ports and read service banners.
+            'host' => ['required', 'string', 'max:255', function (string $attribute, mixed $value, \Closure $fail) {
+                try {
+                    OutboundUrlGuard::resolveSafeHost((string) $value);
+                } catch (\InvalidArgumentException $e) {
+                    $fail($e->getMessage());
+                }
+            }],
+            'port' => ['required', 'integer', Rule::in([25, 465, 587, 2525])],
             'username' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'max:255'],
             'from_email' => ['required', 'email', 'max:255'],
@@ -117,18 +128,33 @@ class EmailConnectionController extends Controller
 
             return redirect()->route('email-connections.index')->with('success', 'SMTP connected — a test email was sent to your account address.');
         } catch (RuntimeException $e) {
+            // The raw transport error can echo the remote server's greeting;
+            // keep it in the log and give the customer a plain explanation.
+            report($e);
+            $reason = str_contains(strtolower($e->getMessage()), 'auth')
+                ? 'the server rejected the username or password'
+                : 'we could not connect to that server — check the host, port and your provider\'s SMTP settings';
+
             $connection->update([
                 'verification_status' => 'failed',
-                'verification_message' => $e->getMessage(),
+                'verification_message' => ucfirst($reason).'.',
             ]);
 
-            return redirect()->route('email-connections.index')->with('error', "Saved, but the test email failed: {$e->getMessage()}");
+            return redirect()->route('email-connections.index')->with('error', "Saved, but the test email failed: {$reason}.");
         }
     }
 
     public function disconnect(): RedirectResponse
     {
-        auth()->user()->emailConnection?->delete();
+        $connection = auth()->user()->emailConnection;
+
+        // Revoke at Google too — deleting our copy alone left a refresh token
+        // with send-mail rights valid at Google indefinitely.
+        if ($connection?->provider === 'gmail') {
+            app(GmailOAuthService::class)->revoke((string) ($connection->credential('refresh_token') ?: $connection->credential('access_token')));
+        }
+
+        $connection?->delete();
 
         return redirect()->route('email-connections.index')->with('success', 'Disconnected — CRM nurture emails will send from AffilStack\'s own address again.');
     }

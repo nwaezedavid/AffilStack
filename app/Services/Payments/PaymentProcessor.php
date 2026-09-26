@@ -12,7 +12,9 @@ use App\Services\Credits\CreditManager;
 use App\Services\Referrals\ReferralService;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * The one place that turns a verified, gateway-normalized payment result
@@ -23,6 +25,9 @@ use Illuminate\Support\Facades\Log;
  */
 class PaymentProcessor
 {
+    /** Statuses a transaction can still be fulfilled from. */
+    public const CLAIMABLE_STATUSES = ['pending', 'failed'];
+
     public function __construct(
         protected CreditManager $credits,
         protected ReferralService $referrals,
@@ -45,8 +50,14 @@ class PaymentProcessor
             return null;
         }
 
-        // Already processed by the other caller (webhook vs. redirect race) — no-op.
-        if ($transaction->status === 'successful') {
+        // Only a pending (or previously failed, e.g. a retried card) row can
+        // ever become successful. 'successful' means the other caller
+        // (webhook vs. redirect) already granted it; 'refunded' and
+        // 'charged_back' are final — the gateway can still report the
+        // original order as paid after a refund (a PayPal order stays
+        // COMPLETED, a Stripe session stays "paid"), so replaying the
+        // callback must never grant the purchase a second time.
+        if (! in_array($transaction->status, self::CLAIMABLE_STATUSES, true)) {
             return $transaction;
         }
 
@@ -54,22 +65,53 @@ class PaymentProcessor
         $isSuccessful = in_array($result['status'], ['successful', 'succeeded', 'complete', 'paid'], true);
 
         if (! $isSuccessful || $result['amount'] < $expectedAmount || $result['currency'] !== $transaction->currency) {
-            $transaction->update([
-                'status' => 'failed',
-                'gateway' => $gateway,
-                'gateway_tx_id' => $result['remote_id'] ?: $transaction->gateway_tx_id,
-                'raw_payload' => $result['raw'],
-                'processed_at' => now(),
-            ]);
+            PaymentTransaction::whereKey($transaction->id)
+                ->whereIn('status', self::CLAIMABLE_STATUSES)
+                ->update([
+                    'status' => 'failed',
+                    'gateway' => $gateway,
+                    'gateway_tx_id' => $result['remote_id'] ?: $transaction->gateway_tx_id,
+                    'raw_payload' => json_encode($result['raw']),
+                    'processed_at' => now(),
+                ]);
 
             Log::warning('Payment failed verification', [
                 'gateway' => $gateway, 'tx_ref' => $txRef, 'status' => $result['status'],
                 'expected' => $expectedAmount, 'actual' => $result['amount'],
             ]);
 
-            return $transaction;
+            return $transaction->fresh();
         }
 
+        // Atomic claim: exactly one caller wins the pending → processing
+        // transition. Before this, the webhook and the browser callback (or
+        // a user firing parallel copies of their own callback URL) could
+        // both read 'pending' and both grant credits/commission/wallet
+        // balance for a single payment.
+        $claimed = PaymentTransaction::whereKey($transaction->id)
+            ->whereIn('status', self::CLAIMABLE_STATUSES)
+            ->update(['status' => 'processing', 'updated_at' => now()]);
+
+        if ($claimed !== 1) {
+            return $transaction->fresh();
+        }
+
+        try {
+            return DB::transaction(fn () => $this->fulfil($gateway, $result, $transaction->fresh()));
+        } catch (Throwable $e) {
+            // Nothing was granted (the transaction rolled back) — release
+            // the claim so a webhook retry can try again.
+            PaymentTransaction::whereKey($transaction->id)->where('status', 'processing')->update(['status' => 'pending']);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $result
+     */
+    protected function fulfil(string $gateway, array $result, PaymentTransaction $transaction): PaymentTransaction
+    {
         $transaction->update([
             'status' => 'successful',
             'gateway' => $gateway,
@@ -121,11 +163,23 @@ class PaymentProcessor
             return;
         }
 
+        // amount_cents is what the gateway charged, in the gateway's own
+        // currency (naira kobo on Paystack) — the wallet is kept in the
+        // platform currency, so credit the value the checkout recorded.
+        $creditCents = $transaction->credited_amount_cents
+            ?? ($transaction->currency === strtoupper((string) config('api_billing.currency', 'USD')) ? $transaction->amount_cents : null);
+
+        if (! $creditCents) {
+            Log::error('API wallet top-up paid in a foreign currency with no recorded credit value — not credited', ['gateway' => $gateway, 'tx_ref' => $transaction->tx_ref]);
+
+            return;
+        }
+
         $this->paymentMethods->record($transaction->user, $gateway, $result);
 
         $this->apiWallet->topUp(
             $transaction->user,
-            $transaction->amount_cents,
+            $creditCents,
             'api_wallet_topup_purchase',
             $transaction
         );
@@ -223,9 +277,12 @@ class PaymentProcessor
      */
     protected function activateSubscription(PaymentTransaction $transaction, string $gateway, array $result): void
     {
+        // The server-recorded purchase always wins; gateway metadata is only
+        // a fallback for transactions created before those columns existed.
         $meta = $result['meta'] ?? [];
-        $planId = $meta['plan_id'] ?? null;
-        $billingCycle = $meta['billing_cycle'] ?? 'monthly';
+        $planId = $transaction->plan_id ?? $transaction->pendingSignup?->plan_id ?? ($meta['plan_id'] ?? null);
+        $billingCycle = $transaction->billing_cycle ?? $transaction->pendingSignup?->billing_cycle ?? ($meta['billing_cycle'] ?? 'monthly');
+        $billingCycle = in_array($billingCycle, ['monthly', 'yearly'], true) ? $billingCycle : 'monthly';
         $plan = $planId ? Plan::find($planId) : null;
 
         if (! $plan || ! $transaction->user_id) {
@@ -234,7 +291,35 @@ class PaymentProcessor
             return;
         }
 
-        $periodEnd = $billingCycle === 'yearly' ? Carbon::now()->addYear() : Carbon::now()->addMonth();
+        $existing = Subscription::where('user_id', $transaction->user_id)->where('status', 'active')->first();
+
+        // Paying again for the plan and cycle you're already on is a
+        // renewal (the only way to renew on the one-time-charge gateways):
+        // the new period starts where the paid-up one ends, instead of
+        // throwing the remaining time away.
+        $periodStart = Carbon::now();
+
+        if ($existing
+            && $existing->plan_id === $plan->id
+            && $existing->billing_cycle === $billingCycle
+            && $existing->current_period_end?->isFuture()) {
+            $periodStart = $existing->current_period_end->copy();
+        }
+
+        $periodEnd = $billingCycle === 'yearly' ? $periodStart->copy()->addYear() : $periodStart->copy()->addMonth();
+
+        // Switching away from a Stripe subscription (an upgrade creates a
+        // brand-new Stripe subscription) must stop the old one billing —
+        // otherwise the customer keeps paying the old price every month and
+        // its invoices are silently ignored as an "unknown subscription".
+        $newStripeSubscriptionId = $gateway === 'stripe' ? ($result['subscription_reference'] ?? null) : null;
+
+        if ($existing
+            && $existing->gateway === 'stripe'
+            && $existing->gateway_subscription_id
+            && $existing->gateway_subscription_id !== $newStripeSubscriptionId) {
+            $this->cancelStripeSubscription($existing->gateway_subscription_id);
+        }
 
         $subscription = Subscription::updateOrCreate(
             ['user_id' => $transaction->user_id, 'status' => 'active'],
@@ -245,9 +330,10 @@ class PaymentProcessor
                 'gateway' => $gateway,
                 'gateway_customer_id' => $result['customer_reference'] ?? $transaction->user->email,
                 'gateway_subscription_id' => $result['subscription_reference'] ?? null,
-                'current_period_start' => now(),
+                'current_period_start' => $periodStart,
                 'current_period_end' => $periodEnd,
                 'cancel_at_period_end' => false,
+                'renewal_reminder_sent_at' => null,
             ]
         );
 
@@ -262,6 +348,23 @@ class PaymentProcessor
             $subscription
         );
 
+        $subscription->update(['last_credit_grant_at' => now()]);
+
         $this->referrals->recordCommission($subscription, $transaction);
+    }
+
+    protected function cancelStripeSubscription(string $subscriptionId): void
+    {
+        try {
+            app(StripeGateway::class)->cancelSubscription($subscriptionId);
+        } catch (Throwable $e) {
+            // Never block the customer's new plan on this — but make it loud,
+            // because the old subscription will keep charging until someone
+            // cancels it in the Stripe dashboard.
+            Log::error('Could not cancel the replaced Stripe subscription — cancel it manually in Stripe', [
+                'stripe_subscription_id' => $subscriptionId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

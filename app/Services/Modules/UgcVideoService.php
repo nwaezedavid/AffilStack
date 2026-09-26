@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
@@ -158,6 +159,11 @@ class UgcVideoService
                 'generation_id' => $generation->id, 'user_id' => $user->id, 'error' => $e->getMessage(),
             ]);
             $generation->update(['status' => 'failed', 'error_message' => 'Insufficient credits at processing time.']);
+
+            // Unpaid: the rendered file must not stay downloadable.
+            if ($localPath) {
+                Storage::disk('public')->delete($localPath);
+            }
         }
     }
 
@@ -201,7 +207,9 @@ class UgcVideoService
                 return null;
             }
 
-            $path = "ugc-videos/{$generationId}.mp4";
+            // Unguessable name: public-disk files are served to anyone
+            // holding the URL.
+            $path = "ugc-videos/{$generationId}-".Str::random(32).'.mp4';
             Storage::disk('public')->put($path, $response->body());
 
             return $path;

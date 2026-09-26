@@ -19,7 +19,7 @@ return new class extends Migration
         Schema::create('heygen_settings', function (Blueprint $table) {
             $table->id();
             $table->boolean('is_enabled')->default(false);
-            $table->json('credentials')->nullable();
+            $table->text('credentials')->nullable(); // encrypted:array cast stores ciphertext, not JSON — a json column rejects it on MariaDB/MySQL
             $table->timestamp('verified_at')->nullable();
             $table->string('verification_status')->nullable();
             $table->text('verification_message')->nullable();

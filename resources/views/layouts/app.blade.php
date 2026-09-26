@@ -248,14 +248,40 @@
                     list.innerHTML = '<p class="px-4 py-6 text-center text-xs text-ink-400">No notifications yet.</p>';
                     return;
                 }
-                list.innerHTML = items.map(function (n) {
-                    const dot = n.read_at ? '' : '<span class="inline-block w-1.5 h-1.5 rounded-full bg-brand-600 mr-1.5 align-middle"></span>';
-                    const tone = n.success ? 'text-ink-900' : 'text-red-700';
-                    return '<a href="' + n.url + '" data-id="' + n.id + '" class="notif-item block px-4 py-3 hover:bg-surface-muted transition">'
-                        + '<div class="text-xs ' + tone + '">' + dot + n.message + '</div>'
-                        + '<div class="text-[11px] text-ink-400 mt-0.5">' + n.created_at + '</div>'
-                        + '</a>';
-                }).join('');
+                // Built with DOM nodes and textContent, never innerHTML: a
+                // notification's message embeds user-chosen text (an offer's
+                // product name — which a team seat can set on the owner's
+                // account), so string-built HTML here was a stored XSS.
+                list.replaceChildren();
+                items.forEach(function (n) {
+                    const link = document.createElement('a');
+                    let url = '#';
+                    try {
+                        const parsed = new URL(String(n.url), window.location.origin);
+                        if (parsed.origin === window.location.origin) {
+                            url = parsed.href;
+                        }
+                    } catch (e) {}
+                    link.href = url;
+                    link.dataset.id = n.id;
+                    link.className = 'notif-item block px-4 py-3 hover:bg-surface-muted transition';
+
+                    const message = document.createElement('div');
+                    message.className = 'text-xs ' + (n.success ? 'text-ink-900' : 'text-red-700');
+                    if (!n.read_at) {
+                        const dot = document.createElement('span');
+                        dot.className = 'inline-block w-1.5 h-1.5 rounded-full bg-brand-600 mr-1.5 align-middle';
+                        message.appendChild(dot);
+                    }
+                    message.appendChild(document.createTextNode(String(n.message ?? '')));
+
+                    const when = document.createElement('div');
+                    when.className = 'text-[11px] text-ink-400 mt-0.5';
+                    when.textContent = String(n.created_at ?? '');
+
+                    link.append(message, when);
+                    list.appendChild(link);
+                });
             }
 
             function poll() {

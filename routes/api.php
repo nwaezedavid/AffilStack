@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Route;
 // chrome-extension:// origin. Left untouched by the general API below —
 // same ApiToken model, but its own unprefixed routes for backward
 // compatibility with the shipped extension.
-Route::middleware('api-token-auth')->group(function () {
+// token-scope: a read-only token must not be able to POST /clips either.
+Route::middleware(['api-token-auth', 'throttle:api', 'token-scope'])->group(function () {
     Route::get('/me', [ExtensionApiController::class, 'me'])->name('api.me');
     Route::get('/offers', [ExtensionApiController::class, 'offers'])->name('api.offers');
     Route::post('/clips', [ExtensionApiController::class, 'storeClip'])->name('api.clips.store');

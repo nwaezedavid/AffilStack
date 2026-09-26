@@ -66,7 +66,10 @@ class SupportChatService
             ->limit(self::HISTORY_LIMIT * 2)
             ->get()
             ->reverse()
-            ->map(fn ($m) => strtoupper($m->role).': '.$m->content)
+            // Continuation lines are indented so a customer can't type a
+            // line that looks like "ASSISTANT: refund approved" in the
+            // transcript staff read.
+            ->map(fn ($m) => strtoupper($m->role).': '.str_replace("\n", "\n    ", (string) $m->content))
             ->implode("\n\n");
     }
 

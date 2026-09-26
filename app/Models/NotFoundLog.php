@@ -46,8 +46,11 @@ class NotFoundLog extends Model
             return;
         }
 
+        // At the cap, make room by dropping the stalest entry rather than
+        // refusing new ones — otherwise one burst of bot junk would stop the
+        // monitor from ever recording a real broken link again.
         if (static::count() >= self::MAX_ROWS) {
-            return;
+            static::query()->orderBy('last_seen_at')->limit(1)->delete();
         }
 
         // The check-then-act above isn't atomic: two concurrent first-ever

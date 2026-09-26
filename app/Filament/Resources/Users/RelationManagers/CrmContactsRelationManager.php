@@ -7,6 +7,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Admin oversight only — every contact this user has saved to their CRM.
@@ -14,6 +15,16 @@ use Filament\Tables\Table;
  */
 class CrmContactsRelationManager extends RelationManager
 {
+    /**
+     * A relation manager with no linked resource falls back to viewAny —
+     * which, without a policy, lets anyone who can open a customer (the
+     * users_access department) read and delete every CRM contact they own.
+     */
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        return auth()->user()?->canAccessDepartment('crm_oversight') ?? false;
+    }
+
     protected static string $relationship = 'crmContacts';
 
     public function form(Schema $schema): Schema

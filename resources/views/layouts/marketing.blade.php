@@ -11,6 +11,9 @@
     // to be accepted here.
     $menuItemsRaw = \App\Models\SiteSetting::get('menu_items', '[]');
     $menuItems = is_array($menuItemsRaw) ? $menuItemsRaw : (json_decode((string) $menuItemsRaw, true) ?: []);
+    // Only site-relative or http(s) links ever render — a javascript: or
+    // data: URL here would run script on every public page.
+    $menuItems = array_values(array_filter($menuItems, fn ($item) => is_array($item) && \App\Support\SafeHtml::isSafeUrl((string) ($item['url'] ?? ''))));
     $blogUrl = \App\Models\SiteSetting::get('seo_blog_url');
     $metaDescription = trim(($__env->yieldContent('meta_description')) ?: \App\Models\SiteSetting::get('seo_meta_description', ''));
     // A per-page @section('og_image', ...) (see marketing/page.blade.php)

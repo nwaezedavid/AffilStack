@@ -10,6 +10,7 @@ use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Cookie as CookieValue;
 
 /**
@@ -47,7 +48,7 @@ class ReferralService
     {
         $referrer->referralClicks()->create([
             'ip_address' => $request->ip(),
-            'user_agent' => (string) $request->userAgent(),
+            'user_agent' => Str::limit((string) $request->userAgent(), 500, ''),
             'clicked_at' => now(),
         ]);
     }

@@ -66,9 +66,21 @@ class StripeGateway implements PaymentGateway
         return (string) ($this->settings->credential('webhook_secret') ?: config('services.stripe.webhook_secret'));
     }
 
+    /**
+     * Pinned so the response shapes this class parses (invoice.subscription,
+     * invoice.payment_intent, session.payment_intent) can't silently change
+     * when the Stripe account's default API version is upgraded — the
+     * 2025-03-31 "basil" release moved several of them.
+     */
+    public const API_VERSION = '2024-06-20';
+
+    /** How old a signed webhook may be before it's rejected as a replay. */
+    public const WEBHOOK_TOLERANCE_SECONDS = 300;
+
     protected function client()
     {
-        return Http::asForm()->withToken($this->secretKey())->baseUrl($this->baseUrl());
+        return Http::asForm()->withToken($this->secretKey())->baseUrl($this->baseUrl())
+            ->withHeaders(['Stripe-Version' => self::API_VERSION]);
     }
 
     public function initiateSignupCheckout(string $email, string $name, Plan $plan, string $billingCycle, int $pendingSignupId): array
@@ -216,6 +228,10 @@ class StripeGateway implements PaymentGateway
             return false;
         }
 
+        if (abs(time() - (int) $timestamp) > self::WEBHOOK_TOLERANCE_SECONDS) {
+            return false;
+        }
+
         $expected = hash_hmac('sha256', $timestamp.'.'.$request->getContent(), $secret);
 
         foreach ($signatures as $signature) {
@@ -244,7 +260,19 @@ class StripeGateway implements PaymentGateway
         // The signature already proves this body came from Stripe, so —
         // unlike Flutterwave, which we re-verify server-to-server — it's
         // safe (and the documented Stripe-recommended approach) to trust
-        // the event payload directly instead of an extra API round-trip.
+        // the event payload directly. The one exception: a subscription
+        // session's payload has no payment_intent, and storing the session
+        // id instead would make every later refund/dispute unmatchable, so
+        // fetch the expanded session for that case.
+        if (empty($session['payment_intent']) && ! empty($session['invoice'])) {
+            try {
+                return $this->normalize($this->retrieveSession((string) $session['id']));
+            } catch (RuntimeException) {
+                // Fall back to the payload; the browser callback normally
+                // records the payment intent first anyway.
+            }
+        }
+
         return $this->normalize($session);
     }
 
@@ -255,11 +283,14 @@ class StripeGateway implements PaymentGateway
     {
         $response = Http::withToken($this->secretKey())
             ->baseUrl($this->baseUrl())
+            ->withHeaders(['Stripe-Version' => self::API_VERSION])
             ->get("/checkout/sessions/{$sessionId}", [
                 // Audit item #2 (saved payment methods) — expands enough of
                 // the session to read the card's brand/last4/token straight
-                // off the callback, no extra API round-trip.
-                'expand' => ['payment_intent.payment_method'],
+                // off the callback, no extra API round-trip. A
+                // subscription-mode session has no payment_intent of its
+                // own; its first invoice carries it instead.
+                'expand' => ['payment_intent.payment_method', 'invoice.payment_intent.payment_method'],
             ]);
 
         if ($response->failed()) {
@@ -281,11 +312,17 @@ class StripeGateway implements PaymentGateway
         // as a bare id string, not the expanded object, so this stays null
         // there (the callback path is the one PaymentProcessor's idempotency
         // check normally wins first — see class docblock).
-        $paymentMethod = data_get($session, 'payment_intent.payment_method.card');
+        $paymentIntent = is_array($session['payment_intent'] ?? null)
+            ? $session['payment_intent']
+            : (is_array(data_get($session, 'invoice.payment_intent')) ? data_get($session, 'invoice.payment_intent') : null);
+        $paymentMethod = data_get($paymentIntent, 'payment_method.card');
 
         return [
             'tx_ref' => (string) (data_get($session, 'metadata.tx_ref') ?? $session['client_reference_id'] ?? ''),
-            'remote_id' => (string) (data_get($session, 'payment_intent.id') ?? $session['payment_intent'] ?? $session['id'] ?? ''),
+            'remote_id' => (string) (data_get($paymentIntent, 'id')
+                ?? (is_string($session['payment_intent'] ?? null) ? $session['payment_intent'] : null)
+                ?? (is_string(data_get($session, 'invoice.payment_intent')) ? data_get($session, 'invoice.payment_intent') : null)
+                ?? $session['id'] ?? ''),
             'status' => $paid ? 'successful' : (string) ($session['payment_status'] ?? 'unpaid'),
             'amount' => ((float) ($session['amount_total'] ?? 0)) / 100,
             'currency' => strtoupper((string) ($session['currency'] ?? '')),
@@ -298,7 +335,7 @@ class StripeGateway implements PaymentGateway
                 'last4' => (string) ($paymentMethod['last4'] ?? ''),
                 'exp_month' => (int) ($paymentMethod['exp_month'] ?? 0),
                 'exp_year' => (int) ($paymentMethod['exp_year'] ?? 0),
-                'token' => (string) data_get($session, 'payment_intent.payment_method.id', ''),
+                'token' => (string) data_get($paymentIntent, 'payment_method.id', ''),
                 // A Checkout Session's payment method is always attached to
                 // the customer it creates, so a later off-session charge
                 // against this same token (chargeSavedToken(), the API
@@ -350,13 +387,15 @@ class StripeGateway implements PaymentGateway
             return null;
         }
 
-        if (empty($invoice['subscription'])) {
+        $subscriptionId = $this->invoiceSubscriptionId($invoice);
+
+        if (! $subscriptionId) {
             return null;
         }
 
         return [
             'kind' => 'renewed',
-            'gateway_subscription_id' => (string) $invoice['subscription'],
+            'gateway_subscription_id' => $subscriptionId,
             'gateway_tx_id' => (string) ($invoice['id'] ?? ''),
             'amount' => ((float) ($invoice['amount_paid'] ?? 0)) / 100,
             'currency' => strtoupper((string) ($invoice['currency'] ?? '')),
@@ -370,13 +409,15 @@ class StripeGateway implements PaymentGateway
      */
     protected function resolveInvoiceFailed(array $invoice): ?array
     {
-        if (empty($invoice['subscription'])) {
+        $subscriptionId = $this->invoiceSubscriptionId($invoice);
+
+        if (! $subscriptionId) {
             return null;
         }
 
         return [
             'kind' => 'payment_failed',
-            'gateway_subscription_id' => (string) $invoice['subscription'],
+            'gateway_subscription_id' => $subscriptionId,
             // Carried through so SubscriptionRenewalService::markPastDue()
             // can try the user's other saved cards against this exact
             // invoice before giving up — see retryInvoiceWithPaymentMethod().
@@ -576,8 +617,14 @@ class StripeGateway implements PaymentGateway
      */
     public function refund(string $gatewayTxId, int $amountCents): array
     {
+        $paymentIntentId = $this->resolvePaymentIntentId($gatewayTxId);
+
+        if ($paymentIntentId === null) {
+            return ['success' => false, 'message' => "Could not find the Stripe payment behind {$gatewayTxId}.", 'raw' => []];
+        }
+
         $response = $this->client()->post('/refunds', [
-            'payment_intent' => $gatewayTxId,
+            'payment_intent' => $paymentIntentId,
             'amount' => $amountCents,
         ]);
 
@@ -593,5 +640,109 @@ class StripeGateway implements PaymentGateway
             'message' => 'Refund processed by Stripe.',
             'raw' => (array) $data,
         ];
+    }
+
+    /**
+     * Webhook payloads follow the endpoint's own API version (set in the
+     * Stripe dashboard), not the Stripe-Version header pinned above, so
+     * accept both invoice shapes.
+     *
+     * @param  array<string, mixed>  $invoice
+     */
+    protected function invoiceSubscriptionId(array $invoice): ?string
+    {
+        $id = $invoice['subscription']
+            ?? data_get($invoice, 'parent.subscription_details.subscription')
+            ?? data_get($invoice, 'subscription_details.subscription');
+
+        if (is_array($id)) {
+            $id = $id['id'] ?? null;
+        }
+
+        return filled($id) ? (string) $id : null;
+    }
+
+    /**
+     * Older rows (and a webhook that beat the callback) may hold a Checkout
+     * Session id or an invoice id rather than the payment intent a refund
+     * needs.
+     */
+    protected function resolvePaymentIntentId(string $gatewayTxId): ?string
+    {
+        if (str_starts_with($gatewayTxId, 'pi_')) {
+            return $gatewayTxId;
+        }
+
+        if (str_starts_with($gatewayTxId, 'cs_')) {
+            try {
+                $session = $this->retrieveSession($gatewayTxId);
+            } catch (RuntimeException) {
+                return null;
+            }
+
+            $id = data_get($session, 'payment_intent.id') ?? data_get($session, 'payment_intent')
+                ?? data_get($session, 'invoice.payment_intent.id') ?? data_get($session, 'invoice.payment_intent');
+
+            return is_string($id) && $id !== '' ? $id : null;
+        }
+
+        if (str_starts_with($gatewayTxId, 'in_')) {
+            $response = $this->client()->get("/invoices/{$gatewayTxId}");
+            $id = $response->successful() ? $response->json('payment_intent') : null;
+
+            return is_string($id) && $id !== '' ? $id : null;
+        }
+
+        return $gatewayTxId !== '' ? $gatewayTxId : null;
+    }
+
+    /**
+     * Stops a subscription billing immediately — used when a customer's
+     * plan is replaced by a new Stripe subscription, refunded, or their
+     * account is deleted. An already-canceled subscription is a success.
+     */
+    public function cancelSubscription(string $subscriptionId): void
+    {
+        $response = $this->client()->delete("/subscriptions/{$subscriptionId}");
+
+        if ($response->failed() && $response->json('error.code') !== 'resource_missing') {
+            throw new RuntimeException('Stripe subscription cancel failed: '.$response->body());
+        }
+    }
+
+    /**
+     * Re-prices an existing subscription from its next invoice onward
+     * (proration_behavior=none: the period already paid for is untouched).
+     * This is how a scheduled downgrade reaches Stripe — without it Stripe
+     * keeps charging the old plan's price while the app grants the new
+     * plan's credits.
+     */
+    public function updateSubscriptionPrice(string $subscriptionId, Plan $plan, string $billingCycle): void
+    {
+        $subscription = $this->client()->get("/subscriptions/{$subscriptionId}");
+
+        $itemId = $subscription->json('items.data.0.id');
+        $productId = $subscription->json('items.data.0.price.product');
+
+        if ($subscription->failed() || ! $itemId || ! $productId) {
+            throw new RuntimeException('Stripe subscription lookup failed: '.$subscription->body());
+        }
+
+        $response = $this->client()->post("/subscriptions/{$subscriptionId}", [
+            'proration_behavior' => 'none',
+            'items' => [[
+                'id' => $itemId,
+                'price_data' => [
+                    'currency' => strtolower($plan->currency),
+                    'product' => is_array($productId) ? ($productId['id'] ?? '') : $productId,
+                    'unit_amount' => $billingCycle === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents,
+                    'recurring' => ['interval' => $billingCycle === 'yearly' ? 'year' : 'month'],
+                ],
+            ]],
+        ]);
+
+        if ($response->failed()) {
+            throw new RuntimeException('Stripe subscription price update failed: '.$response->body());
+        }
     }
 }

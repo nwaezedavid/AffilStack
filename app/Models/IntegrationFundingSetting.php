@@ -39,24 +39,29 @@ class IntegrationFundingSetting extends Model
 
     public static function current(): self
     {
-        return static::query()->firstOrCreate(['id' => 1], [
-            // Spelled out explicitly rather than relying on the migration's
-            // column defaults: firstOrCreate()'s INSERT only sends the
-            // attributes given here, so any column left out comes back as
-            // an unset (null) attribute on this in-memory instance even
-            // though the database filled in its own default — the two are
-            // not the same thing. A brand-new install calling current()
-            // for the very first time would otherwise crash the moment
-            // isAnthropicReminderDue()/isMetaAdsReminderDue() ran.
-            'heygen_low_balance_threshold' => 100,
-            'anthropic_reminder_days' => 14,
-            'meta_ads_reminder_days' => 14,
-            // Both cadences start their clock from creation, not from
-            // "never" — otherwise a brand-new install would show every
-            // manual reminder as immediately overdue.
-            'anthropic_reminder_last_acknowledged_at' => now(),
-            'meta_ads_reminder_last_acknowledged_at' => now(),
-        ]);
+        // Not firstOrCreate(['id' => 1]): 'id' isn't fillable, so the INSERT silently
+        // used the next auto-increment value instead — and on MariaDB/MySQL that
+        // isn't 1 once any insert has been rolled back — so every call after
+        // that created a fresh empty row and saved settings looked lost.
+        return static::query()->orderBy('id')->first()
+            ?? static::query()->forceCreate(['id' => 1] + [
+                // Spelled out explicitly rather than relying on the migration's
+                // column defaults: firstOrCreate()'s INSERT only sends the
+                // attributes given here, so any column left out comes back as
+                // an unset (null) attribute on this in-memory instance even
+                // though the database filled in its own default — the two are
+                // not the same thing. A brand-new install calling current()
+                // for the very first time would otherwise crash the moment
+                // isAnthropicReminderDue()/isMetaAdsReminderDue() ran.
+                'heygen_low_balance_threshold' => 100,
+                'anthropic_reminder_days' => 14,
+                'meta_ads_reminder_days' => 14,
+                // Both cadences start their clock from creation, not from
+                // "never" — otherwise a brand-new install would show every
+                // manual reminder as immediately overdue.
+                'anthropic_reminder_last_acknowledged_at' => now(),
+                'meta_ads_reminder_last_acknowledged_at' => now(),
+            ]);
     }
 
     public function isHeyGenBalanceLow(): bool

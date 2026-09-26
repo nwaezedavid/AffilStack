@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\RegistrationController;
 use App\Models\PaymentGatewaySetting;
 use App\Models\PaymentTransaction;
 use App\Models\PendingSignup;
@@ -157,8 +158,9 @@ class PaymentSignupFlowTest extends TestCase
         ];
         Http::fake(['api.flutterwave.com/*' => Http::response($verifyResponse, 200)]);
 
-        // The redirect callback arrives first...
-        $this->get(route('registration.callback', [
+        // The redirect callback arrives first (in the browser that started
+        // the signup)...
+        $this->withSession([RegistrationController::SESSION_PENDING_SIGNUP_KEY => $pending->id])->get(route('registration.callback', [
             'gateway' => 'flutterwave', 'tx_ref' => $transaction->tx_ref,
             'transaction_id' => 555111, 'status' => 'successful',
         ]))->assertRedirect(route('dashboard'));

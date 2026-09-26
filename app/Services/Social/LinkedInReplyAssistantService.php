@@ -9,6 +9,7 @@ use App\Services\AI\AIGenerationException;
 use App\Services\AI\AIProvider;
 use App\Services\Credits\CreditManager;
 use App\Services\Credits\InsufficientCreditsException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Task #3: "paste their reply, get an AI-drafted response" — the DM
@@ -64,15 +65,19 @@ class LinkedInReplyAssistantService
         // right message (no credit was spent either way).
         $result = $this->ai->generateJson($system, $context);
 
-        $draft = LinkedinReplyDraft::create([
-            'user_id' => $user->id,
-            'offer_id' => $offer?->id,
-            'their_message' => $theirMessage,
-            'draft_reply' => (string) ($result['draft_reply'] ?? ''),
-        ]);
+        // Saved and charged atomically — a draft whose charge fails (credits
+        // spent by a parallel request meanwhile) is rolled back, not kept free.
+        return DB::transaction(function () use ($user, $offer, $theirMessage, $result, $cost) {
+            $draft = LinkedinReplyDraft::create([
+                'user_id' => $user->id,
+                'offer_id' => $offer?->id,
+                'their_message' => $theirMessage,
+                'draft_reply' => (string) ($result['draft_reply'] ?? ''),
+            ]);
 
-        $this->credits->spend($user, $cost, 'linkedin_reply_draft', $draft);
+            $this->credits->spend($user, $cost, 'linkedin_reply_draft', $draft);
 
-        return $draft;
+            return $draft;
+        });
     }
 }

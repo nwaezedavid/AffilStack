@@ -60,6 +60,7 @@ return [
     'topup_presets_cents' => [1000, 2500, 10000],
 
     'min_topup_cents' => 1000, // $10.00 minimum, same reasoning as min_amount_cents above
+    'max_topup_cents' => 500000, // $5,000 per checkout — caps a typo'd amount and the unsigned column
 
     /*
     |--------------------------------------------------------------------|

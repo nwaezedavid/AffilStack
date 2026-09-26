@@ -108,14 +108,28 @@ class SecretRedactionProcessorTest extends TestCase
         $this->assertSame(['user_id' => 42, 'module' => 'blog_article', 'duration_ms' => 1234], $result->context);
     }
 
-    public function test_it_does_not_attempt_to_stringify_objects_in_context(): void
+    public function test_it_leaves_ordinary_objects_in_context_untouched(): void
     {
         $processor = new SecretRedactionProcessor;
-        $exception = new \RuntimeException('boom');
+        $object = new \stdClass;
+
+        $result = ($processor)($this->record('Something failed', ['subject' => $object]));
+
+        $this->assertSame($object, $result->context['subject']);
+    }
+
+    public function test_it_redacts_secrets_inside_a_logged_exception_and_its_previous_ones(): void
+    {
+        // Laravel logs errors as ['exception' => $e], whose message Monolog
+        // formats after processors run — so it must be flattened here.
+        $processor = new SecretRedactionProcessor;
+        $exception = new \RuntimeException('outer', previous: new \RuntimeException('call failed: Bearer sk-abcdefghijklmnop123'));
 
         $result = ($processor)($this->record('Something failed', ['exception' => $exception]));
 
-        $this->assertSame($exception, $result->context['exception']);
+        $this->assertIsString($result->context['exception']);
+        $this->assertStringContainsString('RuntimeException: outer', $result->context['exception']);
+        $this->assertStringNotContainsString('sk-abcdefghijklmnop123', $result->context['exception']);
     }
 
     public function test_it_ignores_short_known_secrets_to_avoid_mass_redacting_common_substrings(): void

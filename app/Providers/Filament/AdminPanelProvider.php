@@ -2,8 +2,10 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\AdminLogin;
 use App\Filament\Widgets\RevenueOverview;
 use App\Filament\Widgets\SupportInboxWidget;
+use App\Http\Middleware\EnsurePanelLoginCompleted;
 use App\Models\SiteSetting;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
@@ -38,7 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->favicon(fn () => ($favicon = SiteSetting::get('logo_square_path'))
                 ? Storage::disk('public')->url($favicon)
                 : null)
-            ->login()
+            ->login(AdminLogin::class)
             ->multiFactorAuthentication([
                 AppAuthentication::make()->recoverable(),
             ], isRequired: true)
@@ -72,6 +74,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+                EnsurePanelLoginCompleted::class,
+            ], isPersistent: true);
     }
 }

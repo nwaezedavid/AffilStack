@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\WebhookDelivery;
+use App\Support\OutboundUrlGuard;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -10,6 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -49,8 +51,28 @@ class SendWebhookDelivery implements ShouldQueue
 
         $signature = hash_hmac('sha256', $body, $endpoint->secret);
 
+        // Re-vetted at send time and the vetted IP pinned for the connection
+        // (see OutboundUrlGuard): the saved hostname could since have been
+        // re-pointed at 127.0.0.1 or a private address.
+        try {
+            $target = OutboundUrlGuard::resolveSafeIp($endpoint->url);
+        } catch (InvalidArgumentException $e) {
+            $this->delivery->update([
+                'status' => 'failed',
+                'attempts' => $this->delivery->attempts + 1,
+                'response_status' => null,
+                'response_body' => 'Blocked: '.$e->getMessage(),
+            ]);
+
+            return;
+        }
+
         try {
             $response = Http::timeout(10)
+                ->withoutRedirecting()
+                ->withOptions(['curl' => [CURLOPT_RESOLVE => [
+                    "{$target['host']}:{$target['port']}:".(str_contains($target['ip'], ':') ? "[{$target['ip']}]" : $target['ip']),
+                ]]])
                 ->withBody($body, 'application/json')
                 ->withHeaders([
                     'X-AffilStack-Event' => $this->delivery->event,

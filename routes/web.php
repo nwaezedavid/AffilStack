@@ -105,11 +105,12 @@ Route::post('/contact', [ContactController::class, 'store'])->middleware('thrott
 
 // Public, unauthenticated — whoever clicks a cloaked link is the offer's own
 // audience, not an AffilStack user. See LinkCloakingService.
-Route::get('/go/{code}', [LinkController::class, 'redirect'])->name('links.redirect');
+// Throttled per visitor IP: every hit writes a click row and queues a geo lookup.
+Route::get('/go/{code}', [LinkController::class, 'redirect'])->middleware('throttle:60,1')->name('links.redirect');
 
 // Public, unauthenticated — whoever clicks a referral link is a prospective
 // signup, not an AffilStack user yet. See ReferralController.
-Route::get('/r/{code}', [ReferralController::class, 'redirect'])->name('referrals.redirect');
+Route::get('/r/{code}', [ReferralController::class, 'redirect'])->middleware('throttle:60,1')->name('referrals.redirect');
 
 // CRM/email dashboard: public, unauthenticated — the open pixel and click
 // redirect are hit by the CRM contact's own email client, never by an
@@ -230,7 +231,7 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     // Task #7: the "Intelligence Centre" AI self-assessment dashboard — see
     // IntelligenceCentreService. Owner-only, like billing/CRM/earnings.
     Route::get('/intelligence-centre', [IntelligenceCentreController::class, 'index'])->name('intelligence-centre.index');
-    Route::post('/intelligence-centre', [IntelligenceCentreController::class, 'store'])->name('intelligence-centre.store');
+    Route::post('/intelligence-centre', [IntelligenceCentreController::class, 'store'])->middleware('throttle:paid-lookups')->name('intelligence-centre.store');
 
     Route::get('/offers', [OfferController::class, 'index'])->name('offers.index');
     Route::get('/offers/create', [OfferController::class, 'create'])->name('offers.create');
@@ -247,9 +248,9 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::post('/offers/{offer}/linkedin/post', [LinkedInController::class, 'post'])->name('offers.linkedin.post');
     Route::post('/offers/{offer}/linkedin/article', [LinkedInController::class, 'article'])->name('offers.linkedin.article');
     Route::get('/offers/{offer}/linkedin/reply-assistant', [LinkedInReplyAssistantController::class, 'index'])->name('offers.linkedin.reply-assistant');
-    Route::post('/offers/{offer}/linkedin/reply-assistant', [LinkedInReplyAssistantController::class, 'store'])->name('offers.linkedin.reply-assistant.store');
+    Route::post('/offers/{offer}/linkedin/reply-assistant', [LinkedInReplyAssistantController::class, 'store'])->middleware('throttle:paid-lookups')->name('offers.linkedin.reply-assistant.store');
     Route::post('/generations/{generation}/nurture-started', [ContentCalendarController::class, 'markSequenceStarted'])->name('generations.nurture-started');
-    Route::post('/generations/{generation}/localize', [LocalizationController::class, 'store'])->name('generations.localize');
+    Route::post('/generations/{generation}/localize', [LocalizationController::class, 'store'])->middleware('throttle:paid-lookups')->name('generations.localize');
     Route::get('/generations/{generation}/linkedin/export', [LinkedInController::class, 'export'])->name('generations.linkedin.export');
 
     Route::post('/offers/{offer}/youtube/script', [YouTubeController::class, 'script'])->name('offers.youtube.script');
@@ -279,7 +280,7 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::get('/email-connections', [EmailConnectionController::class, 'index'])->name('email-connections.index');
     Route::get('/email-connections/gmail/redirect', [EmailConnectionController::class, 'redirectToGoogle'])->name('email-connections.gmail.redirect');
     Route::get('/email-connections/gmail/callback', [EmailConnectionController::class, 'handleGoogleCallback'])->name('email-connections.gmail.callback');
-    Route::post('/email-connections/smtp', [EmailConnectionController::class, 'storeSmtp'])->name('email-connections.smtp.store');
+    Route::post('/email-connections/smtp', [EmailConnectionController::class, 'storeSmtp'])->middleware('throttle:10,1')->name('email-connections.smtp.store');
     Route::delete('/email-connections', [EmailConnectionController::class, 'disconnect'])->name('email-connections.destroy');
 
     // Task #3 (LinkedIn) + task #2 (YouTube/TikTok/Instagram): one
@@ -294,9 +295,9 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     // SocialPublishController and each SocialPublishProvider implementation.
     Route::post('/generations/{generation}/publish/{provider}', [SocialPublishController::class, 'store'])->name('generations.publish');
 
-    Route::get('/leads', [LeadFinderController::class, 'index'])->name('leads.index');
-    Route::post('/leads/search', [LeadFinderController::class, 'search'])->name('leads.search');
-    Route::post('/leads/import', [LeadFinderController::class, 'import'])->name('leads.import');
+    Route::get('/leads', [LeadFinderController::class, 'index'])->middleware('throttle:paid-lookups')->name('leads.index');
+    Route::post('/leads/search', [LeadFinderController::class, 'search'])->middleware('throttle:paid-lookups')->name('leads.search');
+    Route::post('/leads/import', [LeadFinderController::class, 'import'])->middleware('throttle:paid-lookups')->name('leads.import');
 
     Route::get('/links', [DashboardLinkController::class, 'index'])->name('links.index');
     Route::get('/links/{trackedLink}', [DashboardLinkController::class, 'show'])->name('links.show');
@@ -368,8 +369,8 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     // /support/{ticket} wildcard below, or "chat" gets swallowed as a
     // ticket ID and 404s on route-model binding.
     Route::get('/support/chat', [SupportChatController::class, 'show'])->name('support.chat');
-    Route::post('/support/chat/message', [SupportChatController::class, 'message'])->middleware('throttle:20,1')->name('support.chat.message');
-    Route::post('/support/chat/escalate', [SupportChatController::class, 'escalate'])->name('support.chat.escalate');
+    Route::post('/support/chat/message', [SupportChatController::class, 'message'])->middleware('throttle:support-chat')->name('support.chat.message');
+    Route::post('/support/chat/escalate', [SupportChatController::class, 'escalate'])->middleware('throttle:5,60')->name('support.chat.escalate');
 
     Route::get('/support/{ticket}', [SupportTicketController::class, 'show'])->name('support.show');
     Route::post('/support/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('support.reply');
@@ -387,11 +388,11 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
 // it from swallowing anything that isn't actually slug-shaped.
 Route::middleware('cache-public-page')
     ->get('/{slug}', [PageController::class, 'show'])
-    ->where('slug', '[a-z0-9-]+')
+    ->where('slug', '[a-z0-9-]{1,100}')
     ->name('page.show');
 
 // RankMath-style redirects manager + 404 monitor (see Redirect/NotFoundLog).
 // Must stay the LAST route registered: Route::fallback() only ever fires
 // once every route above has already failed to match, and it deliberately
 // skips the admin panel/API/webhook paths inside the controller itself.
-Route::fallback([RedirectFallbackController::class, 'handle']);
+Route::fallback([RedirectFallbackController::class, 'handle'])->middleware('throttle:120,1');

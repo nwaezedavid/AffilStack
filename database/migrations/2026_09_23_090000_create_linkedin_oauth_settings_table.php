@@ -19,7 +19,7 @@ return new class extends Migration
         Schema::create('linkedin_oauth_settings', function (Blueprint $table) {
             $table->id();
             $table->boolean('is_enabled')->default(false);
-            $table->json('credentials')->nullable();
+            $table->text('credentials')->nullable(); // encrypted:array cast stores ciphertext, not JSON — a json column rejects it on MariaDB/MySQL
             $table->timestamps();
         });
     }

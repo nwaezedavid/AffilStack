@@ -13,11 +13,21 @@ use Illuminate\Support\Facades\Schema;
  * and the current balance is always SUM(amount_cents) — see
  * PayoutWalletService::balance(). Immutable once written; nothing here is
  * ever edited or deleted, only appended to.
+ *
+ * Originally timestamped 2026_09_17, before referral_payouts existed — fine
+ * on SQLite (which doesn't validate a foreign key's target table at create
+ * time) but a hard "errno 150" failure on MariaDB/MySQL, which does. Moved
+ * after 2026_09_20_090001_create_referral_payouts_table; the hasTable()
+ * guard keeps any database that already ran it under the old name working.
  */
 return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('wallet_transactions')) {
+            return;
+        }
+
         Schema::create('wallet_transactions', function (Blueprint $table) {
             $table->id();
             $table->string('currency');

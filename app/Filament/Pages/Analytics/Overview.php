@@ -152,6 +152,12 @@ class Overview extends Page
      */
     public function paidUsersByPlan(): array
     {
+        // Revenue by plan is billing information — hidden from staff
+        // outside that department (this page is open to every panel user).
+        if (! auth()->user()?->canAccessDepartment('billing')) {
+            return [];
+        }
+
         return Subscription::query()
             ->whereIn('subscriptions.status', ['active', 'trialing'])
             ->join('plans', 'plans.id', '=', 'subscriptions.plan_id')

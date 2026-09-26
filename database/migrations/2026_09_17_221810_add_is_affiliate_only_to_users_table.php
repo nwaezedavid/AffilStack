@@ -17,7 +17,12 @@ return new class extends Migration
             // config('referrals.affiliate_only_allowed_routes') for how it's
             // enforced: such an account can only ever reach /referrals,
             // /profile, and logout — never any content/billing feature.
-            $table->boolean('is_affiliate_only')->default(false)->after('seat_role');
+            //
+            // No ->after(): it used to say after('seat_role'), but seat_role
+            // is only added by a later (2026_09_21) migration. SQLite ignores
+            // column positioning so it never showed up in tests, but
+            // MariaDB/MySQL reject it with "Unknown column 'seat_role'".
+            $table->boolean('is_affiliate_only')->default(false);
         });
     }
 

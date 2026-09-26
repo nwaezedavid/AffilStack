@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id', 'subscription_id', 'pending_signup_id', 'credit_package_id', 'type', 'gateway', 'gateway_tx_id', 'gateway_reference', 'tx_ref',
     'amount_cents', 'currency', 'status', 'raw_payload', 'processed_at',
+    'plan_id', 'billing_cycle', 'credited_amount_cents',
 ])]
 class PaymentTransaction extends Model
 {

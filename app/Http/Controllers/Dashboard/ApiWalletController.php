@@ -38,7 +38,7 @@ class ApiWalletController extends Controller
         abort_if($request->user()->isSeat(), 403);
 
         $validated = $request->validate([
-            'amount_cents' => ['required', 'integer', 'min:'.config('api_billing.min_topup_cents')],
+            'amount_cents' => ['required', 'integer', 'min:'.config('api_billing.min_topup_cents'), 'max:'.config('api_billing.max_topup_cents', 500000)],
             'gateway' => ['nullable', 'string'],
         ]);
 
@@ -71,6 +71,9 @@ class ApiWalletController extends Controller
             'gateway' => $gateway->key(),
             'tx_ref' => $checkout['tx_ref'],
             'amount_cents' => $checkout['amount_cents'],
+            // What the wallet gets, in the platform currency — amount_cents
+            // is what the gateway charged (naira kobo on Paystack).
+            'credited_amount_cents' => $validated['amount_cents'],
             'currency' => $checkout['currency'],
             'status' => 'pending',
         ]);

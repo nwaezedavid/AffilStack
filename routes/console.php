@@ -1,7 +1,10 @@
 <?php
 
 use App\Console\ScheduleMonitoring;
+use App\Models\ApiRequestLog;
+use App\Models\IdempotencyKey;
 use App\Models\ScheduledTaskRun;
+use App\Models\WebhookDelivery;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -128,3 +131,31 @@ Schedule::call(fn () => ScheduledTaskRun::where('created_at', '<', now()->subDay
     ->daily()
     ->name('prune-scheduled-task-runs')
     ->withoutOverlapping();
+
+// Worker died mid-job (deploy restart, reboot, hard timeout) — without this
+// the generation's spinner would run forever. See FailStuckGenerations.
+ScheduleMonitoring::track(
+    Schedule::command('generations:fail-stuck')->everyFifteenMinutes()->withoutOverlapping(),
+    'generations:fail-stuck',
+);
+
+// High-volume log tables that otherwise grow without bound. Idempotency keys
+// only need to outlive a client's retry window; request/delivery logs back
+// the 30-day dashboard stats and short-term debugging.
+Schedule::call(function () {
+    IdempotencyKey::where('created_at', '<', now()->subDays(7))->delete();
+    ApiRequestLog::where('created_at', '<', now()->subDays(90))->delete();
+    WebhookDelivery::where('created_at', '<', now()->subDays(90))->delete();
+})
+    ->daily()
+    ->name('prune-api-logs')
+    ->withoutOverlapping();
+
+Schedule::command('activitylog:clean')->weekly()->withoutOverlapping();
+
+// Yearly plans are paid once a year but sold as "credits / month" — this is
+// what actually delivers each month's allowance. See GrantMonthlyCredits.
+ScheduleMonitoring::track(
+    Schedule::command('subscriptions:grant-monthly-credits')->daily()->withoutOverlapping(),
+    'subscriptions:grant-monthly-credits',
+);

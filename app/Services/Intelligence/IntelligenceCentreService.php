@@ -9,6 +9,7 @@ use App\Services\AI\AIGenerationException;
 use App\Services\AI\AIProvider;
 use App\Services\Credits\CreditManager;
 use App\Services\Credits\InsufficientCreditsException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Task #7 ("Intelligence Centre"): a self-assessment dashboard feature —
@@ -63,14 +64,19 @@ class IntelligenceCentreService
         $metrics = $this->buildMetrics($user);
         $assessment = $this->assess($metrics);
 
-        $report = IntelligenceCentreReport::updateOrCreate(
-            ['user_id' => $user->id],
-            ['metrics' => $metrics, 'assessment' => $assessment, 'generated_at' => now()]
-        );
+        // Charged in the same transaction as the save: parallel requests can
+        // all pass hasEnough() above, but only the ones that can actually pay
+        // keep a report.
+        return DB::transaction(function () use ($user, $metrics, $assessment, $cost) {
+            $report = IntelligenceCentreReport::updateOrCreate(
+                ['user_id' => $user->id],
+                ['metrics' => $metrics, 'assessment' => $assessment, 'generated_at' => now()]
+            );
 
-        $this->credits->spend($user, $cost, 'intelligence_centre', $report);
+            $this->credits->spend($user, $cost, 'intelligence_centre', $report);
 
-        return $report;
+            return $report;
+        });
     }
 
     /**
