@@ -16,14 +16,17 @@ return [
     // is where third-party API credentials live. This file holds this
     // feature's own policy knobs instead.
 
-    // Text Search returns name/address/rating/place_id for a free-text
+    // Places API (New). The legacy /maps/api/place/* endpoints this used
+    // first can't be enabled on any Google Cloud project created after
+    // 2025-03-01, so a fresh production key would fail every search.
+    // Text Search returns name/address/rating/place id for a free-text
     // query like "dentists in Austin, TX" — no phone/website. Those live
     // behind a second, per-place Details call, made only for a place the
     // user actually chooses to import (see GoogleMapsLeadService::details())
     // rather than once per search result, to keep a single search to one
     // Places API call regardless of how many results it returns.
-    'search_endpoint' => 'https://maps.googleapis.com/maps/api/place/textsearch/json',
-    'details_endpoint' => 'https://maps.googleapis.com/maps/api/place/details/json',
+    'search_endpoint' => 'https://places.googleapis.com/v1/places:searchText',
+    'details_endpoint' => 'https://places.googleapis.com/v1/places',
 
     'results_limit' => 20,
 ];

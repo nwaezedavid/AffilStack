@@ -55,15 +55,16 @@ class LeadFinderControllerTest extends TestCase
     protected function fakeSuccessfulSearch(): void
     {
         Http::fake([
-            'maps.googleapis.com/maps/api/place/textsearch/*' => Http::response([
-                'status' => 'OK',
-                'results' => [[
-                    'place_id' => 'place_1',
-                    'name' => 'Bright Smile Dental',
-                    'formatted_address' => '123 Main St, Austin, TX',
+            'places.googleapis.com/v1/places:searchText' => Http::response([
+                'places' => [[
+                    'id' => 'place_1',
+                    'displayName' => ['text' => 'Bright Smile Dental', 'languageCode' => 'en'],
+                    'formattedAddress' => '123 Main St, Austin, TX',
                     'rating' => 4.8,
-                    'user_ratings_total' => 120,
+                    'userRatingCount' => 120,
+                    'primaryType' => 'dentist',
                     'types' => ['dentist', 'point_of_interest', 'establishment'],
+                    'googleMapsUri' => 'https://maps.google.com/?cid=1',
                 ]],
             ], 200),
         ]);
@@ -81,7 +82,10 @@ class LeadFinderControllerTest extends TestCase
         $response->assertOk();
         $response->assertSee('Bright Smile Dental');
         $response->assertSee('Showing businesses matching your Offer Research recommendation');
-        Http::assertSent(fn ($request) => str_contains((string) $request->url(), 'dentists in Austin, TX') || str_contains((string) ($request['query'] ?? ''), 'dentists in Austin, TX'));
+        Http::assertSent(fn ($request) => $request->method() === 'POST'
+            && $request['textQuery'] === 'dentists in Austin, TX'
+            && $request->hasHeader('X-Goog-Api-Key', 'test-key')
+            && ! str_contains($request->url(), 'test-key'));
     }
 
     public function test_visiting_leads_without_query_params_does_not_search(): void
@@ -145,5 +149,45 @@ class LeadFinderControllerTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Already in CRM');
+    }
+
+    public function test_importing_a_result_fetches_its_phone_and_website_from_place_details(): void
+    {
+        config(['services.google_places.api_key' => 'test-key']);
+        $user = User::factory()->create();
+        $this->subscribe($user, $this->planWithGoogleMaps());
+        Http::fake([
+            'places.googleapis.com/v1/places/place_1' => Http::response([
+                'nationalPhoneNumber' => '(512) 555-0100',
+                'websiteUri' => 'https://brightsmile.example',
+            ], 200),
+        ]);
+
+        $this->actingAs($user)->post(route('leads.import'), [
+            'place_id' => 'place_1', 'name' => 'Bright Smile Dental', 'address' => '123 Main St, Austin, TX', 'type' => 'dentist',
+        ])->assertSessionHas('success');
+
+        $contact = CrmContact::where('user_id', $user->id)->sole();
+        $this->assertSame('(512) 555-0100', $contact->phone);
+        $this->assertSame('https://brightsmile.example', $contact->website);
+        $this->assertSame('place_1', $contact->raw_data['google_place_id']);
+        Http::assertSent(fn ($request) => $request->method() === 'GET'
+            && str_contains($request->header('X-Goog-FieldMask')[0] ?? '', 'websiteUri'));
+    }
+
+    public function test_a_google_error_shows_a_short_message_instead_of_the_raw_response(): void
+    {
+        config(['services.google_places.api_key' => 'test-key']);
+        $user = User::factory()->create();
+        $this->subscribe($user, $this->planWithGoogleMaps());
+        Http::fake([
+            'places.googleapis.com/*' => Http::response(['error' => ['code' => 403, 'message' => 'Places API (New) has not been used in project 123', 'status' => 'PERMISSION_DENIED']], 403),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('leads.index', ['niche' => 'dentists', 'location' => 'Austin, TX']));
+
+        $response->assertOk();
+        $response->assertSee('Google Maps search failed');
+        $response->assertDontSee('has not been used in project');
     }
 }

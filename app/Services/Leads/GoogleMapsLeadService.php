@@ -2,6 +2,8 @@
 
 namespace App\Services\Leads;
 
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -27,51 +29,42 @@ class GoogleMapsLeadService
     }
 
     /**
-     * One Places API "Text Search" call regardless of how many results
-     * come back — no phone/website yet, see details() for why that's a
-     * separate, per-place call made only for a place the user imports.
+     * One Places API (New) "Text Search" call regardless of how many
+     * results come back — no phone/website yet, see details() for why
+     * that's a separate, per-place call made only for a place the user
+     * imports. The field mask keeps this on the cheaper Text Search tier.
      *
      * @return array<int, array{place_id: string, name: string, address: string, rating: ?float, ratings_total: ?int, type: ?string, maps_url: string}>
      */
     public function search(string $niche, string $location): array
     {
-        if (! $this->apiKey) {
-            throw new GoogleMapsException('Google Maps isn\'t configured yet — add GOOGLE_PLACES_API_KEY to the environment.');
-        }
-
-        $response = Http::timeout(15)->get(config('google_maps.search_endpoint'), [
-            'query' => trim("{$niche} in {$location}"),
-            'key' => $this->apiKey,
-        ]);
-
-        if ($response->failed()) {
-            throw new GoogleMapsException('Google Maps search failed: '.$response->body());
-        }
-
-        $body = $response->json();
-        $status = $body['status'] ?? 'UNKNOWN_ERROR';
-
-        if ($status === 'ZERO_RESULTS') {
-            return [];
-        }
-
-        if ($status !== 'OK') {
-            throw new GoogleMapsException('Google Maps search failed: '.($body['error_message'] ?? $status));
-        }
+        $this->ensureConfigured();
 
         $limit = (int) config('google_maps.results_limit');
 
-        return collect($body['results'] ?? [])
+        $response = $this->client('places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.primaryType,places.types,places.googleMapsUri')
+            ->post((string) config('google_maps.search_endpoint'), [
+                'textQuery' => trim("{$niche} in {$location}"),
+                'pageSize' => max(1, min(20, $limit)),
+            ]);
+
+        if ($response->failed()) {
+            throw $this->failure('Google Maps search failed', $response);
+        }
+
+        return collect($response->json('places') ?? [])
+            ->filter(fn (mixed $place) => is_array($place) && ! empty($place['id']))
             ->take($limit)
             ->map(fn (array $place) => [
-                'place_id' => $place['place_id'],
-                'name' => $place['name'] ?? 'Unnamed business',
-                'address' => $place['formatted_address'] ?? '',
-                'rating' => $place['rating'] ?? null,
-                'ratings_total' => $place['user_ratings_total'] ?? null,
-                'type' => $this->primaryType($place['types'] ?? []),
-                'maps_url' => "https://www.google.com/maps/place/?q=place_id:{$place['place_id']}",
+                'place_id' => (string) $place['id'],
+                'name' => (string) data_get($place, 'displayName.text', 'Unnamed business'),
+                'address' => (string) ($place['formattedAddress'] ?? ''),
+                'rating' => isset($place['rating']) ? (float) $place['rating'] : null,
+                'ratings_total' => isset($place['userRatingCount']) ? (int) $place['userRatingCount'] : null,
+                'type' => $this->primaryType(array_values(array_filter([$place['primaryType'] ?? null, ...($place['types'] ?? [])]))),
+                'maps_url' => (string) ($place['googleMapsUri'] ?? "https://www.google.com/maps/place/?q=place_id:{$place['id']}"),
             ])
+            ->values()
             ->all();
     }
 
@@ -83,30 +76,55 @@ class GoogleMapsLeadService
      */
     public function details(string $placeId): array
     {
-        if (! $this->apiKey) {
-            throw new GoogleMapsException('Google Maps isn\'t configured yet — add GOOGLE_PLACES_API_KEY to the environment.');
-        }
+        $this->ensureConfigured();
 
-        $response = Http::timeout(15)->get(config('google_maps.details_endpoint'), [
-            'place_id' => $placeId,
-            'fields' => 'formatted_phone_number,website',
-            'key' => $this->apiKey,
-        ]);
+        $response = $this->client('nationalPhoneNumber,internationalPhoneNumber,websiteUri')
+            ->get(rtrim((string) config('google_maps.details_endpoint'), '/').'/'.rawurlencode($placeId));
 
         if ($response->failed()) {
-            throw new GoogleMapsException('Fetching business details failed: '.$response->body());
-        }
-
-        $body = $response->json();
-
-        if (($body['status'] ?? 'UNKNOWN_ERROR') !== 'OK') {
-            throw new GoogleMapsException('Fetching business details failed: '.($body['error_message'] ?? $body['status'] ?? 'unknown error'));
+            throw $this->failure('Fetching business details failed', $response);
         }
 
         return [
-            'phone' => $body['result']['formatted_phone_number'] ?? null,
-            'website' => $body['result']['website'] ?? null,
+            'phone' => $response->json('nationalPhoneNumber') ?? $response->json('internationalPhoneNumber'),
+            'website' => $response->json('websiteUri'),
         ];
+    }
+
+    protected function ensureConfigured(): void
+    {
+        if (! $this->apiKey) {
+            throw new GoogleMapsException('Google Maps isn\'t configured yet — add GOOGLE_PLACES_API_KEY to the environment.');
+        }
+    }
+
+    /**
+     * The key travels in a header rather than the query string, so it
+     * never lands in a proxy or server access log.
+     */
+    protected function client(string $fieldMask): PendingRequest
+    {
+        return Http::timeout(15)
+            ->acceptJson()
+            ->withHeaders([
+                'X-Goog-Api-Key' => (string) $this->apiKey,
+                'X-Goog-FieldMask' => $fieldMask,
+            ]);
+    }
+
+    /**
+     * Google's raw error stays in the log; the customer gets a short,
+     * actionable message rather than a JSON dump.
+     */
+    protected function failure(string $prefix, Response $response): GoogleMapsException
+    {
+        $reason = (string) ($response->json('error.message') ?? $response->reason());
+
+        report(new GoogleMapsException("{$prefix}: HTTP {$response->status()} {$reason}"));
+
+        return new GoogleMapsException($response->status() === 429
+            ? 'Google Maps is busy right now — please try again in a minute.'
+            : "{$prefix} — please try again, or contact support if it keeps happening.");
     }
 
     /**
