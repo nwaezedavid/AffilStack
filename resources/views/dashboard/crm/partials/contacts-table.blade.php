@@ -37,7 +37,7 @@
             <table class="w-full text-sm">
                 <thead class="text-left text-[11px] font-mono uppercase tracking-[0.12em] text-ink-400">
                     <tr class="border-b border-line">
-                        <th class="w-10 px-4 py-3"><input type="checkbox" id="bulk-all" class="h-4 w-4 rounded border-line text-brand-600 focus:ring-brand-500" aria-label="Select all contacts on this page"></th>
+                        <th class="w-10 pl-4 pr-2 py-3"><input type="checkbox" id="bulk-all" class="h-4 w-4 rounded border-line text-brand-600 focus:ring-brand-500" aria-label="Select all contacts on this page"></th>
                         <th class="px-3 py-3 font-medium">Contact</th>
                         <th class="px-3 py-3 font-medium">Email / phone</th>
                         <th class="px-3 py-3 font-medium">Lists</th>
@@ -48,20 +48,20 @@
                 <tbody class="divide-y divide-line">
                     @foreach ($contacts as $contact)
                         <tr class="align-top hover:bg-surface-muted/50 transition">
-                            <td class="px-4 py-3"><input type="checkbox" name="contact_ids[]" value="{{ $contact->id }}" form="bulk-form" class="bulk-item h-4 w-4 rounded border-line text-brand-600 focus:ring-brand-500" aria-label="Select {{ $contact->name ?: $contact->company }}"></td>
+                            <td class="pl-4 pr-2 py-3"><input type="checkbox" name="contact_ids[]" value="{{ $contact->id }}" form="bulk-form" class="bulk-item h-4 w-4 rounded border-line text-brand-600 focus:ring-brand-500" aria-label="Select {{ $contact->name ?: $contact->company }}"></td>
                             <td class="px-3 py-3">
-                                <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-2.5">
                                     <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-navy-800 text-xs font-semibold text-white" aria-hidden="true">{{ mb_strtoupper(mb_substr($contact->name ?: ($contact->company ?: '?'), 0, 1)) }}</span>
                                     <div class="min-w-0">
                                         <div class="font-medium text-ink-900">{{ $contact->name ?: '—' }}</div>
-                                        <div class="text-xs text-ink-600 truncate max-w-[13rem]">{{ collect([$contact->title, $contact->company !== $contact->name ? $contact->company : null])->filter()->implode(' · ') ?: $contact->location }}</div>
+                                        <div class="text-xs text-ink-600 truncate max-w-[9.5rem]">{{ collect([$contact->title, $contact->company !== $contact->name ? $contact->company : null])->filter()->implode(' · ') ?: $contact->location }}</div>
                                         <div class="mt-0.5 text-[11px] text-ink-400 capitalize">via {{ str_replace('_', ' ', $contact->source) }}</div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-3 py-3 text-xs">
                                 @if ($contact->email)
-                                    <div class="text-ink-900">{{ $contact->email }}</div>
+                                    <div class="max-w-[11rem] truncate text-ink-900" title="{{ $contact->email }}">{{ $contact->email }}</div>
                                 @else
                                     <div class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-amber-700"><x-heroicon-m-exclamation-triangle class="h-3 w-3" /> No email</div>
                                 @endif
@@ -78,7 +78,7 @@
                             <td class="px-3 py-3">
                                 <div class="flex flex-col items-start gap-1">
                                     @forelse ($contact->lists as $list)
-                                        <a href="{{ route('crm.lists.show', $list) }}" title="{{ $list->name }}" class="inline-block max-w-[11rem] truncate whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset {{ $list->chipClasses() }}">{{ $list->name }}</a>
+                                        <a href="{{ route('crm.lists.show', $list) }}" title="{{ $list->name }}" class="inline-block max-w-[8.5rem] truncate whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset {{ $list->chipClasses() }}">{{ $list->name }}</a>
                                     @empty
                                         <span class="text-xs text-ink-400">—</span>
                                     @endforelse

@@ -51,7 +51,7 @@
         Your CRM is where prospects become buyers. Lists keep each product's contacts separate so you never send the wrong offer to the wrong person.
     </x-ui.feature-intro>
 
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
         {{-- Lists sidebar --}}
         <aside class="space-y-4" aria-label="Contact lists">
             @include('dashboard.crm.partials.lists-sidebar', ['lists' => $lists, 'activeList' => $activeList, 'listColors' => $listColors])
