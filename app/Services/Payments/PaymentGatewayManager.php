@@ -47,17 +47,56 @@ class PaymentGatewayManager
     }
 
     /**
-     * Audit item #3: Paystack (NGN) is only ever shown to a checkout
-     * resolved as Nigerian; Flutterwave/Stripe/PayPal (USD) only to
-     * everyone else — on top of each gateway's own admin on/off toggle,
-     * never instead of it. See CheckoutCountryResolver.
+     * Gateways that charge in naira. Every other gateway charges the plan's
+     * own currency (US dollars).
+     *
+     * @var array<int, string>
+     */
+    public const NAIRA_GATEWAYS = ['paystack'];
+
+    /**
+     * Which enabled gateways a checkout may use. Everyone can pay in US
+     * dollars through any enabled dollar gateway (Flutterwave, Stripe,
+     * PayPal) — Nigeria included. A checkout resolved as Nigerian also gets
+     * Paystack (naira), listed first, but only while an admin has Paystack
+     * switched on. See CheckoutCountryResolver.
      *
      * @return array<int, PaymentGateway>
      */
     public function enabledForCountry(string $countryCode): array
     {
-        $allowedKeys = $countryCode === 'NG' ? ['paystack'] : ['flutterwave', 'stripe', 'paypal'];
+        $enabled = $this->enabled();
 
-        return array_values(array_filter($this->enabled(), fn (PaymentGateway $gateway) => in_array($gateway->key(), $allowedKeys, true)));
+        $dollar = array_filter($enabled, fn (PaymentGateway $gateway) => ! $this->chargesInNaira($gateway));
+        $naira = $countryCode === 'NG'
+            ? array_filter($enabled, fn (PaymentGateway $gateway) => $this->chargesInNaira($gateway))
+            : [];
+
+        return array_values(array_merge($naira, $dollar));
+    }
+
+    public function chargesInNaira(PaymentGateway $gateway): bool
+    {
+        return in_array($gateway->key(), self::NAIRA_GATEWAYS, true);
+    }
+
+    /**
+     * Whether naira checkout exists at all right now — drives the
+     * "Paying from Nigeria? Switch to Naira" link, which is pointless while
+     * Paystack is off.
+     */
+    public function nairaAvailable(): bool
+    {
+        return collect($this->enabled())->contains(fn (PaymentGateway $gateway) => $this->chargesInNaira($gateway));
+    }
+
+    /**
+     * The wording a customer picks from, e.g. "Pay in Naira (₦) — Paystack".
+     */
+    public function optionLabel(PaymentGateway $gateway): string
+    {
+        return $this->chargesInNaira($gateway)
+            ? 'Pay in Naira (₦) — '.$gateway->label()
+            : 'Pay in US dollars ($) — '.$gateway->label();
     }
 }

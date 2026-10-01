@@ -90,10 +90,10 @@ class PaymentGatewaySettings extends Page
      * @var array<string, array{label: string, icon: string, shownTo: string}>
      */
     protected static array $gateways = [
-        'flutterwave' => ['label' => 'Flutterwave', 'icon' => 'heroicon-o-globe-alt', 'shownTo' => 'International customers (USD)'],
-        'stripe' => ['label' => 'Stripe', 'icon' => 'heroicon-o-credit-card', 'shownTo' => 'International customers (USD)'],
-        'paystack' => ['label' => 'Paystack', 'icon' => 'heroicon-o-banknotes', 'shownTo' => 'Customers checking out from Nigeria (NGN)'],
-        'paypal' => ['label' => 'PayPal', 'icon' => 'heroicon-o-currency-dollar', 'shownTo' => 'International customers (USD)'],
+        'flutterwave' => ['label' => 'Flutterwave', 'icon' => 'heroicon-o-globe-alt', 'shownTo' => 'Everyone, Nigeria included (US dollars)'],
+        'stripe' => ['label' => 'Stripe', 'icon' => 'heroicon-o-credit-card', 'shownTo' => 'Everyone, Nigeria included (US dollars)'],
+        'paystack' => ['label' => 'Paystack', 'icon' => 'heroicon-o-banknotes', 'shownTo' => 'Nigeria only, as an extra Naira option'],
+        'paypal' => ['label' => 'PayPal', 'icon' => 'heroicon-o-currency-dollar', 'shownTo' => 'Everyone, Nigeria included (US dollars)'],
     ];
 
     /**

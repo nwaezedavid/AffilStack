@@ -64,15 +64,7 @@
                         <option value="monthly">Monthly — ${{ number_format($plan->priceMonthly()) }}/mo</option>
                         <option value="yearly">Yearly — ${{ number_format($plan->priceYearly(), 2) }}/yr (15% off)</option>
                     </select>
-                    @if (count($enabledGateways) > 1)
-                        <select name="gateway" class="w-full rounded-md border border-line px-2 py-1.5 text-xs">
-                            @foreach ($enabledGateways as $gateway)
-                                <option value="{{ $gateway->key() }}">{{ $gateway->label() }}</option>
-                            @endforeach
-                        </select>
-                    @elseif (count($enabledGateways) === 1)
-                        <input type="hidden" name="gateway" value="{{ $enabledGateways[0]->key() }}">
-                    @endif
+                    <x-checkout.gateway-select :gateways="$enabledGateways" compact />
                     <button @class([
                         'w-full rounded-md text-white text-sm py-2 transition',
                         'bg-line text-ink-400 cursor-not-allowed' => $subscription?->plan_id === $plan->id,
@@ -95,15 +87,7 @@
 
     <p class="text-xs text-ink-400 mt-6">Payments are processed securely by {{ $enabledGateways ? collect($enabledGateways)->map->label()->implode(' or ') : 'our payment provider' }}. You'll be redirected to complete payment.</p>
 
-    {{-- Audit item #3 — Paystack/Naira is shown only when we've detected
-         Nigeria; this is the escape hatch when that guess is wrong. --}}
-    <form method="POST" action="{{ route('checkout.country.update') }}" class="mt-1">
-        @csrf
-        <input type="hidden" name="country" value="{{ $isNigeria ? 'US' : 'NG' }}">
-        <button type="submit" class="text-xs text-ink-400 hover:text-ink-600 underline">
-            {{ $isNigeria ? 'Not in Nigeria? Pay in US dollars instead' : 'Paying from Nigeria? Switch to Naira' }}
-        </button>
-    </form>
+    <x-checkout.country-switch :is-nigeria="$isNigeria" class="mt-1" />
 
     {{-- Saved payment methods (audit item #2) — captured automatically from
          a successful charge, see PaymentMethodRecorder; nothing to "add"

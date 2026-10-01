@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\PaymentGatewaySetting;
 use App\Models\Plan;
 use App\Services\Payments\CheckoutCountryResolver;
+use App\Services\Payments\PaymentGatewayManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -77,25 +78,59 @@ class CheckoutCountryGatingTest extends TestCase
         $this->assertTrue($resolver->isNigeria($request));
     }
 
-    public function test_signup_page_shows_only_paystack_when_the_country_override_is_nigeria(): void
+    public function test_a_nigerian_checkout_can_pay_in_naira_or_dollars_when_paystack_is_on(): void
     {
         PaymentGatewaySetting::create(['gateway' => 'flutterwave', 'is_enabled' => true]);
-        PaymentGatewaySetting::create(['gateway' => 'stripe', 'is_enabled' => true]);
-        PaymentGatewaySetting::create(['gateway' => 'paypal', 'is_enabled' => true]);
+        PaymentGatewaySetting::create(['gateway' => 'stripe', 'is_enabled' => false]);
+        PaymentGatewaySetting::create(['gateway' => 'paypal', 'is_enabled' => false]);
         PaymentGatewaySetting::create(['gateway' => 'paystack', 'is_enabled' => true]);
         $plan = $this->makePlan();
 
-        // Paystack is the only Nigeria-eligible gateway, so with exactly one
-        // option available the form renders it as a hidden field (see
-        // signup.blade.php) rather than a visible label — assert on the
-        // hidden value, not display text.
         $this->withSession(['checkout_country' => 'NG'])
             ->get(route('registration.form', $plan))
             ->assertOk()
-            ->assertSee('value="paystack"', false)
-            ->assertDontSee('Stripe')
-            ->assertDontSee('Flutterwave')
-            ->assertDontSee('PayPal');
+            ->assertSeeInOrder(['Pay in Naira (₦) — Paystack', 'Pay in US dollars ($) — Flutterwave'])
+            ->assertSee('Not in Nigeria? Hide the Naira option');
+    }
+
+    public function test_a_nigerian_checkout_pays_in_dollars_with_flutterwave_while_paystack_is_off(): void
+    {
+        PaymentGatewaySetting::create(['gateway' => 'flutterwave', 'is_enabled' => true]);
+        PaymentGatewaySetting::create(['gateway' => 'paystack', 'is_enabled' => false]);
+        $plan = $this->makePlan();
+
+        $this->withSession(['checkout_country' => 'NG'])
+            ->get(route('registration.form', $plan))
+            ->assertOk()
+            ->assertSee('value="flutterwave"', false)
+            ->assertDontSee('Paystack')
+            // Naira isn't on offer at all, so there's nothing to switch to.
+            ->assertDontSee('Naira option');
+    }
+
+    public function test_a_nigerian_signup_reaches_flutterwave_when_it_is_the_only_gateway(): void
+    {
+        PaymentGatewaySetting::create(['gateway' => 'flutterwave', 'is_enabled' => true]);
+        $plan = $this->makePlan();
+        Http::fake([
+            'api.flutterwave.com/*' => Http::response(['status' => 'success', 'data' => ['link' => 'https://checkout.flutterwave.com/pay/test']]),
+        ]);
+
+        $this->assertSame(
+            ['flutterwave'],
+            array_map(fn ($g) => $g->key(), app(PaymentGatewayManager::class)->enabledForCountry('NG')),
+        );
+
+        $this->withSession(['checkout_country' => 'NG'])
+            ->post(route('registration.store', $plan), [
+                'name' => 'Ada', 'email' => 'ada@example.com',
+                'password' => 'correct-horse-battery-staple', 'password_confirmation' => 'correct-horse-battery-staple',
+                'billing_cycle' => 'monthly',
+                'gateway' => 'flutterwave',
+                'accepts_refund_policy' => '1',
+            ])
+            ->assertSessionMissing('error')
+            ->assertRedirect('https://checkout.flutterwave.com/pay/test');
     }
 
     public function test_signup_page_hides_paystack_when_the_country_override_is_not_nigeria(): void
@@ -109,31 +144,30 @@ class CheckoutCountryGatingTest extends TestCase
         $this->withSession(['checkout_country' => 'US'])
             ->get(route('registration.form', $plan))
             ->assertOk()
-            ->assertDontSee('Paystack')
-            ->assertSee('Stripe')
-            ->assertSee('Flutterwave')
-            ->assertSee('PayPal');
+            ->assertDontSee('Pay in Naira')
+            ->assertSee('Pay in US dollars ($) — Stripe')
+            ->assertSee('Pay in US dollars ($) — Flutterwave')
+            ->assertSee('Pay in US dollars ($) — PayPal')
+            ->assertSee('Paying from Nigeria? Show the Naira option');
     }
 
-    public function test_paystack_still_requires_its_own_admin_toggle_even_for_a_nigerian_checkout(): void
+    public function test_a_non_nigerian_checkout_never_falls_back_to_paystack(): void
     {
-        PaymentGatewaySetting::create(['gateway' => 'flutterwave', 'is_enabled' => true]);
-        PaymentGatewaySetting::create(['gateway' => 'stripe', 'is_enabled' => false]);
-        PaymentGatewaySetting::create(['gateway' => 'paypal', 'is_enabled' => false]);
-        PaymentGatewaySetting::create(['gateway' => 'paystack', 'is_enabled' => false]);
+        PaymentGatewaySetting::create(['gateway' => 'flutterwave', 'is_enabled' => false]);
+        PaymentGatewaySetting::create(['gateway' => 'paystack', 'is_enabled' => true]);
         $plan = $this->makePlan();
 
-        $response = $this->withSession(['checkout_country' => 'NG'])
+        $response = $this->withSession(['checkout_country' => 'US'])
             ->post(route('registration.store', $plan), [
                 'name' => 'Jane', 'email' => 'jane@example.com',
                 'password' => 'correct-horse-battery-staple', 'password_confirmation' => 'correct-horse-battery-staple',
                 'billing_cycle' => 'monthly',
+                'gateway' => 'paystack',
                 'accepts_refund_policy' => '1',
             ]);
 
-        // No gateway is both Nigeria-eligible and admin-enabled, so
-        // checkout can't proceed — the country gate never overrides the
-        // admin's own on/off switch.
+        // Paystack charges in naira only, so with no dollar gateway on,
+        // checkout can't proceed — the admin's own switches always win.
         $response->assertRedirect();
         $response->assertSessionHas('error');
     }

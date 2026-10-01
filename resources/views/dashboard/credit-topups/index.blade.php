@@ -24,15 +24,7 @@
 
                 <form method="POST" action="{{ route('credit-topups.checkout', $package) }}" class="space-y-2 mt-auto">
                     @csrf
-                    @if (count($enabledGateways) > 1)
-                        <select name="gateway" class="w-full rounded-md border border-line px-2 py-1.5 text-xs">
-                            @foreach ($enabledGateways as $gateway)
-                                <option value="{{ $gateway->key() }}">{{ $gateway->label() }}</option>
-                            @endforeach
-                        </select>
-                    @elseif (count($enabledGateways) === 1)
-                        <input type="hidden" name="gateway" value="{{ $enabledGateways[0]->key() }}">
-                    @endif
+                    <x-checkout.gateway-select :gateways="$enabledGateways" compact />
                     <button class="w-full rounded-md bg-navy-900 text-white text-sm py-2 hover:bg-navy-800 transition">
                         Buy now
                     </button>

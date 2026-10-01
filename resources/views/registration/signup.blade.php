@@ -40,18 +40,7 @@
                         <option value="yearly">Yearly — ${{ number_format($plan->priceYearly(), 2) }}/yr (15% off)</option>
                     </select>
                 </div>
-                @if (count($enabledGateways) > 1)
-                    <div>
-                        <label class="block text-sm font-medium text-ink-900 mb-1">Payment method</label>
-                        <select name="gateway" class="w-full rounded-md border border-line px-3 py-2 text-sm">
-                            @foreach ($enabledGateways as $gateway)
-                                <option value="{{ $gateway->key() }}">{{ $gateway->label() }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                @elseif (count($enabledGateways) === 1)
-                    <input type="hidden" name="gateway" value="{{ $enabledGateways[0]->key() }}">
-                @endif
+                <x-checkout.gateway-select :gateways="$enabledGateways" />
                 <label class="flex items-start gap-2 text-xs text-ink-600">
                     <input type="checkbox" name="accepts_refund_policy" value="1" required class="mt-0.5">
                     <span>I've read and accept the <a href="{{ route('refund-policy') }}" target="_blank" class="text-brand-600 hover:text-brand-700 underline">Refund &amp; Cancellation Policy</a>.</span>
@@ -64,15 +53,7 @@
                 </button>
             </form>
 
-            {{-- Audit item #3 — Paystack/Naira is shown only when we've detected
-                 Nigeria; this is the escape hatch when that guess is wrong. --}}
-            <form method="POST" action="{{ route('checkout.country.update') }}" class="mt-3 text-center">
-                @csrf
-                <input type="hidden" name="country" value="{{ $isNigeria ? 'US' : 'NG' }}">
-                <button type="submit" class="text-xs text-ink-400 hover:text-ink-600 underline">
-                    {{ $isNigeria ? 'Not in Nigeria? Pay in US dollars instead' : 'Paying from Nigeria? Switch to Naira' }}
-                </button>
-            </form>
+            <x-checkout.country-switch :is-nigeria="$isNigeria" class="mt-3 text-center" />
 
             @if (\App\Models\GoogleOauthSetting::current()->is_enabled)
                 <div class="flex items-center gap-3 my-6">
