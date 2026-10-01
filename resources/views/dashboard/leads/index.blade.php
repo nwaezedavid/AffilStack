@@ -21,8 +21,21 @@
             <div class="bg-red-50 text-red-700 rounded-lg px-4 py-2.5 mb-4 text-sm">{{ $autoSearchError }}</div>
         @endif
 
+        @php $selectedOffer = $offerId ?? ($offers->count() === 1 ? $offers->first()->id : null); @endphp
         <form method="POST" action="{{ route('leads.search') }}" class="bg-surface border border-line rounded-lg p-5 mb-6 grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
             @csrf
+            @if ($offers->isNotEmpty())
+                <div class="sm:col-span-3">
+                    <label for="offer_id" class="block text-xs text-ink-600 mb-1">Save leads to which product's list?</label>
+                    <select id="offer_id" name="offer_id" class="w-full sm:w-auto rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <option value="">No product — just my CRM</option>
+                        @foreach ($offers as $offer)
+                            <option value="{{ $offer->id }}" @selected($selectedOffer === $offer->id)>{{ $offer->product_name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-ink-400">Keeps each product's prospects separate, so a campaign never reaches the wrong people. Autopilot campaigns on that list email new leads automatically.</p>
+                </div>
+            @endif
             <div>
                 <label for="niche" class="block text-xs text-ink-600 mb-1">Niche</label>
                 <input id="niche" name="niche" value="{{ old('niche', $niche) }}" required placeholder="e.g. dentists, coffee shops" class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
@@ -62,6 +75,9 @@
                                     <input type="hidden" name="name" value="{{ $place['name'] }}">
                                     <input type="hidden" name="address" value="{{ $place['address'] }}">
                                     <input type="hidden" name="type" value="{{ $place['type'] }}">
+                                    @if ($selectedOffer)
+                                        <input type="hidden" name="offer_id" value="{{ $selectedOffer }}">
+                                    @endif
                                     <button class="rounded-md border border-line text-ink-900 text-xs px-2.5 py-1.5 hover:bg-surface-muted transition whitespace-nowrap">Add to CRM</button>
                                 </form>
                             @endif

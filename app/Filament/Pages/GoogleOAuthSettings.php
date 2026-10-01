@@ -53,6 +53,7 @@ class GoogleOAuthSettings extends Page
         $this->form->fill([
             'is_enabled' => $settings->is_enabled,
             'gmail_sending_enabled' => $settings->gmail_sending_enabled,
+            'gmail_reading_enabled' => $settings->gmail_reading_enabled,
             'youtube_publishing_enabled' => $settings->youtube_publishing_enabled,
             'youtube_approval_status' => $settings->youtube_approval_status,
             'youtube_approval_notes' => $settings->youtube_approval_notes,
@@ -96,6 +97,11 @@ class GoogleOAuthSettings extends Page
                     ->components([
                         Toggle::make('gmail_sending_enabled')
                             ->label('Allow users to connect Gmail for sending')
+                            ->columnSpanFull(),
+                        // Agent 08: CRM reply detection through the Gmail API.
+                        Toggle::make('gmail_reading_enabled')
+                            ->label('Allow Gmail inbox reading — requires Google CASA approval')
+                            ->helperText('Adds the restricted gmail.readonly scope to the Connect Gmail consent screen so replies from CRM contacts are detected through the Gmail API. Leave OFF until Google has approved the CASA security assessment — until then every user can still use IMAP reply detection (Gmail with an App Password, Outlook, Zoho, Hostinger, …). Users who connected Gmail before this was on must click "Allow inbox reading" once.')
                             ->columnSpanFull(),
                         Placeholder::make('gmail_redirect_uri')
                             ->label('Additional authorized redirect URI')
@@ -176,6 +182,7 @@ class GoogleOAuthSettings extends Page
         $settings->update([
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
             'gmail_sending_enabled' => (bool) ($data['gmail_sending_enabled'] ?? false),
+            'gmail_reading_enabled' => (bool) ($data['gmail_reading_enabled'] ?? false),
             'youtube_publishing_enabled' => (bool) ($data['youtube_publishing_enabled'] ?? false),
             'youtube_approval_status' => $data['youtube_approval_status'] ?? 'not_submitted',
             'youtube_approval_notes' => $data['youtube_approval_notes'] ?? null,

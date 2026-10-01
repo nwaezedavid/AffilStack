@@ -54,6 +54,8 @@ class DashboardNavigation
             ]],
             ['label' => 'Find & close buyers', 'items' => [
                 ['name' => 'crm.index', 'match' => 'crm.*', 'label' => 'CRM & Campaigns', 'icon' => 'users'],
+                // Agent 08: replies from CRM contacts, with AI follow-up drafting.
+                ['name' => 'crm.inbox', 'match' => 'crm.inbox*', 'label' => 'Inbox & Replies', 'icon' => 'inbox-arrow-down'],
                 ['name' => 'leads.index', 'match' => 'leads.*', 'label' => 'Local Leads', 'icon' => 'map-pin'],
                 ['name' => 'extension.index', 'match' => 'extension.*', 'label' => 'Chrome Extension', 'icon' => 'puzzle-piece'],
             ]],

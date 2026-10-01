@@ -14,7 +14,11 @@ use App\Http\Controllers\Dashboard\ApiWalletController;
 use App\Http\Controllers\Dashboard\BlogController;
 use App\Http\Controllers\Dashboard\CompetitorAngleController;
 use App\Http\Controllers\Dashboard\ContentCalendarController;
+use App\Http\Controllers\Dashboard\CrmCampaignController;
 use App\Http\Controllers\Dashboard\CrmController;
+use App\Http\Controllers\Dashboard\CrmImportController;
+use App\Http\Controllers\Dashboard\CrmInboxController;
+use App\Http\Controllers\Dashboard\CrmListController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\EarningsController;
 use App\Http\Controllers\Dashboard\EmailConnectionController;
@@ -375,6 +379,47 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::get('/support/{ticket}', [SupportTicketController::class, 'show'])->name('support.show');
     Route::post('/support/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('support.reply');
     Route::post('/support/{ticket}/rate', [SupportTicketController::class, 'rate'])->name('support.rate');
+});
+
+// ---------------------------------------------------------------------
+// Agent 08 — CRM lists, campaigns (with autopilot), the replies Inbox and
+// the Email Sending connection checks. Same middleware stack as the
+// dashboard group above; owner-only like the rest of the CRM (none of
+// these are in config('agency.seat_allowed_routes')).
+// ---------------------------------------------------------------------
+Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats', 'restrict-affiliate-only'])->group(function () {
+    Route::post('/crm/contacts/bulk', [CrmController::class, 'bulk'])->name('crm.contacts.bulk');
+
+    Route::post('/crm/lists', [CrmListController::class, 'store'])->name('crm.lists.store');
+    Route::get('/crm/lists/{crmList}', [CrmListController::class, 'show'])->name('crm.lists.show');
+    Route::patch('/crm/lists/{crmList}', [CrmListController::class, 'update'])->name('crm.lists.update');
+    Route::delete('/crm/lists/{crmList}', [CrmListController::class, 'destroy'])->name('crm.lists.destroy');
+
+    Route::post('/crm/import', [CrmImportController::class, 'upload'])->middleware('throttle:20,1')->name('crm.import.upload');
+    Route::get('/crm/import/{token}', [CrmImportController::class, 'preview'])->name('crm.import.preview');
+    Route::post('/crm/import/{token}', [CrmImportController::class, 'store'])->name('crm.import.store');
+
+    Route::get('/crm/campaigns', [CrmCampaignController::class, 'index'])->name('crm.campaigns.index');
+    Route::get('/crm/campaigns/create', [CrmCampaignController::class, 'create'])->name('crm.campaigns.create');
+    Route::post('/crm/campaigns', [CrmCampaignController::class, 'store'])->middleware('throttle:paid-lookups')->name('crm.campaigns.store');
+    Route::get('/crm/campaigns/{campaign}', [CrmCampaignController::class, 'show'])->name('crm.campaigns.show');
+    Route::put('/crm/campaigns/{campaign}', [CrmCampaignController::class, 'update'])->name('crm.campaigns.update');
+    Route::delete('/crm/campaigns/{campaign}', [CrmCampaignController::class, 'destroy'])->name('crm.campaigns.destroy');
+    Route::post('/crm/campaigns/{campaign}/send-new', [CrmCampaignController::class, 'sendToNew'])->name('crm.campaigns.send-new');
+    Route::patch('/crm/campaigns/{campaign}/autopilot', [CrmCampaignController::class, 'autopilot'])->name('crm.campaigns.autopilot');
+    Route::post('/crm/campaigns/{campaign}/pause', [CrmCampaignController::class, 'pause'])->name('crm.campaigns.pause');
+    Route::post('/crm/campaigns/{campaign}/resume', [CrmCampaignController::class, 'resume'])->name('crm.campaigns.resume');
+
+    Route::get('/crm/inbox', [CrmInboxController::class, 'index'])->name('crm.inbox');
+    Route::post('/crm/inbox/check', [CrmInboxController::class, 'check'])->middleware('throttle:6,1')->name('crm.inbox.check');
+    Route::get('/crm/inbox/{contact}', [CrmInboxController::class, 'show'])->name('crm.inbox.show');
+    Route::post('/crm/inbox/replies/{reply}/draft', [CrmInboxController::class, 'draft'])->middleware('throttle:paid-lookups')->name('crm.inbox.draft');
+    Route::post('/crm/inbox/replies/{reply}/send', [CrmInboxController::class, 'send'])->middleware('throttle:30,1')->name('crm.inbox.send');
+
+    Route::post('/email-connections/test', [EmailConnectionController::class, 'test'])->middleware('throttle:10,1')->name('email-connections.test');
+    Route::post('/email-connections/imap', [EmailConnectionController::class, 'storeImap'])->middleware('throttle:10,1')->name('email-connections.imap.store');
+    Route::delete('/email-connections/imap', [EmailConnectionController::class, 'destroyImap'])->name('email-connections.imap.destroy');
+    Route::patch('/email-connections/settings', [EmailConnectionController::class, 'updateSettings'])->name('email-connections.settings');
 });
 
 // Any admin-created SitePage whose slug isn't one of the five dedicated

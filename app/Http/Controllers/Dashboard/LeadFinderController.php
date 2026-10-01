@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\CrmContact;
+use App\Models\CrmList;
+use App\Models\Offer;
 use App\Services\Leads\GoogleMapsException;
 use App\Services\Leads\GoogleMapsLeadService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -50,6 +53,8 @@ class LeadFinderController extends Controller
             'niche' => $niche,
             'location' => $location,
             'autoSearchError' => $autoSearchError,
+            'offers' => $this->offers(),
+            'offerId' => $this->selectedOfferId($request),
         ]);
     }
 
@@ -76,7 +81,29 @@ class LeadFinderController extends Controller
             'niche' => $validated['niche'],
             'location' => $validated['location'],
             'autoSearchError' => null,
+            'offers' => $this->offers(),
+            'offerId' => $this->selectedOfferId($request),
         ]);
+    }
+
+    /**
+     * The user's researched products, for "Save leads to which product?".
+     *
+     * @return Collection<int, Offer>
+     */
+    protected function offers()
+    {
+        return auth()->user()->offers()->where('is_sandbox', false)->latest()->get(['id', 'product_name']);
+    }
+
+    /**
+     * ?offer= (from a product page) or the form's offer_id — only the user's own.
+     */
+    protected function selectedOfferId(Request $request): ?int
+    {
+        $id = (int) ($request->input('offer_id') ?: $request->query('offer'));
+
+        return $id && auth()->user()->offers()->whereKey($id)->exists() ? $id : null;
     }
 
     /**
@@ -112,6 +139,7 @@ class LeadFinderController extends Controller
             'name' => 'required|string|max:255',
             'address' => 'nullable|string|max:255',
             'type' => 'nullable|string|max:255',
+            'offer_id' => 'nullable|integer',
         ]);
 
         $alreadyImported = auth()->user()->crmContacts()
@@ -129,7 +157,7 @@ class LeadFinderController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        CrmContact::create([
+        $contact = CrmContact::create([
             'user_id' => auth()->id(),
             'name' => $validated['name'],
             'company' => $validated['name'],
@@ -143,6 +171,17 @@ class LeadFinderController extends Controller
                 'type' => $validated['type'] ?? null,
             ],
         ]);
+
+        // Filed into the product's own list so its prospects never mix with
+        // another product's — which also fires that list's autopilot campaigns.
+        $offer = ! empty($validated['offer_id']) ? auth()->user()->offers()->find($validated['offer_id']) : null;
+
+        if ($offer) {
+            $list = CrmList::forOffer($offer);
+            $list->addContact($contact);
+
+            return back()->with('success', "\"{$validated['name']}\" added to {$list->name}.");
+        }
 
         return back()->with('success', "\"{$validated['name']}\" added to your CRM.");
     }

@@ -547,4 +547,18 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             ->when($currency, fn ($query) => $query->where('currency', $currency))
             ->exists();
     }
+
+    // ------------------------------------------------------------------
+    // Agent 08 — CRM campaigns and inbox replies.
+    // ------------------------------------------------------------------
+
+    public function crmCampaigns(): HasMany
+    {
+        return $this->hasMany(CrmCampaign::class);
+    }
+
+    public function crmReplies(): HasMany
+    {
+        return $this->hasMany(CrmReply::class);
+    }
 }
