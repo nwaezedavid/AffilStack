@@ -138,8 +138,9 @@
                     card.querySelector('[data-tour-hint]').hidden = !(target && !visible);
                     const mobile = window.innerWidth < 640;
 
+                    overlay.style.background = visible ? 'transparent' : 'rgba(10, 23, 48, 0.62)';
                     if (!visible) {
-                        spotlight.style.cssText = 'top:50%;left:50%;width:0;height:0;';
+                        spotlight.style.cssText = 'display:none;';
                         if (mobile) {
                             card.style.cssText = 'left:1rem;right:1rem;bottom:1rem;top:auto;width:auto;';
                         } else {

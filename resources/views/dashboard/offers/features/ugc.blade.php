@@ -187,7 +187,7 @@
             <form method="POST" action="{{ route('offers.ugc.video', $offer) }}" class="mt-4" data-ugc-video-form>
                 @csrf
                 <input type="hidden" name="content_generation_id" value="{{ $selectedScript->id }}">
-                <label for="video_script" class="flex items-center justify-between text-sm font-medium text-navy-900">
+                <label for="video_script" class="flex flex-wrap items-center justify-between gap-x-3 text-sm font-medium text-navy-900">
                     <span>What your presenter will say</span>
                     <span class="text-xs font-normal text-ink-400" data-script-meter></span>
                 </label>
