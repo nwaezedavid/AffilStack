@@ -6,6 +6,7 @@ use App\Models\EmailConnection;
 use App\Models\GoogleOauthSetting;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 
 /**
@@ -29,6 +30,12 @@ class GmailOAuthService
     protected const SEND_ENDPOINT = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
 
     protected const SCOPE = 'openid email https://www.googleapis.com/auth/gmail.send';
+
+    /**
+     * Added to SCOPE only while the admin's "Allow Gmail inbox reading"
+     * toggle is on (Google CASA approval) — a restricted scope.
+     */
+    public const READ_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 
     protected GoogleOauthSetting $settings;
 
@@ -75,7 +82,8 @@ class GmailOAuthService
             'client_id' => $this->clientId(),
             'redirect_uri' => $redirectUri,
             'response_type' => 'code',
-            'scope' => self::SCOPE,
+            'scope' => $this->settings->gmailReadingAvailable() ? self::SCOPE.' '.self::READ_SCOPE : self::SCOPE,
+            'include_granted_scopes' => 'true',
             'state' => $state,
             'access_type' => 'offline',
             // Forces Google to hand back a refresh_token even if this
@@ -93,7 +101,7 @@ class GmailOAuthService
      * Exchanges an authorization code for tokens + the connected Gmail
      * address, and returns exactly what EmailConnection::credentials needs.
      *
-     * @return array{access_token: string, refresh_token: string, expires_at: string, email: string}
+     * @return array{access_token: string, refresh_token: string, expires_at: string, email: string, read_granted: bool}
      */
     public function exchangeCode(string $code, string $redirectUri): array
     {
@@ -124,6 +132,7 @@ class GmailOAuthService
             'refresh_token' => (string) $token->json('refresh_token'),
             'expires_at' => now()->addSeconds((int) $token->json('expires_in', 3600))->toIso8601String(),
             'email' => (string) $profile->json('email'),
+            'read_granted' => in_array(self::READ_SCOPE, explode(' ', (string) $token->json('scope')), true),
         ];
     }
 
@@ -170,22 +179,65 @@ class GmailOAuthService
      * via the Gmail API's users.messages.send, not SMTP. $connection must
      * be provider === 'gmail'.
      */
-    public function send(EmailConnection $connection, string $toEmail, string $subject, string $htmlBody): void
+    /**
+     * @param  array<string, mixed>  $options  see PersonalEmailSender::send()
+     * @return array{provider_message_id: string|null, provider_thread_id: string|null}
+     */
+    public function send(EmailConnection $connection, string $toEmail, string $subject, string $htmlBody, array $options = []): array
     {
         $accessToken = $this->freshAccessToken($connection);
 
+        $fromName = $connection->credential('from_name');
         $message = (new Email)
-            ->from($connection->connected_email)
+            ->from($fromName ? new Address((string) $connection->connected_email, (string) $fromName) : (string) $connection->connected_email)
             ->to($toEmail)
             ->subject($subject)
             ->html($htmlBody);
 
-        $raw = rtrim(strtr(base64_encode($message->toString()), '+/', '-_'), '=');
+        PersonalEmailSender::applyOptions($message, $options);
 
-        $response = Http::withToken($accessToken)->post(self::SEND_ENDPOINT, ['raw' => $raw]);
+        $raw = rtrim(strtr(base64_encode($message->toString()), '+/', '-_'), '=');
+        $payload = ['raw' => $raw];
+
+        if (! empty($options['thread_id'])) {
+            $payload['threadId'] = $options['thread_id'];
+        }
+
+        $response = Http::withToken($accessToken)->post(self::SEND_ENDPOINT, $payload);
 
         if ($response->failed()) {
             throw new RuntimeException('Gmail send failed: '.$response->body());
         }
+
+        return [
+            'provider_message_id' => $response->json('id'),
+            'provider_thread_id' => $response->json('threadId'),
+        ];
+    }
+
+    /**
+     * A live check that the stored tokens still work: refreshes the access
+     * token if needed and reads the account's address.
+     *
+     * @throws RuntimeException
+     */
+    public function verify(EmailConnection $connection): string
+    {
+        $accessToken = $this->freshAccessToken($connection);
+        $profile = Http::withToken($accessToken)->timeout(15)->get(self::USERINFO_ENDPOINT);
+
+        if ($profile->failed() || ! $profile->json('email')) {
+            throw new RuntimeException('Google did not accept the stored Gmail permission — please reconnect Gmail.');
+        }
+
+        return (string) $profile->json('email');
+    }
+
+    /**
+     * Public so the Gmail inbox reader can share token refreshing.
+     */
+    public function accessTokenFor(EmailConnection $connection): string
+    {
+        return $this->freshAccessToken($connection);
     }
 }
