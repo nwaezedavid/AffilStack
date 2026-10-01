@@ -83,7 +83,7 @@
                         $genTone = $genFeature ? \App\Support\OfferFeatures::tone(\App\Support\OfferFeatures::get($genFeature)['tone']) : \App\Support\OfferFeatures::tone('brand');
                     @endphp
                     <a href="{{ $genFeature ? route('offers.feature', [$offer, $genFeature]) : route('offers.show', $offer) }}"
-                       class="group flex items-start gap-3 rounded-2xl border border-line bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+                       class="group flex min-w-0 items-start gap-3 rounded-2xl border border-line bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
                         <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ $genTone['icon'] }}">
                             <x-dynamic-component :component="'heroicon-o-'.($genFeature ? \App\Support\OfferFeatures::get($genFeature)['icon'] : 'document')" class="h-5 w-5" />
                         </span>

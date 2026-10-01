@@ -27,7 +27,7 @@
         </div>
     </div>
 
-    <div class="relative grid gap-4 sm:grid-cols-2">
+    <div class="relative grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
         <div>
             <label for="product_name" class="block text-sm font-medium text-navy-900 mb-1.5">Product name</label>
             <input id="product_name" name="product_name" value="{{ old('product_name', request('product_name')) }}" required maxlength="255"

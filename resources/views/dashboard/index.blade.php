@@ -104,7 +104,7 @@
             </div>
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($offers->skip(1) as $other)
-                    <a href="{{ route('offers.show', $other) }}" class="group flex items-center gap-3 rounded-2xl border border-line bg-white p-3.5 transition hover:border-brand-500 hover:shadow-md">
+                    <a href="{{ route('offers.show', $other) }}" class="group flex min-w-0 items-center gap-3 rounded-2xl border border-line bg-white p-3.5 transition hover:border-brand-500 hover:shadow-md">
                         <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-navy-800 to-brand-600 font-display text-sm font-semibold text-white">{{ mb_strtoupper(mb_substr($other->product_name, 0, 2)) }}</span>
                         <span class="min-w-0 flex-1">
                             <span class="block truncate text-sm font-semibold text-navy-900">{{ $other->product_name }}</span>

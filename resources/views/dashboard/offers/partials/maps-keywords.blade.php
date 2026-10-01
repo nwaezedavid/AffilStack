@@ -6,7 +6,7 @@
     $firstLocation = $locations[0] ?? null;
 @endphp
 @if ($mapsKeywords !== [])
-    <div data-maps-block data-tour="maps-keywords" class="rounded-3xl border border-line bg-white p-5 sm:p-6">
+    <div data-maps-block data-tour="maps-keywords" class="@container rounded-3xl border border-line bg-white p-5 sm:p-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex items-start gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-line">
@@ -31,23 +31,23 @@
             </div>
         @endif
 
-        <ul class="mt-4 grid gap-2.5 sm:grid-cols-2">
+        <ul class="mt-4 grid gap-2.5 @2xl:grid-cols-2">
             @foreach ($mapsKeywords as $item)
                 <li class="flex flex-col gap-2 rounded-2xl bg-gradient-to-br from-teal-50 to-white p-3.5 ring-1 ring-teal-100">
-                    <div class="flex items-start justify-between gap-2">
+                    <div>
                         <p class="font-semibold text-navy-900">{{ $item['keyword'] }}</p>
-                        <div class="flex shrink-0 items-center gap-1.5">
-                            <x-ui.copy-button :text="$item['keyword']" size="xs" />
-                            <a href="{{ \App\Support\ResearchPresenter::mapsUrl($item['keyword'], $firstLocation) }}" target="_blank" rel="noopener"
-                               data-maps-keyword="{{ $item['keyword'] }}"
-                               class="inline-flex items-center gap-1 rounded-full bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-teal-700 transition">
-                                <x-heroicon-m-map-pin class="h-3.5 w-3.5" /> Open in Google Maps
-                            </a>
-                        </div>
+                        @if ($item['why'] !== '')
+                            <p class="mt-0.5 text-xs text-ink-600">{{ $item['why'] }}</p>
+                        @endif
                     </div>
-                    @if ($item['why'] !== '')
-                        <p class="text-xs text-ink-600">{{ $item['why'] }}</p>
-                    @endif
+                    <div class="mt-auto flex flex-wrap items-center gap-1.5">
+                        <a href="{{ \App\Support\ResearchPresenter::mapsUrl($item['keyword'], $firstLocation) }}" target="_blank" rel="noopener"
+                           data-maps-keyword="{{ $item['keyword'] }}"
+                           class="inline-flex items-center gap-1 rounded-full bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-teal-700 transition">
+                            <x-heroicon-m-map-pin class="h-3.5 w-3.5" /> Open in Google Maps
+                        </a>
+                        <x-ui.copy-button :text="$item['keyword']" size="xs" />
+                    </div>
                 </li>
             @endforeach
         </ul>

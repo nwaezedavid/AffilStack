@@ -86,7 +86,7 @@
             @unless (in_array($featureKey, ['maps', 'localize'], true) && $generations->isEmpty())
                 <section aria-labelledby="history-title">
                     <div class="mb-3 flex items-end justify-between">
-                        <h3 id="history-title" class="font-display text-lg font-semibold text-navy-900">Your {{ \Illuminate\Support\Str::lower($feature['label']) }} for this product</h3>
+                        <h3 id="history-title" class="font-display text-lg font-semibold text-navy-900">Your {{ $feature['label'] }} history</h3>
                         <span class="text-xs text-ink-400">{{ $completed->count() }} ready</span>
                     </div>
                     <div data-history-slot data-poll-url="{{ route('offers.feature', [$offer, $featureKey, 'fragment' => 'history']) }}">

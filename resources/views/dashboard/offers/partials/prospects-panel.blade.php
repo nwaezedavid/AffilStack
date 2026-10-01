@@ -6,15 +6,15 @@
         $campaignUrl = \Illuminate\Support\Facades\Route::has('crm.campaigns.create') ? route('crm.campaigns.create', ['list' => $prospectList->id]) : null;
         $listUrl = \Illuminate\Support\Facades\Route::has('crm.lists.show') ? route('crm.lists.show', $prospectList) : route('crm.index');
     @endphp
-    <section data-tour="prospects" class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-950 via-navy-900 to-emerald-900 p-5 text-white shadow-lg sm:p-7">
+    <section data-tour="prospects" class="@container relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-950 via-navy-900 to-emerald-900 p-5 text-white shadow-lg sm:p-7">
         <div class="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl" aria-hidden="true"></div>
-        <div class="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div class="relative grid gap-6 @4xl:grid-cols-[1fr_auto] @4xl:items-center">
             <div>
                 <p class="text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-300">Step 2 · Collect buyers</p>
                 <h3 class="mt-1 font-display text-xl font-semibold">Your prospects for this product</h3>
                 <p class="mt-1 text-sm text-white/75">Every business or person you save with the Chrome extension lands in <strong class="text-white">{{ $prospectList->name }}</strong> — then one click emails them all.</p>
 
-                <ol class="mt-5 grid gap-3 sm:grid-cols-3">
+                <ol class="mt-5 grid gap-3 @xl:grid-cols-3">
                     @foreach ([
                         ['puzzle-piece', 'Install the Chrome extension', route('extension.index')],
                         ['map', 'Search a keyword on Google Maps or LinkedIn', null],
@@ -34,8 +34,8 @@
                 </ol>
             </div>
 
-            <div class="flex flex-row items-center gap-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 lg:flex-col lg:items-stretch lg:p-5 lg:text-center">
-                <div class="lg:mb-1">
+            <div class="flex flex-row items-center gap-4 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 @4xl:flex-col @4xl:items-stretch @4xl:p-5 @4xl:text-center">
+                <div class="@4xl:mb-1">
                     <p class="font-display text-4xl font-semibold tabular-nums">{{ number_format($prospectCount) }}</p>
                     <p class="text-xs text-white/70">{{ \Illuminate\Support\Str::plural('prospect', $prospectCount) }} saved</p>
                 </div>

@@ -39,12 +39,19 @@ class OfferFeatureController extends Controller
             : $offer->generations->whereIn('module', $definition['modules']);
         $generations = $generations->sortByDesc('created_at')->values();
 
+        // The UGC page shows the latest angle ideas as step 1's picker, so
+        // its history leaves finished angle rounds out rather than repeat them.
+        $history = $feature === 'ugc'
+            ? $generations->reject(fn ($generation) => $generation->module === 'ugc_angles' && $generation->status === 'completed')->values()
+            : $generations;
+
         $data = [
             'offer' => $offer,
             'featureKey' => $feature,
             'feature' => $definition,
             'tone' => OfferFeatures::tone($definition['tone']),
             'generations' => $generations,
+            'history' => $history,
             'pending' => $generations->contains('status', 'queued'),
             'planLocked' => ! OfferFeatures::planAllows($user, $feature),
             'seatLocked' => ! OfferFeatures::seatAllows($user, $feature),

@@ -56,7 +56,7 @@
                     };
                     $gradient = ['from-brand-500 to-navy-900', 'from-rose-500 to-violet-700', 'from-teal-500 to-emerald-700', 'from-amber-400 to-orange-600', 'from-sky-500 to-indigo-700', 'from-fuchsia-500 to-rose-600'][$offer->id % 6];
                 @endphp
-                <article class="group flex flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:-translate-y-0.5 hover:shadow-lg">
+                <article class="group flex min-w-0 flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:-translate-y-0.5 hover:shadow-lg">
                     <div class="relative bg-gradient-to-br {{ $gradient }} p-5 text-white">
                         <div class="pointer-events-none absolute -right-6 -top-8 h-28 w-28 rounded-full bg-white/15 blur-xl" aria-hidden="true"></div>
                         <div class="relative flex items-start justify-between gap-3">
@@ -78,7 +78,7 @@
                             <p class="text-[11px] text-ink-400">Content</p>
                         </div>
                         <div class="p-3">
-                            <p class="truncate text-sm font-semibold text-navy-900">{{ $offer->recommended_channel ? \App\Support\ResearchPresenter::channelLabel($offer->recommended_channel) : '—' }}</p>
+                            <p class="truncate text-sm font-semibold text-navy-900">{{ $bestKey ? \App\Support\OfferFeatures::get($bestKey)['label'] : '—' }}</p>
                             <p class="text-[11px] text-ink-400">Best channel</p>
                         </div>
                     </div>
@@ -86,6 +86,12 @@
                         <x-ui.button :href="route('offers.show', $offer)" variant="primary" size="sm" icon="squares-2x2">Open hub</x-ui.button>
                         @if ($offer->status === 'ready' && $bestKey)
                             <x-ui.button :href="route('offers.feature', [$offer, $bestKey])" variant="secondary" size="sm" icon="sparkles">{{ \App\Support\OfferFeatures::get($bestKey)['label'] }}</x-ui.button>
+                        @endif
+                        @if ($offer->status === 'failed')
+                            <form method="POST" action="{{ route('offers.research.retry', $offer) }}">
+                                @csrf
+                                <x-ui.button variant="secondary" size="sm" icon="arrow-path">Retry research</x-ui.button>
+                            </form>
                         @endif
                         @if ($offer->status === 'ready' && ! auth()->user()->isSeat())
                             <x-ui.button :href="route('offers.feature', [$offer, 'maps'])" variant="ghost" size="sm" icon="map-pin">Find buyers</x-ui.button>
