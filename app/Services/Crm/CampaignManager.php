@@ -328,7 +328,7 @@ class CampaignManager
      *
      * @return Collection<int, CrmCampaignRecipient>
      */
-    protected function dueRecipients(CrmCampaign $campaign, int $limit, int $followUpCount)
+    protected function dueRecipients(CrmCampaign $campaign, int $limit, int $followUpCount): Collection
     {
         $queued = $campaign->recipients()->with('contact')->where('status', 'queued')->orderBy('id')->limit($limit)->get();
 
