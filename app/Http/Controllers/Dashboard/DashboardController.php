@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Services\Credits\CreditManager;
+use App\Support\OfferHubData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -31,14 +32,18 @@ class DashboardController extends Controller
             return redirect()->route('referrals.index');
         }
 
-        $offers = $user->visibleOffers()->latest()->limit(5)->get();
-        $recentGenerations = $user->visibleGenerations()->latest()->limit(8)->get();
+        // Get Started: the research form first, then the results for the
+        // most recent product right below it (polled live while it runs).
+        $offers = $user->visibleOffers()->latest()->limit(6)->get();
+        $latestOffer = $offers->first();
         $balance = $credits->balance($user);
         $subscription = $user->activeSubscription()->with('plan')->first();
         $contactCount = $user->crmContacts()->count();
+        $productCount = $user->visibleOffers()->count();
 
-        return view('dashboard.index', compact(
-            'offers', 'recentGenerations', 'balance', 'subscription', 'contactCount'
+        return view('dashboard.index', array_merge(
+            compact('offers', 'latestOffer', 'balance', 'subscription', 'contactCount', 'productCount'),
+            $latestOffer ? OfferHubData::for($user, $latestOffer) : [],
         ));
     }
 }

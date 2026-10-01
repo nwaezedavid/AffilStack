@@ -201,7 +201,10 @@ class OfferFeatures
                 'short' => 'Find local business leads',
                 'icon' => 'map-pin',
                 'tone' => 'teal',
-                'channel' => 'google_maps',
+                // Not plan-gated as a page: the Maps keywords + Chrome
+                // extension flow works on every plan. Only the built-in
+                // Local Leads search on it needs the google_maps channel.
+                'channel' => null,
                 'owner_only' => true,
                 'modules' => [],
                 'cost_keys' => [],

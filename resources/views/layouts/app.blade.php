@@ -147,6 +147,12 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+                    {{-- Agent 10: replay the welcome tour (partials/onboarding-tour). --}}
+                    @unless ($isAffiliatePortal)
+                        <a href="{{ route('onboarding.restart') }}" data-tour-restart class="hidden sm:inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-ink-600 ring-1 ring-line hover:bg-surface-muted hover:text-ink-900 transition">
+                            <x-heroicon-o-academic-cap class="h-4 w-4" /> Take the tour
+                        </a>
+                    @endunless
                     <div id="notif-bell" class="relative">
                         <button type="button" id="notif-toggle" class="relative flex items-center justify-center h-9 w-9 rounded-md text-ink-600 hover:bg-surface-muted transition" aria-label="Notifications">
                             <x-heroicon-o-bell class="h-5 w-5" />
@@ -286,6 +292,9 @@
             setInterval(poll, 20000);
         })();
     </script>
+
+    {{-- Agent 10: the dashboard welcome tour. --}}
+    @include('partials.onboarding-tour')
 
     @stack('scripts')
 </body>

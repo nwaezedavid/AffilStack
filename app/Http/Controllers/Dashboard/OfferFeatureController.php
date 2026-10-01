@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\CrmList;
 use App\Models\Offer;
 use App\Services\Social\InstagramPublishingService;
 use App\Services\Social\TikTokPublishingService;
@@ -56,6 +57,8 @@ class OfferFeatureController extends Controller
             'socialConnections' => collect(),
             'publishProviders' => [],
             'localizable' => collect(),
+            'prospectList' => null,
+            'prospectCount' => 0,
         ];
 
         if ($feature === 'nurture' && ! $user->isSeat()) {
@@ -68,6 +71,11 @@ class OfferFeatureController extends Controller
             $data['ugcVoices'] = $heygen->voices();
             $data['socialConnections'] = $user->socialConnections()->get()->keyBy('provider');
             $data['publishProviders'] = $this->publishProviders();
+        }
+
+        if ($feature === 'maps' && ! $user->isSeat() && $offer->user_id === $user->id) {
+            $data['prospectList'] = CrmList::forOffer($offer);
+            $data['prospectCount'] = $data['prospectList']->contacts()->count();
         }
 
         if ($feature === 'localize') {
