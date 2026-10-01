@@ -33,7 +33,7 @@ class EmailNurtureController extends Controller
             return back()->with('error', 'Not enough credits for an email nurture sequence. Upgrade your plan or buy a credit top-up.');
         }
 
-        return redirect()->route('offers.show', $offer)->with('success', "Email sequence for {$contact->name} queued — we'll notify you the moment it's ready.");
+        return redirect()->route('offers.feature', [$offer, 'nurture'])->with('success', "Email sequence for {$contact->name} queued — we'll notify you the moment it's ready.");
     }
 
     /**

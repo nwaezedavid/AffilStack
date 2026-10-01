@@ -27,6 +27,8 @@ use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\LinkedInReplyAssistantController;
 use App\Http\Controllers\Dashboard\LocalizationController;
 use App\Http\Controllers\Dashboard\OfferController;
+use App\Http\Controllers\Dashboard\OfferFeatureController;
+use App\Http\Controllers\Dashboard\OnboardingController;
 use App\Http\Controllers\Dashboard\PinterestController;
 use App\Http\Controllers\Dashboard\ReferralController as DashboardReferralController;
 use App\Http\Controllers\Dashboard\SocialConnectionController;
@@ -371,6 +373,17 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::get('/support/chat', [SupportChatController::class, 'show'])->name('support.chat');
     Route::post('/support/chat/message', [SupportChatController::class, 'message'])->middleware('throttle:support-chat')->name('support.chat.message');
     Route::post('/support/chat/escalate', [SupportChatController::class, 'escalate'])->middleware('throttle:5,60')->name('support.chat.escalate');
+
+    // --- Agent 10: Get Started journey — research status polling, the
+    // dedicated per-feature product pages, and the welcome tour. Seat
+    // access for these is granted in config('agency.seat_allowed_routes').
+    Route::get('/offers/{offer}/research-status', [OfferController::class, 'researchStatus'])->name('offers.research.status');
+    Route::post('/offers/{offer}/research/retry', [OfferController::class, 'retryResearch'])->name('offers.research.retry');
+    Route::get('/offers/{offer}/features/{feature}', [OfferFeatureController::class, 'show'])->name('offers.feature');
+    Route::post('/onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
+    Route::post('/onboarding/dismiss', [OnboardingController::class, 'dismiss'])->name('onboarding.dismiss');
+    Route::get('/onboarding/restart', [OnboardingController::class, 'restart'])->name('onboarding.restart');
+    // --- end Agent 10
 
     Route::get('/support/{ticket}', [SupportTicketController::class, 'show'])->name('support.show');
     Route::post('/support/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('support.reply');

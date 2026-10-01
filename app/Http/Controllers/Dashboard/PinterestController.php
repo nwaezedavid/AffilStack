@@ -24,6 +24,6 @@ class PinterestController extends Controller
             return back()->with('error', 'Not enough credits for Pinterest pins. Upgrade your plan or buy a credit top-up.');
         }
 
-        return redirect()->route('offers.show', $offer)->with('success', "Pinterest pins queued — we'll notify you the moment they're ready.");
+        return redirect()->route('offers.feature', [$offer, 'pinterest'])->with('success', "Pinterest pins queued — we'll notify you the moment they're ready.");
     }
 }

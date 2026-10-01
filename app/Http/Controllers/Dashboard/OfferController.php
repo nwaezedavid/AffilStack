@@ -3,20 +3,15 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
-use App\Models\HeyGenSetting;
 use App\Models\Offer;
 use App\Models\ResearchClip;
 use App\Services\Compliance\DisclosureService;
 use App\Services\Credits\InsufficientCreditsException;
 use App\Services\Modules\OfferResearchService;
-use App\Services\Social\InstagramPublishingService;
-use App\Services\Social\TikTokPublishingService;
-use App\Services\Social\YouTubePublishingService;
-use App\Services\Video\HeyGenClient;
-use App\Services\Video\VideoGenerationException;
+use App\Support\OfferHubData;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class OfferController extends Controller
@@ -34,11 +29,17 @@ class OfferController extends Controller
             $query->where('product_name', 'like', '%'.$search.'%');
         }
 
-        if (in_array($request->query('status'), ['researching', 'ready', 'archived'], true)) {
+        if (in_array($request->query('status'), ['queued', 'ready', 'failed', 'researching', 'archived'], true)) {
             $query->where('status', $request->query('status'));
         }
 
-        $offers = $query->latest()->paginate(10)->withQueryString();
+        $offers = $query->latest()
+            ->withCount([
+                'generations as content_count' => fn ($generations) => $generations->where('module', '!=', 'research')->where('status', 'completed'),
+            ])
+            ->with(['crmLists' => fn ($lists) => $lists->withCount('contacts')])
+            ->paginate(12)
+            ->withQueryString();
 
         return view('dashboard.offers.index', compact('offers'));
     }
@@ -48,26 +49,46 @@ class OfferController extends Controller
         return view('dashboard.offers.create');
     }
 
-    public function store(Request $request, OfferResearchService $service): RedirectResponse
+    /**
+     * Queues research from the Get Started form (or the standalone create
+     * page). A JSON request — the Get Started form's progressive
+     * enhancement — gets the new offer's status URL back so the page can
+     * show progress and poll without reloading; a plain form post falls
+     * back to a normal redirect.
+     */
+    public function store(Request $request, OfferResearchService $service): RedirectResponse|JsonResponse
     {
+        $otherValue = config('affiliate_networks.other_value');
+
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'product_url' => 'required|url|max:2048',
             'affiliate_network' => 'required|string|max:255',
+            'affiliate_network_other' => 'nullable|string|max:255|required_if:affiliate_network,'.$otherValue,
             'affiliate_link' => 'nullable|url|max:2048',
             'clip_id' => 'nullable|integer',
+        ], [
+            'affiliate_network_other.required_if' => 'Type the name of the affiliate platform you chose "Other" for.',
         ]);
+
+        $network = $validated['affiliate_network'] === $otherValue
+            ? trim((string) $validated['affiliate_network_other'])
+            : $validated['affiliate_network'];
 
         try {
             $offer = $service->queue(
                 auth()->user(),
                 $validated['product_name'],
                 $validated['product_url'],
-                $validated['affiliate_network'],
+                $network,
                 $validated['affiliate_link'] ?? null,
             );
         } catch (InsufficientCreditsException $e) {
-            return back()->withInput()->with('error', 'Not enough credits for offer research. Upgrade your plan or buy a credit top-up.');
+            $message = 'Not enough credits for offer research. Upgrade your plan or buy a credit top-up.';
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 402)
+                : back()->withInput()->with('error', $message);
         }
 
         // "Create offer from clip" (item 11's browser extension): attach the
@@ -78,73 +99,86 @@ class OfferController extends Controller
                 ->update(['offer_id' => $offer->id]);
         }
 
-        return redirect()->route('offers.show', $offer)->with('success', "Research queued — we'll notify you the moment it's ready.");
+        if ($request->expectsJson()) {
+            return response()->json([
+                'offer_id' => $offer->id,
+                'status' => $offer->status,
+                'status_url' => route('offers.research.status', $offer),
+                'show_url' => route('offers.show', $offer),
+            ], 201);
+        }
+
+        $message = "Research queued — we'll notify you the moment it's ready.";
+
+        return $request->input('return_to') === 'dashboard' && ! auth()->user()->isSeat()
+            ? redirect()->route('dashboard')->with('success', $message)
+            : redirect()->route('offers.show', $offer)->with('success', $message);
     }
 
+    /**
+     * The product hub: research results, the prospects panel, every
+     * feature as a tile, and recent content.
+     */
     public function show(Offer $offer): View
     {
         abort_unless($offer->isAccessibleBy(auth()->user()), 403);
 
-        $offer->load('generations.emailSends', 'researchClips');
-        $contacts = auth()->user()->crmContacts()->orderBy('name')->get();
+        $offer->load('generations', 'researchClips');
 
-        $ugcVideoReady = HeyGenSetting::current()->isReady();
-        $ugcAvatars = $ugcVideoReady ? $this->ugcVideoAvatars() : [];
-        $ugcVoices = $ugcVideoReady ? $this->ugcVideoVoices() : [];
+        $recent = $offer->generations
+            ->where('module', '!=', 'research')
+            ->sortByDesc('created_at')
+            ->take(6);
 
-        $socialConnections = auth()->user()->socialConnections()->get()->keyBy('provider');
-        $publishProviders = $this->publishProviders();
-
-        return view('dashboard.offers.show', compact('offer', 'contacts', 'ugcVideoReady', 'ugcAvatars', 'ugcVoices', 'socialConnections', 'publishProviders'));
+        return view('dashboard.offers.show', OfferHubData::for(auth()->user(), $offer) + [
+            'recentGenerations' => $recent,
+        ]);
     }
 
     /**
-     * The publish-capable social platforms (task #2) and whether each has
-     * approved AffilStack for publishing yet — used by the ugc_video block
-     * to decide between a real "Publish" button and a "connect first" /
-     * "awaiting approval" state, falling back to the always-available
-     * manual download either way.
-     *
-     * @return array<string, array{label: string, approved: bool}>
+     * Polled by the results area while research runs. Returns the freshly
+     * rendered results block, so the page swaps it in without a reload.
      */
-    protected function publishProviders(): array
+    public function researchStatus(Offer $offer): JsonResponse
     {
-        return collect([
-            'youtube' => YouTubePublishingService::class,
-            'tiktok' => TikTokPublishingService::class,
-            'instagram' => InstagramPublishingService::class,
-        ])->map(fn (string $class, string $key) => [
-            'label' => ucfirst($key),
-            'approved' => app($class)->isApprovedForPublishing(),
-        ])->all();
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
+
+        $offer->refresh();
+        $context = request()->query('context') === 'hub' ? 'hub' : 'dashboard';
+
+        return response()->json([
+            'status' => $offer->status,
+            'html' => view('dashboard.offers.partials.results', OfferHubData::for(auth()->user(), $offer) + ['context' => $context])->render(),
+        ]);
     }
 
     /**
-     * @return array<int, array{id: string, name: string, gender: ?string, preview_image_url: ?string}>
+     * Retry a failed research run, or refresh an older offer's research to
+     * the extended contract — same offer, same credit price.
      */
-    protected function ugcVideoAvatars(): array
+    public function retryResearch(Request $request, Offer $offer, OfferResearchService $service): RedirectResponse|JsonResponse
     {
-        try {
-            return Cache::remember('heygen:avatars', now()->addHours(6), fn () => (new HeyGenClient(
-                (string) HeyGenSetting::current()->credential('api_key'),
-            ))->listAvatars());
-        } catch (VideoGenerationException) {
-            return [];
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
+
+        if ($offer->status === 'queued') {
+            return $request->expectsJson()
+                ? response()->json(['status' => 'queued', 'status_url' => route('offers.research.status', $offer)])
+                : back()->with('success', 'Research is already running.');
         }
-    }
 
-    /**
-     * @return array<int, array{id: string, name: string, language: ?string, gender: ?string}>
-     */
-    protected function ugcVideoVoices(): array
-    {
         try {
-            return Cache::remember('heygen:voices', now()->addHours(6), fn () => (new HeyGenClient(
-                (string) HeyGenSetting::current()->credential('api_key'),
-            ))->listVoices());
-        } catch (VideoGenerationException) {
-            return [];
+            $service->requeue(auth()->user(), $offer);
+        } catch (InsufficientCreditsException) {
+            $message = 'Not enough credits for offer research. Upgrade your plan or buy a credit top-up.';
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 402)
+                : back()->with('error', $message);
         }
+
+        return $request->expectsJson()
+            ? response()->json(['status' => 'queued', 'status_url' => route('offers.research.status', $offer)])
+            : back()->with('success', "Research restarted — we'll notify you the moment it's ready.");
     }
 
     public function updateDisclosure(Request $request, Offer $offer, DisclosureService $disclosure): RedirectResponse

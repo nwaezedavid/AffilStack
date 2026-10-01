@@ -547,4 +547,21 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             ->when($currency, fn ($query) => $query->where('currency', $currency))
             ->exists();
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Agent 10 — onboarding tour (Get Started relaunch)
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Whether the dashboard's welcome tour should start by itself — only
+     * until the user has either finished or skipped it once (the
+     * onboarding_* columns; "Take the tour" clears both to start again).
+     */
+    public function shouldSeeOnboardingTour(): bool
+    {
+        return $this->getAttribute('onboarding_completed_at') === null
+            && $this->getAttribute('onboarding_dismissed_at') === null;
+    }
 }

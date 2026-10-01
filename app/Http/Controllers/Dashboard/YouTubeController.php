@@ -27,7 +27,7 @@ class YouTubeController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('offers.show', $offer)->with('success', "YouTube content queued — we'll notify you the moment it's ready.");
+        return redirect()->route('offers.feature', [$offer, 'youtube'])->with('success', "YouTube content queued — we'll notify you the moment it's ready.");
     }
 
     public function script(Offer $offer, YouTubeService $service): RedirectResponse

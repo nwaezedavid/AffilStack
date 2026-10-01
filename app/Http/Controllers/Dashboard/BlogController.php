@@ -25,6 +25,6 @@ class BlogController extends Controller
             return back()->with('error', 'Not enough credits for a blog article. Upgrade your plan or buy a credit top-up.');
         }
 
-        return redirect()->route('offers.show', $offer)->with('success', "Blog article queued — we'll notify you the moment it's ready.");
+        return redirect()->route('offers.feature', [$offer, 'blog'])->with('success', "Blog article queued — we'll notify you the moment it's ready.");
     }
 }

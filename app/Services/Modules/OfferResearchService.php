@@ -60,6 +60,27 @@ class OfferResearchService
     }
 
     /**
+     * Run research again on an existing offer — the retry after a failed
+     * attempt, or a refresh of an older offer researched before the
+     * extended contract (Maps/LinkedIn keywords, personas…) existed.
+     * Charged exactly like a first run, and only once it succeeds.
+     */
+    public function requeue(User $user, Offer $offer): Offer
+    {
+        $cost = (int) config('credits.costs.research');
+
+        if (! $this->credits->hasEnough($user, $cost)) {
+            throw new InsufficientCreditsException("Need {$cost} credits to run offer research.");
+        }
+
+        $offer->update(['status' => 'queued']);
+
+        RunOfferResearch::dispatch($offer);
+
+        return $offer;
+    }
+
+    /**
      * Called by RunOfferResearch inside the queue worker. Always leaves the
      * offer in a terminal state (ready/failed) and never throws — the job
      * reads the final status to decide which notification to send.
@@ -103,10 +124,19 @@ class OfferResearchService
             - "secondary_channel": one of the same eight channel values, the second-best option.
             - "suggested_maps_niche": ONLY when "recommended_channel" or "secondary_channel" is "google_maps" — a short 2-4 word Google-Maps-ready search keyword for the kind of LOCAL BUSINESS most likely to buy this as a client/referral source (e.g. "dentists", "real estate agents", "coffee shops"), not the end consumer. Empty string "" when local outreach doesn't fit this product at all.
             - "suggested_maps_location": ONLY when a suggested_maps_niche is given — a single plausible city/region to search first (e.g. "Austin, TX"), your best generic guess since no location was provided. Empty string "" otherwise.
+            - "product_overview": 2-4 plain-English sentences on what the product/service actually does and the result it gives, as if explaining it to a friend.
+            - "who_needs_it": an object with "individuals" (array of 2-4 short strings naming the kinds of people who need it) and "businesses" (array of 2-4 short strings naming the kinds of businesses/organisations that need it; empty array if it is purely a consumer product).
+            - "buyer_personas": array of 2-3 objects, each with "name" (a short memorable persona label, e.g. "The overwhelmed solo agency owner") and "description" (1-2 sentences: who they are, what they want, what makes them buy).
+            - "google_maps_keywords": array of 6-10 objects, each with "keyword" (a 1-4 word search term someone would type into Google Maps to find LOCAL BUSINESSES likely to buy this product or refer clients to it, e.g. "dental clinic", "real estate agency") and "why" (one line on why that business type is likely to buy or refer).
+            - "suggested_locations": array of 3-5 cities to start the Google Maps search in, formatted "City, Country". If the affiliate's own location is given below, start with their city/country and nearby large cities; otherwise pick the strongest markets for this product.
+            - "linkedin_keywords": an object with "people" (array of 5-8 job titles or profile keywords to search for individual buyers/decision makers) and "companies" (array of 4-6 industry or company keywords to search for companies likely to buy).
+            - "linkedin_search_tips": array of 2-4 short, practical tips for using those keywords in LinkedIn search (filters to apply, connection degree, how to open the conversation).
             PROMPT;
 
         $affiliateLinkLine = $offer->affiliate_link ? "\nAffiliate link: {$offer->affiliate_link}" : '';
-        $userPrompt = "Product name: {$offer->product_name}\nOfficial URL: {$offer->product_url}\nAffiliate network: {$offer->affiliate_network}{$affiliateLinkLine}";
+        $home = implode(', ', array_filter([$user->city, $user->state_region, $user->country]));
+        $locationLine = $home !== '' ? "\nAffiliate's own location (default suggested_locations here): {$home}" : '';
+        $userPrompt = "Product name: {$offer->product_name}\nOfficial URL: {$offer->product_url}\nAffiliate network: {$offer->affiliate_network}{$affiliateLinkLine}{$locationLine}";
 
         try {
             $result = $this->ai->generateJson($system, $userPrompt);

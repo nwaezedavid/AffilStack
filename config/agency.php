@@ -64,6 +64,16 @@ return [
         'notifications.poll',
         'notifications.read-all',
         'logout',
+        // Agent 10 (Get Started relaunch): the per-feature product pages,
+        // research polling/retry, and the welcome tour. Each still runs
+        // Offer::isAccessibleBy() per request, and the feature page itself
+        // locks the owner-only features (email nurture, local leads).
+        'offers.feature',
+        'offers.research.status',
+        'offers.research.retry',
+        'onboarding.complete',
+        'onboarding.dismiss',
+        'onboarding.restart',
     ],
 
     // Route names allowed only for a seat on a "shared" (Business tier)
