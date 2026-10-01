@@ -55,7 +55,7 @@
         @if ($prospectCount === 0)
             <p class="relative mt-5 flex items-center gap-2 text-xs text-white/70">
                 <x-heroicon-m-light-bulb class="h-4 w-4 text-gold-300" />
-                No prospects yet — copy a Google Maps keyword above, open Maps, and add your first 10 businesses.
+                No prospects yet — search a business type on Google Maps (or a job title on LinkedIn) and add your first 10 with the extension.
             </p>
         @endif
     </section>
