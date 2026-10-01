@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Model;
  * app's own test users — independently of each other and of when
  * "Continue with Google" already works.
  */
-#[Fillable(['is_enabled', 'gmail_sending_enabled', 'youtube_publishing_enabled', 'youtube_approval_status', 'youtube_approval_notes', 'credentials'])]
+#[Fillable(['is_enabled', 'gmail_sending_enabled', 'gmail_reading_enabled', 'youtube_publishing_enabled', 'youtube_approval_status', 'youtube_approval_notes', 'credentials'])]
 class GoogleOauthSetting extends Model
 {
     protected function casts(): array
@@ -30,6 +30,7 @@ class GoogleOauthSetting extends Model
         return [
             'is_enabled' => 'boolean',
             'gmail_sending_enabled' => 'boolean',
+            'gmail_reading_enabled' => 'boolean',
             'youtube_publishing_enabled' => 'boolean',
             'credentials' => 'encrypted:array',
         ];
@@ -53,6 +54,16 @@ class GoogleOauthSetting extends Model
     public function gmailSendingAvailable(): bool
     {
         return $this->gmail_sending_enabled && $this->credential('client_id') && $this->credential('client_secret');
+    }
+
+    /**
+     * Gmail API inbox reading (gmail.readonly, a restricted scope) for CRM
+     * reply detection — off until Google's CASA assessment is approved, and
+     * only meaningful while Gmail sending itself is available.
+     */
+    public function gmailReadingAvailable(): bool
+    {
+        return $this->gmail_reading_enabled && $this->gmailSendingAvailable();
     }
 
     /**
