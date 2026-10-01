@@ -6,6 +6,7 @@ use App\Services\Webhooks\WebhookDispatcher;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -58,6 +59,11 @@ class CrmContact extends Model
     public function emailSends(): HasMany
     {
         return $this->hasMany(CrmEmailSend::class);
+    }
+
+    public function lists(): BelongsToMany
+    {
+        return $this->belongsToMany(CrmList::class, 'crm_contact_list')->withPivot('added_at');
     }
 
     public function isUnsubscribed(): bool

@@ -301,6 +301,11 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return Generation::query()->whereIn('offer_id', $this->billableUser()->offers()->pluck('id'));
     }
 
+    public function crmLists(): HasMany
+    {
+        return $this->hasMany(CrmList::class);
+    }
+
     public function crmContacts(): HasMany
     {
         return $this->hasMany(CrmContact::class);

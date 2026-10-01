@@ -40,6 +40,11 @@ class Offer extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function crmLists(): HasMany
+    {
+        return $this->hasMany(CrmList::class);
+    }
+
     /**
      * Whether $user may view/generate content for this offer — its owner,
      * a team seat (item 10) specifically scoped to this one offer
