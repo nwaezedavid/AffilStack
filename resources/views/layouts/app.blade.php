@@ -14,7 +14,7 @@
     // look interchangeable even though they're the same User model and the
     // same session.
     $isAffiliatePortal = auth()->user()->isAffiliateOnly();
-    $sidebarBg = $isAffiliatePortal ? 'bg-emerald-950' : 'bg-navy-900';
+    $sidebarBg = $isAffiliatePortal ? 'bg-gradient-to-b from-emerald-950 to-emerald-900' : 'bg-gradient-to-b from-navy-950 via-navy-900 to-navy-800';
     $sidebarBorder = $isAffiliatePortal ? 'border-emerald-800' : 'border-white/10';
     $sidebarHover = $isAffiliatePortal ? 'hover:bg-emerald-900/60' : 'hover:bg-white/5';
     $sidebarActive = $isAffiliatePortal ? 'bg-emerald-900 text-white' : 'bg-white/10 text-white';
@@ -61,7 +61,7 @@
         <aside class="w-64 shrink-0 {{ $sidebarBg }} text-white flex flex-col
                       fixed inset-y-0 left-0 z-40 -translate-x-full transition-transform duration-200 ease-out
                       peer-checked:translate-x-0
-                      md:static md:translate-x-0">
+                      md:sticky md:top-0 md:h-screen md:translate-x-0">
             <div class="px-5 py-5 border-b {{ $sidebarBorder }}">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-display font-semibold text-lg">
                     @if ($logo && ! $isAffiliatePortal)
@@ -76,65 +76,25 @@
                 @endif
             </div>
 
-            <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
-                @php
-                    // A team seat (item 10) has no billing/CRM/earnings/
-                    // referrals/support of its own — see
-                    // config('agency.seat_allowed_routes'), enforced by
-                    // RestrictAgencySeats. The nav mirrors that scope so a
-                    // seat never sees a link that would just 403. An
-                    // isolated-plan seat is scoped to its one offer; a
-                    // shared-plan (Business tier) seat instead gets the
-                    // whole team's offer list — see
-                    // User::hasSharedTeamAccess().
-                    $seatOfferItem = auth()->user()->isSeat() && auth()->user()->hasSharedTeamAccess()
-                        ? ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'Offers', 'icon' => '🔎']
-                        : ['name' => 'offers.show', 'params' => [auth()->user()->seat_offer_id], 'match' => 'offers.*', 'label' => 'My Product', 'icon' => '🔎'];
-
-                    $items = auth()->user()->isSeat()
-                        ? [
-                            $seatOfferItem,
-                            ['name' => 'calendar.index', 'match' => 'calendar.*', 'label' => 'Content Calendar', 'icon' => '📅'],
-                            ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => '🗂️'],
-                            ['name' => 'social-connections.index', 'match' => 'social-connections.*', 'label' => 'Connected Accounts', 'icon' => '🔗'],
-                            ['name' => 'api-access.index', 'match' => 'api-access.*', 'label' => 'API Access', 'icon' => '🔌'],
-                        ]
-                        : (auth()->user()->isAffiliateOnly()
-                        // An affiliate-only account (see
-                        // RestrictAffiliateOnlyAccounts) has nothing else on
-                        // this account to link to — every other item here
-                        // would just 403.
-                        ? [
-                            ['name' => 'referrals.index', 'match' => 'referrals.index', 'label' => 'Referrals', 'icon' => '🤝'],
-                        ]
-                        : [
-                            ['name' => 'dashboard', 'match' => 'dashboard', 'label' => 'Overview', 'icon' => '🏠'],
-                            ['name' => 'intelligence-centre.index', 'match' => 'intelligence-centre.*', 'label' => 'Intelligence Centre', 'icon' => '🧠'],
-                            ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'Offer Research', 'icon' => '🔎'],
-                            ['name' => 'crm.index', 'match' => 'crm.*', 'label' => 'CRM Contacts', 'icon' => '📇'],
-                            ['name' => 'email-connections.index', 'match' => 'email-connections.*', 'label' => 'Email Sending', 'icon' => '📧'],
-                            ['name' => 'social-connections.index', 'match' => 'social-connections.*', 'label' => 'Connected Accounts', 'icon' => '🔗'],
-                            ['name' => 'leads.index', 'match' => 'leads.*', 'label' => 'Local Leads', 'icon' => '📍'],
-                            ['name' => 'calendar.index', 'match' => 'calendar.*', 'label' => 'Content Calendar', 'icon' => '📅'],
-                            ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => '🗂️'],
-                            ['name' => 'links.index', 'match' => 'links.*', 'label' => 'Links & Clicks', 'icon' => '🔗'],
-                            ['name' => 'earnings.index', 'match' => 'earnings.*', 'label' => 'Earnings', 'icon' => '💰'],
-                            ['name' => 'referrals.index', 'match' => 'referrals.index', 'label' => 'Referrals', 'icon' => '🤝'],
-                            ['name' => 'team.index', 'match' => 'team.*', 'label' => 'Team', 'icon' => '👥'],
-                            ['name' => 'extension.index', 'match' => 'extension.*', 'label' => 'Browser Extension', 'icon' => '🧩'],
-                            ['name' => 'api-access.index', 'match' => 'api-access.*', 'label' => 'API Access', 'icon' => '🔌'],
-                            ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => '💬'],
-                            ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => '💳'],
-                            ['name' => 'credit-topups.index', 'match' => 'credit-topups.*', 'label' => 'Buy Credits', 'icon' => '⚡'],
-                            ['name' => 'testimonial.edit', 'match' => 'testimonial.*', 'label' => 'Share a Review', 'icon' => '⭐'],
-                        ]);
-                @endphp
-                @foreach ($items as $item)
-                    <a href="{{ route($item['name'], $item['params'] ?? []) }}"
-                       class="flex items-center gap-3 rounded-md px-3 py-2 transition {{ request()->routeIs($item['match']) ? $sidebarActive : $sidebarText.' '.$sidebarHover.' hover:text-white' }}">
-                        <span aria-hidden="true">{{ $item['icon'] }}</span>
-                        <span>{{ $item['label'] }}</span>
-                    </a>
+            <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-5 text-sm" aria-label="Dashboard">
+                @foreach (\App\Support\DashboardNavigation::groupsFor(auth()->user()) as $group)
+                    <div>
+                        <p class="px-3 mb-1.5 text-[10px] font-mono uppercase tracking-[0.18em] {{ $sidebarMuted }}">{{ $group['label'] }}</p>
+                        <div class="space-y-0.5">
+                            @foreach ($group['items'] as $item)
+                                @php($active = request()->routeIs($item['match']))
+                                <a href="{{ route($item['name'], $item['params'] ?? []) }}"
+                                   @if ($active) aria-current="page" @endif
+                                   class="group relative flex items-center gap-3 rounded-lg px-3 py-2 transition {{ $active ? $sidebarActive : $sidebarText.' '.$sidebarHover.' hover:text-white' }}">
+                                    @if ($active)
+                                        <span class="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-gold-400" aria-hidden="true"></span>
+                                    @endif
+                                    <x-dynamic-component :component="'heroicon-o-'.$item['icon']" @class(['h-5 w-5 shrink-0', 'text-gold-300' => $active, 'opacity-80 group-hover:opacity-100' => ! $active]) />
+                                    <span>{{ $item['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
                 @endforeach
             </nav>
 
@@ -156,13 +116,13 @@
                         </div>
                     </div>
                 @endunless
-                <a href="{{ route('profile') }}" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm {{ $sidebarText }} {{ $sidebarHover }} hover:text-white">
-                    <span aria-hidden="true">⚙️</span> Profile & Security
+                <a href="{{ route('profile') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm {{ $sidebarText }} {{ $sidebarHover }} hover:text-white">
+                    <x-heroicon-o-user-circle class="h-5 w-5 shrink-0 opacity-80" /> Profile & Security
                 </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm {{ $sidebarText }} {{ $sidebarHover }} hover:text-white">
-                        <span aria-hidden="true">↩</span> Sign out
+                    <button type="submit" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm {{ $sidebarText }} {{ $sidebarHover }} hover:text-white">
+                        <x-heroicon-o-arrow-left-start-on-rectangle class="h-5 w-5 shrink-0 opacity-80" /> Sign out
                     </button>
                 </form>
             </div>
@@ -170,7 +130,7 @@
 
         {{-- Main --}}
         <div class="flex-1 min-w-0">
-            <header class="bg-surface border-b border-line px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+            <header class="sticky top-0 z-20 bg-surface/90 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                     <label for="sidebar-toggle"
                            class="md:hidden shrink-0 -ml-1 p-2 rounded-md text-ink-600 hover:bg-surface-muted cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-navy-900"
@@ -189,7 +149,7 @@
                 <div class="flex items-center gap-2 sm:gap-4 shrink-0">
                     <div id="notif-bell" class="relative">
                         <button type="button" id="notif-toggle" class="relative flex items-center justify-center h-9 w-9 rounded-md text-ink-600 hover:bg-surface-muted transition" aria-label="Notifications">
-                            <span aria-hidden="true">🔔</span>
+                            <x-heroicon-o-bell class="h-5 w-5" />
                             <span id="notif-badge" class="hidden absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[10px] leading-4 text-center font-mono"></span>
                         </button>
                         <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] max-h-96 overflow-y-auto bg-surface border border-line rounded-lg shadow-lg z-20">
@@ -202,11 +162,14 @@
                             </div>
                         </div>
                     </div>
-                    <div class="text-sm text-ink-600 hidden sm:block truncate max-w-[10rem]">{{ auth()->user()->name }}</div>
+                    <a href="{{ route('profile') }}" class="hidden sm:flex items-center gap-2 rounded-full py-1 pl-1 pr-3 hover:bg-surface-muted transition">
+                        <x-ui.avatar :user="auth()->user()" class="h-8 w-8" />
+                        <span class="text-sm text-ink-900 truncate max-w-[10rem]">{{ auth()->user()->name }}</span>
+                    </a>
                 </div>
             </header>
 
-            <main class="p-4 sm:p-6 max-w-5xl">
+            <main class="p-4 sm:p-6 lg:p-8 max-w-6xl">
                 @if (session('success'))
                     <div class="mb-5 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-4 py-2.5 whitespace-pre-line">
                         {{ session('success') }}

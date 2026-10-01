@@ -21,13 +21,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role', 'refund_policy_accepted_at', 'is_affiliate_only', 'api_wallet_balance_cents', 'api_wallet_auto_recharge_enabled', 'api_wallet_auto_recharge_threshold_cents', 'api_wallet_auto_recharge_amount_cents', 'api_wallet_payment_method_id'])]
+#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'avatar_path', 'birth_date', 'phone', 'gender', 'religion', 'business_website', 'business_industry', 'city', 'state_region', 'timezone', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role', 'refund_policy_accepted_at', 'is_affiliate_only', 'api_wallet_balance_cents', 'api_wallet_auto_recharge_enabled', 'api_wallet_auto_recharge_threshold_cents', 'api_wallet_auto_recharge_amount_cents', 'api_wallet_payment_method_id'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'app_authentication_secret', 'app_authentication_recovery_codes', 'payout_details'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
@@ -45,6 +46,8 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'api_wallet_auto_recharge_enabled' => 'boolean',
             'notify_email_on_completion' => 'boolean',
             'last_active_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'birth_date' => 'date',
             'payout_details' => 'encrypted:array',
             'deleted_at' => 'datetime',
         ];
@@ -154,6 +157,28 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function seatOffer(): BelongsTo
     {
         return $this->belongsTo(Offer::class, 'seat_offer_id');
+    }
+
+    /**
+     * Public URL of the profile photo, or null when none has been uploaded
+     * (callers fall back to initials — see <x-ui.avatar>).
+     */
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? Storage::disk('public')->url($this->avatar_path) : null;
+    }
+
+    /**
+     * Up to two initials from the user's name, for the avatar fallback.
+     */
+    public function initials(): string
+    {
+        return (string) Str::of($this->name ?: $this->email)
+            ->explode(' ')
+            ->filter()
+            ->take(2)
+            ->map(fn (string $word) => mb_strtoupper(mb_substr($word, 0, 1)))
+            ->implode('');
     }
 
     public function isSeat(): bool

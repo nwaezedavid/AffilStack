@@ -46,3 +46,8 @@ body {
 .font-mono {
     font-family: var(--font-mono);
 }
+
+/* Classes built from variables in Blade (e.g. <x-ui.feature-intro>'s step
+   grid) never appear literally in a template, so list them for Tailwind. */
+@source inline("sm:grid-cols-{1,2,3,4}");
+@source inline("lg:grid-cols-{1,2,3,4}");
