@@ -10,8 +10,8 @@ use Tests\TestCase;
 
 /**
  * Item 3 (simplified product-to-leads flow): the optional affiliate_link
- * input on offer creation, and the "Ready to start?" call-to-action + per-
- * channel recommendation badges added to offers/show.blade.php so a
+ * input on offer creation, and the "best channel" call-to-action + per-
+ * feature recommendation badges on the product hub (offers/show) so a
  * finished research result leads straight into the next concrete action
  * instead of just displaying data.
  */
@@ -106,10 +106,13 @@ class OfferControllerTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('offers.show', $offer));
 
+        // The recommended channel's CTA now opens that feature's dedicated
+        // page (offers.feature) instead of jumping to a card further down
+        // the old monolithic product page, and its tile carries the badge.
         $response->assertOk();
-        $response->assertSee('#linkedin-card', false);
-        $response->assertSee('Jump to LinkedIn', false);
-        $response->assertSee('⭐ Recommended', false);
+        $response->assertSee(route('offers.feature', [$offer, 'linkedin']), false);
+        $response->assertSee('Start with LinkedIn content', false);
+        $response->assertSee('Recommended', false);
     }
 
     public function test_show_marks_the_secondary_channel_as_a_good_alternative(): void

@@ -103,7 +103,7 @@ class UgcControllerVideoTest extends TestCase
             'voice_id' => 'voice_1',
         ]);
 
-        $response->assertRedirect(route('offers.show', $offer))->assertSessionHas('success');
+        $response->assertRedirect(route('offers.feature', [$offer, 'ugc']))->assertSessionHas('success');
         Queue::assertPushed(RunUgcVideoGeneration::class);
         $this->assertDatabaseHas('generations', ['offer_id' => $offer->id, 'module' => 'ugc_video', 'status' => 'queued']);
     }
