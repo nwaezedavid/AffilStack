@@ -60,7 +60,7 @@
         </div>
 
         @if ($connection)
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <x-ui.connection-card :brand="$connection->isGmail() ? 'gmail' : 'mail'"
                     :name="$connection->isGmail() ? 'Gmail' : (config('crm.presets.'.$connection->preset.'.label') ?? 'SMTP server')"
                     :account="$connection->connected_email"
@@ -105,7 +105,7 @@
                 </div>
             </div>
         @else
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
                 <div class="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-white via-white to-brand-50 p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                     <div class="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-gradient-to-br from-[#EA4335]/10 via-[#FBBC05]/10 to-[#34A853]/10 blur-xl" aria-hidden="true"></div>
                     <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-line"><x-ui.brand-icon name="gmail" class="h-7 w-7" /></span>
@@ -148,7 +148,7 @@
             <h2 id="replies-heading" class="font-display text-lg font-semibold text-navy-900">See when contacts reply</h2>
         </div>
 
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
             <div class="rounded-2xl border border-line bg-surface p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="flex items-center gap-3">
@@ -178,7 +178,7 @@
                     <form method="POST" action="{{ route('email-connections.imap.store') }}" class="mt-5 space-y-4" data-preset-form="imap">
                         @csrf
                         @include('dashboard.email-connection.partials.presets', ['kind' => 'imap', 'selected' => $connection->preset ?? 'custom'])
-                        <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_9rem]">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_9rem]">
                             <label class="block">
                                 <span class="block text-xs font-medium text-ink-600 mb-1">IMAP server</span>
                                 <input name="host" data-field="host" required value="{{ old('host', $connection->imapCredential('host', config('crm.presets.'.($connection->preset ?? 'custom').'.imap.host'))) }}" placeholder="imap.yourdomain.com" class="w-full rounded-lg border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
@@ -205,7 +205,7 @@
                                 Use the same username and password as my SMTP sender
                             </label>
                         @endif
-                        <div class="grid gap-3 sm:grid-cols-2" id="imap-login">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2" id="imap-login">
                             <label class="block">
                                 <span class="block text-xs font-medium text-ink-600 mb-1">Username (usually your email)</span>
                                 <input name="username" value="{{ old('username', $connection->imapCredential('username', $connection->isGmail() ? $connection->connected_email : '')) }}" autocomplete="username" class="w-full rounded-lg border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
@@ -263,7 +263,7 @@
             </div>
             <form method="POST" action="{{ route('email-connections.settings') }}" class="rounded-2xl border border-line bg-surface p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                 @csrf @method('PATCH')
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <label class="block">
                         <span class="block text-xs font-medium text-ink-600 mb-1">Daily sending limit</span>
                         <input type="number" name="daily_limit" min="1" max="{{ $providerCaps[$connection->isGmail() ? 'gmail' : 'smtp'] }}" value="{{ old('daily_limit', $connection->daily_limit) }}" placeholder="{{ $providerCaps[$connection->isGmail() ? 'gmail' : 'smtp'] }} (maximum)" class="w-full rounded-lg border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
@@ -295,7 +295,7 @@
             <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-navy-900 text-[11px] font-semibold text-white">{{ $connection ? 4 : 3 }}</span>
             <h2 id="deliverability-heading" class="font-display text-lg font-semibold text-navy-900">Land in the inbox, not spam</h2>
         </div>
-        <div class="grid gap-4 md:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
             @foreach ([
                 ['SPF', 'spf', 'A DNS TXT record listing who may send for your domain. Your email host gives you the exact value (e.g. "v=spf1 include:_spf.mail.hostinger.com ~all").'],
                 ['DKIM', 'dkim', 'A digital signature on every email. Turn it on in your email host\'s panel (Hostinger: Emails → DNS settings) — it adds the record for you.'],

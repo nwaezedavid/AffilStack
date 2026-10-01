@@ -17,13 +17,13 @@
             Each product you research gets its own contact list automatically. Research one, add prospects to it, then come back here.
         </x-ui.empty-state>
     @else
-        <form method="POST" action="{{ route('crm.campaigns.store') }}" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <form method="POST" action="{{ route('crm.campaigns.store') }}" class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             @csrf
             <div class="space-y-6 min-w-0">
                 <x-ui.card title="Who should get it?" icon="users" description="Only contacts on this list receive the campaign.">
                     <fieldset>
                         <legend class="sr-only">Contact list</legend>
-                        <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             @foreach ($lists as $list)
                                 <label class="relative cursor-pointer">
                                     <input type="radio" name="list_id" value="{{ $list->id }}" class="peer sr-only" @checked(old('list_id', $selected?->id) == $list->id)>
@@ -42,7 +42,7 @@
                 </x-ui.card>
 
                 <x-ui.card title="What should the email do?" icon="pencil-square" description="Optional — the AI already knows the product from your research.">
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <label class="block sm:col-span-2">
                             <span class="block text-xs font-medium text-ink-600 mb-1">Campaign name</span>
                             <input name="name" value="{{ old('name') }}" maxlength="150" placeholder="{{ ($selected?->offer?->product_name ?? $selected?->name ?? 'My').' outreach — '.now()->format('M j') }}" class="w-full rounded-lg border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">

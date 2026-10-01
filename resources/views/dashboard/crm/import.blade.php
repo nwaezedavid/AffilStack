@@ -21,7 +21,7 @@
         </x-ui.card>
 
         <x-ui.card title="Columns" icon="arrows-right-left" :description="number_format($rowCount).' row(s) found. Preview of the first '.count($sample).':'" padding="p-0">
-            <div class="overflow-x-auto">
+            <div class="relative overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-line bg-surface-muted/60">

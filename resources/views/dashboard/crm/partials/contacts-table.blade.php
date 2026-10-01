@@ -33,7 +33,7 @@
             <button type="submit" form="bulk-form" id="bulk-apply" disabled class="inline-flex items-center gap-1.5 rounded-full bg-navy-900 px-3.5 py-1.5 text-xs font-medium text-white transition hover:bg-navy-800 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2">Apply</button>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="relative overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="text-left text-[11px] font-mono uppercase tracking-[0.12em] text-ink-400">
                     <tr class="border-b border-line">
@@ -41,7 +41,6 @@
                         <th class="px-3 py-3 font-medium">Contact</th>
                         <th class="px-3 py-3 font-medium">Email / phone</th>
                         <th class="px-3 py-3 font-medium">Lists</th>
-                        <th class="px-3 py-3 font-medium">Source</th>
                         <th class="px-3 py-3 font-medium">Status</th>
                         <th class="px-3 py-3"><span class="sr-only">Actions</span></th>
                     </tr>
@@ -55,7 +54,8 @@
                                     <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-navy-800 text-xs font-semibold text-white" aria-hidden="true">{{ mb_strtoupper(mb_substr($contact->name ?: ($contact->company ?: '?'), 0, 1)) }}</span>
                                     <div class="min-w-0">
                                         <div class="font-medium text-ink-900">{{ $contact->name ?: '—' }}</div>
-                                        <div class="text-xs text-ink-600 truncate max-w-[14rem]">{{ collect([$contact->title, $contact->company !== $contact->name ? $contact->company : null])->filter()->implode(' · ') ?: $contact->location }}</div>
+                                        <div class="text-xs text-ink-600 truncate max-w-[13rem]">{{ collect([$contact->title, $contact->company !== $contact->name ? $contact->company : null])->filter()->implode(' · ') ?: $contact->location }}</div>
+                                        <div class="mt-0.5 text-[11px] text-ink-400 capitalize">via {{ str_replace('_', ' ', $contact->source) }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -76,15 +76,14 @@
                                 </div>
                             </td>
                             <td class="px-3 py-3">
-                                <div class="flex flex-wrap gap-1 max-w-[14rem]">
+                                <div class="flex flex-col items-start gap-1">
                                     @forelse ($contact->lists as $list)
-                                        <a href="{{ route('crm.lists.show', $list) }}" class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset {{ $list->chipClasses() }}">{{ \Illuminate\Support\Str::limit($list->name, 28) }}</a>
+                                        <a href="{{ route('crm.lists.show', $list) }}" title="{{ $list->name }}" class="inline-block max-w-[11rem] truncate whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset {{ $list->chipClasses() }}">{{ $list->name }}</a>
                                     @empty
                                         <span class="text-xs text-ink-400">—</span>
                                     @endforelse
                                 </div>
                             </td>
-                            <td class="px-3 py-3 text-xs text-ink-600 capitalize whitespace-nowrap">{{ str_replace('_', ' ', $contact->source) }}</td>
                             <td class="px-3 py-3">
                                 <form method="POST" action="{{ route('crm.update', $contact) }}">
                                     @csrf @method('PATCH')

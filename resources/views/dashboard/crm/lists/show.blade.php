@@ -36,7 +36,7 @@
         </x-ui.next-step>
     @endif
 
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div class="min-w-0 space-y-4">
             <form method="GET" class="flex items-center gap-2" role="search">
                 <label class="relative flex-1">

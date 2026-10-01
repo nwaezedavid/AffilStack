@@ -3,7 +3,7 @@
     @csrf
     @include('dashboard.email-connection.partials.presets', ['kind' => 'smtp', 'selected' => $smtp?->preset ?? 'hostinger'])
 
-    <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_9rem]">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_9rem]">
         <label class="block">
             <span class="block text-xs font-medium text-ink-600 mb-1">SMTP server</span>
             <input name="host" data-field="host" required value="{{ old('host', $smtp?->credential('host') ?? config('crm.presets.hostinger.smtp.host')) }}" placeholder="smtp.yourdomain.com" class="w-full rounded-lg border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
@@ -24,7 +24,7 @@
             </select>
         </label>
     </div>
-    <div class="grid gap-3 sm:grid-cols-2">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label class="block">
             <span class="block text-xs font-medium text-ink-600 mb-1">Username (usually your full email)</span>
             <input name="username" required autocomplete="username" value="{{ old('username', $smtp?->credential('username')) }}" placeholder="you@yourdomain.com" class="w-full rounded-lg border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">

@@ -26,7 +26,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('crm.campaigns.update', $campaign) }}" id="campaign-form" class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+    <form method="POST" action="{{ route('crm.campaigns.update', $campaign) }}" id="campaign-form" class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
         @csrf @method('PUT')
 
         <div class="min-w-0 space-y-5">

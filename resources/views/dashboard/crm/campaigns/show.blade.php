@@ -58,13 +58,19 @@
 
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
         <x-ui.stat label="Sent" :value="number_format($sent)" icon="paper-airplane" :hint="$queued > 0 ? number_format($queued).' still queued' : 'All delivered to the queue'" />
-        <x-ui.stat label="Opened" :value="$pct($opened).'%'" icon="eye" tone="violet" :hint="number_format($opened).' contacts'" />
-        <x-ui.stat label="Clicked" :value="$pct($clicked).'%'" icon="cursor-arrow-rays" tone="gold" :hint="number_format($clicked).' contacts'" />
-        <x-ui.stat label="Replied" :value="$pct($replied).'%'" icon="chat-bubble-left-right" tone="emerald" :hint="number_format($replied).' contacts'" />
+        <x-ui.stat label="Opened" :value="$pct($opened).'%'" icon="eye" tone="violet" :hint="number_format($opened).' '.\Illuminate\Support\Str::plural('contact', $opened)" />
+        <x-ui.stat label="Clicked" :value="$pct($clicked).'%'" icon="cursor-arrow-rays" tone="gold" :hint="number_format($clicked).' '.\Illuminate\Support\Str::plural('contact', $clicked)" />
+        <x-ui.stat label="Replied" :value="$pct($replied).'%'" icon="chat-bubble-left-right" tone="emerald" :hint="number_format($replied).' '.\Illuminate\Support\Str::plural('contact', $replied)" />
         <x-ui.stat label="Skipped / failed" :value="number_format(($counts['skipped'] ?? 0) + ($counts['failed'] ?? 0) + ($counts['unsubscribed'] ?? 0))" icon="no-symbol" tone="rose" hint="No email, unsubscribed or error" />
     </div>
 
-    <div class="grid gap-4 lg:grid-cols-2 mb-6">
+    @if ($replied > 0)
+        <x-ui.next-step class="mb-6" :href="route('crm.inbox')" action="Open Inbox">
+            {{ $replied }} contact{{ $replied === 1 ? '' : 's' }} replied. Let AI draft your follow-up and close the sale.
+        </x-ui.next-step>
+    @endif
+
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 mb-6">
         <div @class(['rounded-2xl border p-5', 'border-gold-300/60 bg-gradient-to-br from-gold-300/15 to-white' => $newContacts > 0, 'border-line bg-surface' => $newContacts === 0])>
             <div class="flex items-start gap-3">
                 <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold-400 text-navy-950"><x-heroicon-o-user-plus class="h-5 w-5" /></span>
@@ -103,12 +109,12 @@
         </div>
     </div>
 
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <x-ui.card title="Recipients" icon="users" :description="number_format($total).' contacts · most recent activity first'" padding="p-0">
             @if ($recipients->isEmpty())
                 <p class="p-6 text-sm text-ink-600">No recipients yet.</p>
             @else
-                <div class="overflow-x-auto">
+                <div class="relative overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="text-left text-[11px] font-mono uppercase tracking-[0.12em] text-ink-400">
                             <tr class="border-b border-line">
@@ -165,11 +171,6 @@
                     </details>
                 @endforeach
             </x-ui.card>
-            @if ($replied > 0)
-                <x-ui.next-step :href="route('crm.inbox')" action="Open Inbox">
-                    {{ $replied }} contact{{ $replied === 1 ? '' : 's' }} replied. Let AI draft your follow-up and close the sale.
-                </x-ui.next-step>
-            @endif
         </aside>
     </div>
 @endsection

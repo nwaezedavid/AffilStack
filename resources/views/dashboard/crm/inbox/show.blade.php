@@ -10,7 +10,7 @@
         <span class="text-ink-900">{{ $name }}</span>
     </nav>
 
-    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <div class="min-w-0 space-y-5">
             {{-- Thread --}}
             <section class="rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgba(16,24,40,0.04)]" aria-label="Conversation">

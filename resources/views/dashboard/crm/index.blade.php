@@ -51,7 +51,7 @@
         Your CRM is where prospects become buyers. Lists keep each product's contacts separate so you never send the wrong offer to the wrong person.
     </x-ui.feature-intro>
 
-    <div class="grid gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
         {{-- Lists sidebar --}}
         <aside class="space-y-4" aria-label="Contact lists">
             @include('dashboard.crm.partials.lists-sidebar', ['lists' => $lists, 'activeList' => $activeList, 'listColors' => $listColors])
@@ -78,7 +78,7 @@
 
         <div class="min-w-0 space-y-4">
             {{-- Add / import --}}
-            <div class="grid gap-3 md:grid-cols-2">
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <details class="group rounded-2xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]" @if ($errors->hasAny(['name', 'email', 'website'])) open @endif>
                     <summary class="flex cursor-pointer list-none items-center gap-3">
                         <span class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600"><x-heroicon-o-user-plus class="h-5 w-5" /></span>

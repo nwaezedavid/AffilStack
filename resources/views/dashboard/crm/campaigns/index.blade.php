@@ -15,7 +15,7 @@
             Pick a list of prospects and AI writes a personalised email for the product you're promoting. You approve it before anything is sent.
         </x-ui.empty-state>
     @else
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             @foreach ($campaigns as $campaign)
                 @php($rate = fn ($n) => $campaign->sent_count > 0 ? round($n / $campaign->sent_count * 100) : 0)
                 <a href="{{ route('crm.campaigns.show', $campaign) }}" class="group rounded-2xl border border-line bg-surface p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
