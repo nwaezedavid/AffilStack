@@ -4,6 +4,7 @@ use App\Console\ScheduleMonitoring;
 use App\Models\ApiRequestLog;
 use App\Models\IdempotencyKey;
 use App\Models\ScheduledTaskRun;
+use App\Models\UserActivityDay;
 use App\Models\WebhookDelivery;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -204,7 +205,7 @@ ScheduleMonitoring::track(
 );
 
 // Daily-active-user history behind the admin activity sparkline.
-Schedule::call(fn () => \App\Models\UserActivityDay::where('date', '<', now()->subDays((int) config('lifecycle.activity_history_days', 90))->toDateString())->delete())
+Schedule::call(fn () => UserActivityDay::where('date', '<', now()->subDays((int) config('lifecycle.activity_history_days', 90))->toDateString())->delete())
     ->daily()
     ->name('prune-user-activity-days')
     ->withoutOverlapping();
