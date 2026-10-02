@@ -3,8 +3,10 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
-use App\Filament\Support\WebpFileUpload;
+use App\Filament\Support\OriginalImageUpload;
 use App\Models\SiteSetting;
+use App\Services\Seo\SeoHeadBuilder;
+use App\Support\Seo\RobotsTxt;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -17,7 +19,8 @@ use Filament\Support\Icons\Heroicon;
 
 /**
  * Everything needed to get the site properly indexed and tracked, without a
- * code deploy: default meta description, social preview image, analytics
+ * code deploy: title template, default meta description, default social
+ * share image, X handle / Facebook app id, analytics
  * and Search Console verification, robots.txt content, and the URL of the
  * WordPress blog subdomain (linked from the nav and included in the
  * generated sitemap — the blog itself is not part of this app and manages
@@ -31,9 +34,13 @@ class SeoSettings extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMagnifyingGlassCircle;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Site';
+    protected static string|\UnitEnum|null $navigationGroup = 'SEO';
 
-    protected static ?string $navigationLabel = 'SEO';
+    protected static ?string $navigationLabel = 'SEO settings';
+
+    protected static ?string $title = 'SEO settings';
+
+    protected static ?int $navigationSort = 2;
 
     protected string $view = 'filament.pages.seo-settings';
 
@@ -45,14 +52,17 @@ class SeoSettings extends Page
     public function mount(): void
     {
         $this->form->fill([
+            'seo_title_template' => SiteSetting::get('seo_title_template', SeoHeadBuilder::DEFAULT_TITLE_TEMPLATE),
             'seo_meta_description' => SiteSetting::get('seo_meta_description'),
+            'seo_twitter_handle' => SiteSetting::get('seo_twitter_handle'),
+            'seo_facebook_app_id' => SiteSetting::get('seo_facebook_app_id'),
             'seo_og_image_path' => SiteSetting::get('seo_og_image_path'),
             'seo_ga_id' => SiteSetting::get('seo_ga_id'),
             'seo_gsc_verification' => SiteSetting::get('seo_gsc_verification'),
             'seo_meta_pixel_id' => SiteSetting::get('seo_meta_pixel_id'),
             'seo_tiktok_pixel_id' => SiteSetting::get('seo_tiktok_pixel_id'),
             'seo_blog_url' => SiteSetting::get('seo_blog_url'),
-            'seo_robots_txt' => SiteSetting::get('seo_robots_txt', "User-agent: *\nAllow: /\n\nSitemap: ".url('/sitemap.xml')),
+            'seo_robots_txt' => SiteSetting::get('seo_robots_txt', RobotsTxt::defaultContent()),
             'seo_social_facebook' => SiteSetting::get('seo_social_facebook'),
             'seo_social_twitter' => SiteSetting::get('seo_social_twitter'),
             'seo_social_linkedin' => SiteSetting::get('seo_social_linkedin'),
@@ -77,18 +87,36 @@ class SeoSettings extends Page
                     ]),
 
                 Section::make('Search & social defaults')
+                    ->description('Used by every page that doesn\'t set its own value under SEO > Page SEO or a Site Page\'s SEO tab.')
+                    ->columns(2)
                     ->components([
+                        TextInput::make('seo_title_template')
+                            ->label('Title template')
+                            ->required()
+                            ->maxLength(80)
+                            ->placeholder(SeoHeadBuilder::DEFAULT_TITLE_TEMPLATE)
+                            ->helperText('How content pages without a custom SEO title are titled. %page% = the page name, %site% = the site name — e.g. "%page% · %site%" gives "Privacy Policy · AffilStack". Per-page SEO titles can use the same variables.'),
+                        TextInput::make('seo_twitter_handle')
+                            ->label('X (Twitter) handle')
+                            ->prefix('@')
+                            ->maxLength(30)
+                            ->rule('regex:/^@?[A-Za-z0-9_]{1,15}$/')
+                            ->helperText('Credited on every shared link (twitter:site), e.g. affilstack.'),
                         Textarea::make('seo_meta_description')
                             ->label('Default meta description')
-                            ->rows(2)
+                            ->rows(3)
                             ->maxLength(160)
-                            ->helperText('Used on pages that don\'t set their own — aim for under 160 characters.'),
-                        WebpFileUpload::make('seo_og_image_path')
-                            ->label('Default social share image (OG image)')
-                            ->image()
-                            ->disk('public')
+                            ->columnSpanFull()
+                            ->helperText('Used on pages that don\'t set their own — aim for 150–160 characters that describe the whole product.'),
+                        OriginalImageUpload::make('seo_og_image_path')
+                            ->label('Default social share image')
                             ->directory('seo')
-                            ->helperText('Shown when a page is shared on social media or messaging apps. Recommended 1200×630.'),
+                            ->columnSpanFull()
+                            ->helperText('Shown when any page without its own image is shared on Facebook, LinkedIn, X or WhatsApp. Create a 1200×630 PNG or JPG (under 5 MB): your logo, a short headline such as "The all-in-one platform for affiliate marketers", and a product screenshot or brand illustration on a navy/blue brand background. Keep text inside the centre 1000×500 area — some apps crop the edges — and avoid tiny text.'),
+                        TextInput::make('seo_facebook_app_id')
+                            ->label('Facebook App ID (optional)')
+                            ->rule('regex:/^\d{5,20}$/')
+                            ->helperText('Adds fb:app_id so Facebook Sharing Debugger and Insights link shares to your app. Leave blank if you have no Meta app.'),
                     ]),
 
                 Section::make('Verification & analytics')
@@ -139,11 +167,18 @@ class SeoSettings extends Page
                     ]),
 
                 Section::make('robots.txt')
-                    ->description('Served live at /robots.txt.')
+                    ->description('Served live at /robots.txt. A "Sitemap:" line is added automatically if you leave it out. Rules that would block the homepage, the favicon, /storage images or /build assets are rejected — Google needs them to show your site and its icon.')
                     ->components([
                         Textarea::make('seo_robots_txt')
                             ->label(false)
                             ->rows(6)
+                            ->rule(fn () => function (string $attribute, mixed $value, \Closure $fail): void {
+                                $blocked = RobotsTxt::blockedEssentialPaths((string) $value);
+
+                                if ($blocked !== []) {
+                                    $fail('These rules would stop Google crawling '.implode(', ', $blocked).' — remove the Disallow lines that match them.');
+                                }
+                            })
                             ->extraInputAttributes(['style' => 'font-family: monospace; font-size: 0.8rem;']),
                     ]),
             ]);
@@ -152,6 +187,10 @@ class SeoSettings extends Page
     public function save(): void
     {
         $data = $this->form->getState();
+
+        if (filled($data['seo_twitter_handle'] ?? null)) {
+            $data['seo_twitter_handle'] = ltrim((string) $data['seo_twitter_handle'], '@');
+        }
 
         foreach ($data as $key => $value) {
             SiteSetting::set($key, $value);

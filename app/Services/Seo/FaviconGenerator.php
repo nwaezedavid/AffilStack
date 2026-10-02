@@ -359,7 +359,7 @@ class FaviconGenerator
 
         // An "A": two legs meeting at the apex, plus a crossbar.
         imagefilledpolygon($image, [256, 92, 300, 92, 420, 420, 354, 420, 256, 160, 158, 420, 92, 420, 212, 92], $gold);
-        imagefilledrectangle($image, 196, 290, 316, 340, $gold);
+        imagefilledrectangle($image, 180, 290, 334, 340, $gold);
 
         return $image;
     }

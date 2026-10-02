@@ -3,8 +3,10 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Support\OriginalImageUpload;
 use App\Filament\Support\WebpFileUpload;
 use App\Models\SiteSetting;
+use App\Services\Seo\FaviconGenerator;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
@@ -90,12 +92,13 @@ class BrandSettings extends Page
                             ->disk('public')
                             ->directory('branding')
                             ->helperText('Wide/horizontal logo — used in the site header, the sign-in/sign-up pages, and the dashboard sidebar. SVG or PNG with a transparent background works best.'),
-                        WebpFileUpload::make('logo_square')
+                        // Kept as uploaded (never WebP — Google's favicon
+                        // crawler doesn't accept it); saving rebuilds the
+                        // favicon set. See SEO > Site icon / FaviconGenerator.
+                        OriginalImageUpload::make('logo_square')
                             ->label('Logo (square / icon)')
-                            ->image()
-                            ->disk('public')
                             ->directory('branding')
-                            ->helperText('Square or circular mark — used as the browser tab icon (favicon), the home-screen icon on mobile, and anywhere else a square logo fits better than the wide one. PNG, at least 512×512.'),
+                            ->helperText('Square mark — becomes the favicon in Google results and browser tabs, and the home-screen icon on phones (every size is generated automatically). PNG, at least 512×512. Preview it under SEO > Site icon.'),
                     ]),
 
                 Section::make('Brand colors')
@@ -185,6 +188,14 @@ class BrandSettings extends Page
             $value = $key === 'menu_items' ? json_encode($data[$key] ?? []) : ($data[$key] ?? null);
 
             SiteSetting::set($settingKey, $value);
+        }
+
+        // The site name, colours and square logo all feed the favicon set
+        // and web manifest.
+        try {
+            app(FaviconGenerator::class)->generate();
+        } catch (\Throwable $e) {
+            report($e);
         }
 
         Notification::make()->title('Site settings saved')->success()->send();

@@ -17,9 +17,10 @@ class SeoMetaAssistant
     public function __construct(protected AIProvider $ai) {}
 
     /**
+     * @param  array<int, string>  $secondaryKeywords
      * @return array{seo_title: string, meta_description: string}
      */
-    public function suggest(string $pageTitle, string $plainTextContent, ?string $focusKeyword = null): array
+    public function suggest(string $pageTitle, string $plainTextContent, ?string $focusKeyword = null, array $secondaryKeywords = []): array
     {
         $system = <<<'PROMPT'
             You write search-engine snippets for a web page: an SEO title
@@ -27,7 +28,9 @@ class SeoMetaAssistant
             characters). Base them on the page's actual title and content —
             never invent claims the content doesn't support. If a focus
             keyword is given, work it naturally into both, as close to the
-            front of the title as reads naturally. Write for a human reader
+            front of the title as reads naturally. If secondary keywords are
+            given, use one or two of them where they fit naturally — never
+            force all of them in. Write for a human reader
             first (compelling, specific, no keyword stuffing) — search
             engines reward that more than keyword density. Return ONLY JSON:
             {"seo_title": "...", "meta_description": "..."}
@@ -35,6 +38,7 @@ class SeoMetaAssistant
 
         $userPrompt = "Page title: {$pageTitle}\n".
             ($focusKeyword ? "Focus keyword: {$focusKeyword}\n" : '').
+            ($secondaryKeywords ? 'Secondary keywords: '.implode(', ', $secondaryKeywords)."\n" : '').
             'Content (truncated): '.mb_substr(trim($plainTextContent), 0, 3000);
 
         try {

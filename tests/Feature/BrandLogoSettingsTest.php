@@ -67,7 +67,10 @@ class BrandLogoSettingsTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('branding/wide-logo.png', false);
-        $response->assertSee('branding/square-logo.png', false);
+        // The square logo is never linked directly any more — it is turned
+        // into the generated favicon set served from /favicon.ico etc.
+        $response->assertSee(url('/favicon.ico'), false);
+        $response->assertSee(url('/favicon-48x48.png'), false);
         $response->assertDontSee('logo_path', false);
     }
 
@@ -103,7 +106,7 @@ class BrandLogoSettingsTest extends TestCase
         $panel = Filament::getPanel('admin');
 
         $this->assertStringContainsString('branding/wide-logo.png', (string) $panel->getBrandLogo());
-        $this->assertStringContainsString('branding/square-logo.png', (string) $panel->getFavicon());
+        $this->assertStringContainsString(url('/favicon-96x96.png'), (string) $panel->getFavicon());
     }
 
     public function test_apple_touch_icon_uses_the_square_logo(): void
