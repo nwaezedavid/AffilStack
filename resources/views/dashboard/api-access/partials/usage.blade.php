@@ -14,7 +14,7 @@
     <x-ui.stat label="Spend (30 days)" :value="'$'.number_format($usage['spend_cents_30d'] / 100, 2)" icon="banknotes" tone="gold" hint="metered calls only" />
 </div>
 
-<div class="grid gap-6 lg:grid-cols-2">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <x-ui.card title="Rate limits by plan" description="Requests per minute, per token. Go over and you get a 429 with a Retry-After header." icon="clock" padding="p-0">
         <table class="w-full text-sm">
             <tbody class="divide-y divide-line">

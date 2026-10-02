@@ -18,7 +18,7 @@
 @endphp
 
 <x-ui.card padding="p-5 sm:p-6">
-    <div class="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center">
         <div>
             <p class="text-[11px] font-mono uppercase tracking-[0.16em] text-brand-600">What is the AffilStack API?</p>
             <h3 class="mt-1 font-display text-xl font-semibold text-navy-900 text-balance">Let your other tools talk to AffilStack — no copy-and-paste.</h3>
@@ -71,7 +71,7 @@
 </div>
 
 <x-ui.card title="Everything the API can do" description="Every endpoint group, generated from the live API specification." icon="squares-2x2">
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         @foreach ($endpointGroups as $tag => $groupEndpoints)
             @php($info = $groupInfo[$tag] ?? ['icon' => 'cube', 'tone' => 'bg-surface-muted text-ink-600', 'text' => ''])
             <div class="rounded-xl border border-line p-4">
@@ -97,7 +97,7 @@
     </div>
 </x-ui.card>
 
-<div class="grid gap-4 sm:grid-cols-3">
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
     <x-ui.stat label="Your rate limit" :value="$currentRateLimit.' / min'" icon="bolt" tone="brand" :hint="($planNames[$currentPlanSlug] ?? 'Your').' plan, per token'" />
     <x-ui.stat label="Reading data" value="Free" icon="arrow-down-tray" tone="emerald" hint="every GET endpoint" />
     <x-ui.stat label="Paid calls" :value="'$'.number_format(collect(config('api_billing.costs'))->max() / 100, 2)" icon="banknotes" tone="gold" hint="per product research run, from your API wallet" />

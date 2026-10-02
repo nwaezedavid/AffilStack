@@ -77,10 +77,10 @@ JS;
         <div>
             <p class="text-sm font-semibold text-navy-900">Option B — send new AffilStack contacts to Google Sheets (Webhooks by Zapier)</p>
             <ol class="mt-2 space-y-2 text-sm text-ink-900">
-                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">1.</span> In Zapier, create a Zap. Trigger app: <strong>Webhooks by Zapier</strong>, event: <strong>Catch Hook</strong>. Copy the <em>Custom Webhook URL</em> it gives you.</li>
-                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">2.</span> Open the <a href="{{ $webhooksUrl }}" data-tab-link="webhooks" class="font-medium text-brand-600 underline">Webhooks tab</a>, paste the URL, tick <strong>New CRM contact created</strong>, and click <strong>Add endpoint</strong>.</li>
-                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">3.</span> Click <strong>Send test event</strong> on the new endpoint, then <strong>Test trigger</strong> in Zapier — you'll see fields like <code class="rounded bg-surface-muted px-1 font-mono text-xs">Data Name</code>, <code class="rounded bg-surface-muted px-1 font-mono text-xs">Data Email</code>, <code class="rounded bg-surface-muted px-1 font-mono text-xs">Data Company</code>.</li>
-                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">4.</span> Add an action: <strong>Google Sheets → Create Spreadsheet Row</strong> (or <strong>Mailchimp → Add/Update Subscriber</strong>) and map those fields. Publish.</li>
+                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">1.</span> <span class="min-w-0">In Zapier, create a Zap. Trigger app: <strong>Webhooks by Zapier</strong>, event: <strong>Catch Hook</strong>. Copy the <em>Custom Webhook URL</em> it gives you.</span></li>
+                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">2.</span> <span class="min-w-0">Open the <a href="{{ $webhooksUrl }}" data-tab-link="webhooks" class="font-medium text-brand-600 underline">Webhooks tab</a>, paste the URL, tick <strong>New CRM contact created</strong>, and click <strong>Add endpoint</strong>.</span></li>
+                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">3.</span> <span class="min-w-0">Click <strong>Send test event</strong> on the new endpoint, then <strong>Test trigger</strong> in Zapier — you'll see fields like <code class="rounded bg-surface-muted px-1 font-mono text-xs">Data Name</code>, <code class="rounded bg-surface-muted px-1 font-mono text-xs">Data Email</code>, <code class="rounded bg-surface-muted px-1 font-mono text-xs">Data Company</code>.</span></li>
+                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">4.</span> <span class="min-w-0">Add an action: <strong>Google Sheets → Create Spreadsheet Row</strong> (or <strong>Mailchimp → Add/Update Subscriber</strong>) and map those fields. Publish.</span></li>
             </ol>
         </div>
 
@@ -131,9 +131,9 @@ JS;
         <div>
             <p class="text-sm font-semibold text-navy-900">React to AffilStack events in Make</p>
             <ol class="mt-2 space-y-2 text-sm text-ink-900">
-                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">1.</span> Add <strong>Webhooks → Custom webhook</strong> as the first module, click <strong>Add</strong>, name it "AffilStack" and copy the address.</li>
-                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">2.</span> Add that address on the <a href="{{ $webhooksUrl }}" data-tab-link="webhooks" class="font-medium text-brand-600 underline">Webhooks tab</a> with the events you want.</li>
-                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">3.</span> In Make click <strong>Run once</strong>, then <strong>Send test event</strong> in AffilStack — Make learns the fields (<code class="rounded bg-surface-muted px-1 font-mono text-xs">event</code>, <code class="rounded bg-surface-muted px-1 font-mono text-xs">data.email</code>…).</li>
+                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">1.</span> <span class="min-w-0">Add <strong>Webhooks → Custom webhook</strong> as the first module, click <strong>Add</strong>, name it "AffilStack" and copy the address.</span></li>
+                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">2.</span> <span class="min-w-0">Add that address on the <a href="{{ $webhooksUrl }}" data-tab-link="webhooks" class="font-medium text-brand-600 underline">Webhooks tab</a> with the events you want.</span></li>
+                <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">3.</span> <span class="min-w-0">In Make click <strong>Run once</strong>, then <strong>Send test event</strong> in AffilStack — Make learns the fields (<code class="rounded bg-surface-muted px-1 font-mono text-xs">event</code>, <code class="rounded bg-surface-muted px-1 font-mono text-xs">data.email</code>…).</span></li>
             </ol>
         </div>
     </div>
@@ -182,10 +182,10 @@ JS;
     </summary>
     <div class="space-y-4 border-t border-line px-5 py-5">
         <ol class="space-y-2 text-sm text-ink-900">
-            <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">1.</span> Open your sheet → <strong>Extensions → Apps Script</strong>. Replace the editor's contents with the script below and save.</li>
-            <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">2.</span> <strong>Project Settings (gear) → Script properties → Add script property</strong>: property <code class="rounded bg-surface-muted px-1 font-mono text-xs">AFFILSTACK_TOKEN</code>, value: your read-only token. (Never paste the token into the code itself.)</li>
-            <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">3.</span> Pick <code class="rounded bg-surface-muted px-1 font-mono text-xs">importAffilStackContacts</code> and click <strong>Run</strong>; approve Google's permission prompt once.</li>
-            <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">4.</span> <strong>Triggers (alarm clock) → Add Trigger</strong> → event source <em>Time-driven</em>, <em>Hour timer</em>, <em>Every hour</em>.</li>
+            <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">1.</span> <span class="min-w-0">Open your sheet → <strong>Extensions → Apps Script</strong>. Replace the editor's contents with the script below and save.</span></li>
+            <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">2.</span> <span class="min-w-0"><strong>Project Settings (gear) → Script properties → Add script property</strong>: property <code class="rounded bg-surface-muted px-1 font-mono text-xs">AFFILSTACK_TOKEN</code>, value: your read-only token. (Never paste the token into the code itself.)</span></li>
+            <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">3.</span> <span class="min-w-0">Pick <code class="rounded bg-surface-muted px-1 font-mono text-xs">importAffilStackContacts</code> and click <strong>Run</strong>; approve Google's permission prompt once.</span></li>
+            <li class="flex gap-2"><span class="font-mono text-xs text-ink-400">4.</span> <span class="min-w-0"><strong>Triggers (alarm clock) → Add Trigger</strong> → event source <em>Time-driven</em>, <em>Hour timer</em>, <em>Every hour</em>.</span></li>
         </ol>
         <x-ui.code-block :code="$appsScript" label="Code.gs" max-height="max-h-[28rem]" />
     </div>

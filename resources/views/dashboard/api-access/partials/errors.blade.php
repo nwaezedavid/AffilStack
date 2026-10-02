@@ -38,7 +38,7 @@
     </div>
 </x-ui.card>
 
-<div class="grid gap-6 lg:grid-cols-2">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <x-ui.card title="Pagination" icon="queue-list">
         <p class="text-sm text-ink-600">List endpoints return 25 items by default. Add <code class="rounded bg-surface-muted px-1 font-mono text-xs">?per_page=100</code> (the maximum) and walk the pages with <code class="rounded bg-surface-muted px-1 font-mono text-xs">?page=2</code>, <code class="rounded bg-surface-muted px-1 font-mono text-xs">3</code>… until <code class="rounded bg-surface-muted px-1 font-mono text-xs">current_page</code> equals <code class="rounded bg-surface-muted px-1 font-mono text-xs">last_page</code>.</p>
         <x-ui.code-block class="mt-3" :code="$pageExample" label="Paginated response" />
@@ -47,18 +47,18 @@
     <x-ui.card title="Idempotency keys" icon="arrow-path">
         <p class="text-sm text-ink-600">Networks fail. If a create times out you can't tell whether it worked — so send an <code class="rounded bg-surface-muted px-1 font-mono text-xs">Idempotency-Key</code> header (any unique string up to 255 characters, like your own order or row ID) on <code class="rounded bg-surface-muted px-1 font-mono text-xs">POST /offers</code> and <code class="rounded bg-surface-muted px-1 font-mono text-xs">POST /crm-contacts</code>.</p>
         <ul class="mt-3 space-y-1.5 text-sm text-ink-600">
-            <li class="flex gap-2"><x-heroicon-m-check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> Same key + same body → you get the original response back; nothing is created or charged twice.</li>
-            <li class="flex gap-2"><x-heroicon-m-x-mark class="mt-0.5 h-4 w-4 shrink-0 text-rose-600" /> Same key + different body → 422, so a bug can't silently reuse a key.</li>
-            <li class="flex gap-2"><x-heroicon-m-information-circle class="mt-0.5 h-4 w-4 shrink-0 text-ink-400" /> Bulk contacts aren't keyed: retry only the items listed in <code class="font-mono text-xs">failed</code>.</li>
+            <li class="flex gap-2"><x-heroicon-m-check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> <span class="min-w-0">Same key + same body → you get the original response back; nothing is created or charged twice.</span></li>
+            <li class="flex gap-2"><x-heroicon-m-x-mark class="mt-0.5 h-4 w-4 shrink-0 text-rose-600" /> <span class="min-w-0">Same key + different body → 422, so a bug can't silently reuse a key.</span></li>
+            <li class="flex gap-2"><x-heroicon-m-information-circle class="mt-0.5 h-4 w-4 shrink-0 text-ink-400" /> <span class="min-w-0">Bulk contacts aren't keyed: retry only the items listed in <code class="font-mono text-xs">failed</code>.</span></li>
         </ul>
     </x-ui.card>
 
     <x-ui.card title="Sandbox tokens" icon="beaker">
         <p class="text-sm text-ink-600">Tick "Sandbox token" when creating a token to get a safe playground, just like Stripe's test mode:</p>
         <ul class="mt-3 space-y-1.5 text-sm text-ink-600">
-            <li class="flex gap-2"><x-heroicon-m-check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> Never spends wallet balance or plan credits.</li>
-            <li class="flex gap-2"><x-heroicon-m-check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> <code class="font-mono text-xs">POST /offers</code> returns sample research instantly.</li>
-            <li class="flex gap-2"><x-heroicon-m-check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> Sandbox and live data never mix — each only sees its own records, and sandbox data never fires real webhooks.</li>
+            <li class="flex gap-2"><x-heroicon-m-check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> <span class="min-w-0">Never spends wallet balance or plan credits.</span></li>
+            <li class="flex gap-2"><x-heroicon-m-check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> <span class="min-w-0"><code class="font-mono text-xs">POST /offers</code> returns sample research instantly.</span></li>
+            <li class="flex gap-2"><x-heroicon-m-check class="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" /> <span class="min-w-0">Sandbox and live data never mix — each only sees its own records, and sandbox data never fires real webhooks.</span></li>
         </ul>
     </x-ui.card>
 
@@ -68,7 +68,7 @@
 </div>
 
 <x-ui.card title="Keep your account safe" icon="shield-check">
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         @foreach ([
             ['eye-slash', 'Never expose a token in front-end code', 'Anything in website JavaScript, a mobile app or a browser extension can be read by anyone. Call the API from a server or an automation tool.'],
             ['key', 'One token per integration', 'Name each token after where it\'s used. If one leaks, revoke just that one — everything else keeps working.'],

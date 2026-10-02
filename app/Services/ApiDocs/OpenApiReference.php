@@ -282,6 +282,10 @@ class OpenApiReference
             return $schema['enum'][0];
         }
 
+        if (($schema['nullable'] ?? false) && ($schema['type'] ?? null) === 'string' && ! isset($schema['format'])) {
+            return null;
+        }
+
         $type = $schema['type'] ?? (isset($schema['properties']) ? 'object' : null);
 
         return match ($type) {

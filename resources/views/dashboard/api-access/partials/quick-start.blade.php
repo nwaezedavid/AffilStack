@@ -80,7 +80,7 @@
                                         <th class="px-4 py-2">Access</th>
                                         <th class="px-4 py-2">Last 30 days</th>
                                         <th class="px-4 py-2">Last used</th>
-                                        <th class="px-4 py-2"><span class="sr-only">Actions</span></th>
+                                        <th class="px-4 py-2" aria-label="Actions"></th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-line">
@@ -125,7 +125,7 @@
     <li class="relative">
         <span class="absolute -left-[2.35rem] top-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-navy-900 font-display text-sm font-semibold text-gold-300 ring-4 ring-surface-muted">2</span>
         <x-ui.card title="Make your first request" description="Ask the API who you are. If you get your name back, everything is wired up." icon="paper-airplane">
-            <dl class="grid gap-3 sm:grid-cols-2">
+            <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div class="rounded-xl bg-surface-muted p-3">
                     <dt class="text-[11px] font-mono uppercase tracking-[0.14em] text-ink-400">Base URL</dt>
                     <dd class="mt-1 flex items-center justify-between gap-2">
@@ -158,7 +158,7 @@
     <li class="relative">
         <span class="absolute -left-[2.35rem] top-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gold-400 font-display text-sm font-semibold text-navy-950 ring-4 ring-surface-muted">3</span>
         <x-ui.card title="Build something useful" description="Pick the path that suits you." icon="sparkles">
-            <div class="grid gap-3 sm:grid-cols-3">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 @foreach ([
                     ['no-code', 'puzzle-piece', 'Use a no-code tool', 'Step-by-step for Zapier, Make, n8n, Google Sheets and Pabbly.'],
                     ['webhooks', 'bolt', 'Get live events', 'Have AffilStack call your URL when leads or content arrive.'],

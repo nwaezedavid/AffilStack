@@ -163,7 +163,7 @@ PHP,
                             <th class="px-4 py-2">Attempts</th>
                             <th class="px-4 py-2">Response</th>
                             <th class="px-4 py-2">When</th>
-                            <th class="px-4 py-2"><span class="sr-only">Actions</span></th>
+                            <th class="px-4 py-2" aria-label="Actions"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-line">

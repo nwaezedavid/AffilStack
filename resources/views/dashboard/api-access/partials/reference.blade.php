@@ -10,7 +10,7 @@
     </label>
 </div>
 
-<div class="grid gap-3 rounded-2xl border border-line bg-surface p-4 sm:grid-cols-3">
+<div class="grid grid-cols-1 gap-3 rounded-2xl border border-line bg-surface p-4 sm:grid-cols-3">
     <div>
         <p class="text-[11px] font-mono uppercase tracking-[0.14em] text-ink-400">Base URL</p>
         <p class="mt-1 break-all font-mono text-xs text-navy-900">{{ $baseUrl }}</p>
@@ -67,7 +67,7 @@
                             </div>
                         @endif
 
-                        <dl class="grid gap-2 sm:grid-cols-3">
+                        <dl class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                             <div class="rounded-xl bg-surface-muted px-3 py-2">
                                 <dt class="text-[11px] font-mono uppercase tracking-wide text-ink-400">Token needed</dt>
                                 <dd class="text-xs text-navy-900">{{ $endpoint['scope'] === 'read' ? 'Any token (read-only works)' : 'Read & write token' }}</dd>
@@ -146,7 +146,7 @@
                             </div>
                         @endif
 
-                        <div class="grid gap-4 xl:grid-cols-2">
+                        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
                             <div class="min-w-0">
                                 <div class="mb-2 flex items-center justify-between gap-2">
                                     <p class="text-xs font-semibold uppercase tracking-wide text-ink-600">Example request</p>

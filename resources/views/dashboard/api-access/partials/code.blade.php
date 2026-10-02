@@ -3,7 +3,7 @@
     <p class="text-sm text-ink-600">Pick an endpoint and a language. Every sample is generated from the API specification and already points at your base URL — replace <code class="rounded bg-surface-muted px-1 font-mono text-xs">YOUR_API_TOKEN</code> and run it.</p>
 </div>
 
-<div class="grid gap-4 md:grid-cols-3">
+<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
     <div class="rounded-2xl border border-line bg-surface p-4">
         <div class="flex items-center gap-2"><x-ui.brand-icon name="nodedotjs" class="h-5 w-5" /><p class="font-display font-semibold text-navy-900">Node.js SDK</p></div>
         <p class="mt-1 text-xs text-ink-600">One file, zero dependencies, Node 18+. Every endpoint as a method, with errors as exceptions.</p>
@@ -51,11 +51,11 @@
 </x-ui.card>
 
 <x-ui.card title="Good to know" icon="light-bulb">
-    <ul class="grid gap-3 text-sm text-ink-600 sm:grid-cols-2">
-        <li class="flex gap-2"><x-heroicon-m-lock-closed class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> Run these on a server or in an automation tool. Never put a token in website JavaScript, a mobile app or a public repo.</li>
-        <li class="flex gap-2"><x-heroicon-m-arrow-path class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> Sending an <code class="font-mono text-xs">Idempotency-Key</code> lets you retry a create safely — the same key never creates a second record.</li>
-        <li class="flex gap-2"><x-heroicon-m-beaker class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> Build against a sandbox token first: identical responses, no charges, separate test data.</li>
-        <li class="flex gap-2"><x-heroicon-m-queue-list class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> List endpoints are paginated — read <code class="font-mono text-xs">last_page</code> and ask for <code class="font-mono text-xs">?page=2</code>, <code class="font-mono text-xs">3</code>…</li>
+    <ul class="grid grid-cols-1 gap-3 text-sm text-ink-600 sm:grid-cols-2">
+        <li class="flex gap-2"><x-heroicon-m-lock-closed class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> <span class="min-w-0">Run these on a server or in an automation tool. Never put a token in website JavaScript, a mobile app or a public repo.</span></li>
+        <li class="flex gap-2"><x-heroicon-m-arrow-path class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> <span class="min-w-0">Sending an <code class="font-mono text-xs">Idempotency-Key</code> lets you retry a create safely — the same key never creates a second record.</span></li>
+        <li class="flex gap-2"><x-heroicon-m-beaker class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> <span class="min-w-0">Build against a sandbox token first: identical responses, no charges, separate test data.</span></li>
+        <li class="flex gap-2"><x-heroicon-m-queue-list class="mt-0.5 h-4 w-4 shrink-0 text-brand-600" /> <span class="min-w-0">List endpoints are paginated — read <code class="font-mono text-xs">last_page</code> and ask for <code class="font-mono text-xs">?page=2</code>, <code class="font-mono text-xs">3</code>…</span></li>
     </ul>
 </x-ui.card>
 
