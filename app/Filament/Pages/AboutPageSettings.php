@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
+use App\Filament\Resources\TeamMembers\TeamMemberResource;
 use App\Filament\Support\WebpFileUpload;
 use App\Models\SiteSetting;
 use BackedEnum;
@@ -12,6 +13,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -78,8 +80,10 @@ class AboutPageSettings extends Page
             'about_hero_headline' => SiteSetting::get('about_hero_headline'),
             'about_hero_subheadline' => SiteSetting::get('about_hero_subheadline'),
             'about_hero_image' => SiteSetting::get('about_hero_image_path'),
+            'about_hero_image_alt' => SiteSetting::get('about_hero_image_alt'),
             'about_story' => SiteSetting::get('about_story'),
             'about_story_image' => SiteSetting::get('about_story_image_path'),
+            'about_story_image_alt' => SiteSetting::get('about_story_image_alt'),
             'about_mission' => SiteSetting::get('about_mission'),
             'about_vision' => SiteSetting::get('about_vision'),
             'about_goals' => $decode(SiteSetting::get('about_goals', '[]')),
@@ -90,6 +94,8 @@ class AboutPageSettings extends Page
             'about_founder_role' => SiteSetting::get('about_founder_role'),
             'about_founder_bio' => SiteSetting::get('about_founder_bio'),
             'about_founder_photo' => SiteSetting::get('about_founder_photo_path'),
+            'about_team_heading' => SiteSetting::get('about_team_heading'),
+            'about_team_subheading' => SiteSetting::get('about_team_subheading'),
             'about_cta_heading' => SiteSetting::get('about_cta_heading'),
             'about_cta_subtext' => SiteSetting::get('about_cta_subtext'),
             'about_cta_button_label' => SiteSetting::get('about_cta_button_label'),
@@ -117,6 +123,12 @@ class AboutPageSettings extends Page
                             ->image()
                             ->disk('public')
                             ->directory('about')
+                            ->helperText('A 1600×1000 px (16:10) photo of the team at work, the founder speaking at an event, or a real workspace — warm, natural light and real people rather than stock. JPG or WebP under 1 MB. It sits on a dark navy background in a rounded frame. Left empty, a designed illustration is shown.')
+                            ->columnSpanFull(),
+                        TextInput::make('about_hero_image_alt')
+                            ->label('Hero image description (alt text)')
+                            ->maxLength(150)
+                            ->placeholder('The AffilStack team planning a product launch in Lagos')
                             ->columnSpanFull(),
                     ]),
 
@@ -133,6 +145,11 @@ class AboutPageSettings extends Page
                             ->image()
                             ->disk('public')
                             ->directory('about')
+                            ->helperText('A 1200×900 px (4:3) picture that tells the origin story: an early whiteboard sketch, the first office, or the founder working on the first version. JPG or WebP under 800 KB. Shown beside the story text.')
+                            ->columnSpanFull(),
+                        TextInput::make('about_story_image_alt')
+                            ->label('Story image description (alt text)')
+                            ->maxLength(150)
                             ->columnSpanFull(),
                     ]),
 
@@ -216,7 +233,22 @@ class AboutPageSettings extends Page
                             ->avatar()
                             ->disk('public')
                             ->directory('about')
+                            ->helperText('A square 800×800 px (1:1) headshot: head and shoulders, face centred, plain or softly blurred background. JPG, PNG or WebP under 1 MB.')
                             ->columnSpanFull(),
+                    ]),
+
+                Section::make('Team')
+                    ->description('Add your CEO, CFO, COO and the rest of the team under Site → Team Members. They appear in a grid below the founder; the section stays hidden until someone is added.')
+                    ->columns(2)
+                    ->components([
+                        TextInput::make('about_team_heading')->label('Team heading')->placeholder('Meet the team')->maxLength(100),
+                        TextInput::make('about_team_subheading')->label('Team subheading')->placeholder('The people building AffilStack and looking after our members every day.')->maxLength(200),
+                        Actions::make([
+                            Action::make('manageTeam')
+                                ->label('Manage team members')
+                                ->url(fn (): string => TeamMemberResource::getUrl())
+                                ->color('gray'),
+                        ])->columnSpanFull(),
                     ]),
 
                 Section::make('Closing call to action')
@@ -240,6 +272,7 @@ class AboutPageSettings extends Page
             'about_story', 'about_story_image', 'about_mission', 'about_vision',
             'about_goals', 'about_what_we_do', 'about_how_we_works', 'about_who_we_serve',
             'about_founder_name', 'about_founder_role', 'about_founder_bio', 'about_founder_photo',
+            'about_hero_image_alt', 'about_story_image_alt', 'about_team_heading', 'about_team_subheading',
             'about_cta_heading', 'about_cta_subtext', 'about_cta_button_label', 'about_cta_button_url',
         ];
 

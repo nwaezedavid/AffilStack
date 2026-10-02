@@ -51,6 +51,7 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\GoogleSiteAnalyticsController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LinkController;
+use App\Http\Controllers\MobileAppRedirectController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PaymentMethodController;
@@ -95,6 +96,13 @@ Route::middleware('cache-public-page')->group(function () {
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+
+// --- Agent 02: mobile apps smart link -------------------------------------
+// /app sends Android visitors to Google Play, iPhone/iPad visitors to the App
+// Store and everyone else to the homepage apps section (Content → Mobile
+// Apps). Registered before the /{slug} catch-all below so it isn't swallowed.
+Route::get('/app', MobileAppRedirectController::class)->name('mobile-app.redirect');
+// --- End agent 02 ------------------------------------------------------------
 
 // The ONLY admin URL anyone should ever need to type or bookmark. Every
 // other admin screen lives under /afs-admin/* (see AdminPanelProvider's
