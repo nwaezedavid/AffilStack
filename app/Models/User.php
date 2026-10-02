@@ -547,4 +547,15 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             ->when($currency, fn ($query) => $query->where('currency', $currency))
             ->exists();
     }
+
+    // ---- Agent 05: affiliate marketing kit ----
+
+    /**
+     * Daily impression counters for this affiliate's embedded banners —
+     * see AffiliateBannerImpression / BannerEmbedController.
+     */
+    public function affiliateBannerImpressions(): HasMany
+    {
+        return $this->hasMany(AffiliateBannerImpression::class);
+    }
 }

@@ -43,12 +43,16 @@ class ReferralService
     /**
      * Called from the public /r/{code} redirect. Never blocks the redirect
      * on failure — logging a click is a nice-to-have, not the critical path.
+     * $bannerKey/$source come from the Marketing Kit's tracked links ("b" and
+     * utm_medium) so per-banner and per-channel clicks can be reported.
      */
-    public function recordClick(User $referrer, Request $request): void
+    public function recordClick(User $referrer, Request $request, ?string $bannerKey = null, ?string $source = null): void
     {
         $referrer->referralClicks()->create([
             'ip_address' => $request->ip(),
             'user_agent' => Str::limit((string) $request->userAgent(), 500, ''),
+            'banner_key' => $bannerKey,
+            'source' => $source,
             'clicked_at' => now(),
         ]);
     }

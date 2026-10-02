@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AllowEmbedding;
 use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Middleware\CachePublicPage;
 use App\Http\Middleware\EnsureAccountNotSuspended;
@@ -53,6 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'idempotent' => EnsureIdempotency::class,
             'log-api-request' => LogApiRequest::class,
             'cache-public-page' => CachePublicPage::class,
+            'allow-embedding' => AllowEmbedding::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
