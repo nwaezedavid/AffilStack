@@ -26,5 +26,10 @@
             [&_a]:text-brand-600 [&_a]:underline [&_strong]:text-navy-900">
             {!! \App\Support\SafeHtml::clean($page->content) !!}
         </div>
+
+        {{-- Agent 04: live cookie list + "change my settings" on the Cookie Policy page. --}}
+        @if ($page->slug === 'cookie-policy')
+            @include('partials.consent.cookie-table')
+        @endif
     </article>
 @endsection

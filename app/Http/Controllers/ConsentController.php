@@ -45,7 +45,10 @@ class ConsentController extends Controller
             return response()->json(['ok' => false], 422);
         }
 
-        $visitorId = $data['analytics'] && ! empty($data['vid'])
+        // Linked whenever the browser sends its visitor id — including on a
+        // withdrawal, which is what tells the profile builder to stop
+        // profiling that (still anonymous) visitor.
+        $visitorId = ! empty($data['vid'])
             ? AnalyticsVisitor::query()->where('uuid', strtolower($data['vid']))->value('id')
             : null;
         $ua = UserAgentParser::parse($request->userAgent());

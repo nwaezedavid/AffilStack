@@ -219,3 +219,24 @@ ScheduleMonitoring::track(
     'social-connections:verify',
 );
 // --- end agent 07 ---
+
+// --- Agent 04: first-party analytics ----------------------------------------
+// Interest & intent profiles behind Analytics → Audience Insights and the
+// ad audiences: incremental every 30 minutes, a full rebuild nightly (keeps
+// time-based stages and the 30-day engagement score current). The purge
+// enforces the retention period set in Analytics → Cookie Consent.
+ScheduleMonitoring::track(
+    Schedule::command('analytics:build-profiles')->everyThirtyMinutes()->withoutOverlapping(),
+    'analytics:build-profiles',
+);
+
+ScheduleMonitoring::track(
+    Schedule::command('analytics:build-profiles --full')->dailyAt('02:41')->withoutOverlapping(),
+    'analytics:build-profiles --full',
+);
+
+ScheduleMonitoring::track(
+    Schedule::command('analytics:purge')->dailyAt('03:13')->withoutOverlapping(),
+    'analytics:purge',
+);
+// --- end agent 04 ---

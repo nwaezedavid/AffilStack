@@ -165,7 +165,7 @@
         emit();
     }
 
-    function log(action, source) {
+    function log(action, source, priorVisitor) {
         if (!cfg.logUrl) { return; }
         var body = JSON.stringify({
             consent_id: state.id,
@@ -174,7 +174,10 @@
             action: action,
             source: source,
             policy_version: state.v,
-            vid: visitorId(),
+            // On a withdrawal the visitor id is about to be deleted, so the
+            // previous one is sent once more: it tells the server to stop
+            // profiling that visitor.
+            vid: visitorId() || priorVisitor || null,
             path: location.pathname,
             gpc: navigator.globalPrivacyControl === true
         });
@@ -196,12 +199,13 @@
         };
         decided = true;
         writeCookie(CONSENT_COOKIE, serialize(state), cfg.days || 180);
+        var priorVisitor = readCookie(VISITOR_COOKIE);
 
         if (state.a) { ensureVisitorId(); }
         if (!state.a) { deleteCookie(VISITOR_COOKIE); deleteMatching([/^_ga($|_)/, /^_gid$/, /^_gat/]); }
         if (!state.m) { deleteMatching([/^_fbp$/, /^_fbc$/, /^_gcl_/, /^_ttp$/, /^_tt_/, /^_uet/]); }
 
-        log(action, source);
+        log(action, source, priorVisitor);
         hideBanner();
         closeModal();
         syncToggles();
