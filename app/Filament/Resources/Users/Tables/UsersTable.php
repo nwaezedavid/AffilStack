@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Users\Tables;
 
 use App\Models\User;
 use App\Services\Credits\CreditManager;
+use App\Support\Lifecycle\UserActivity;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -28,8 +29,26 @@ class UsersTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->searchable()
+                    ->searchable(['name', 'email', 'company_name'])
                     ->description(fn (User $record) => $record->email),
+                TextColumn::make('activity_status')
+                    ->label('Activity')
+                    ->badge()
+                    ->state(fn (User $record) => UserActivity::statusFor($record))
+                    ->formatStateUsing(fn (string $state) => UserActivity::LABELS[$state] ?? $state)
+                    ->color(fn (string $state) => UserActivity::COLORS[$state] ?? 'gray')
+                    ->icon(fn (string $state) => match ($state) {
+                        UserActivity::ACTIVE => 'heroicon-m-signal',
+                        UserActivity::IDLE => 'heroicon-m-pause-circle',
+                        UserActivity::INACTIVE => 'heroicon-m-moon',
+                        default => 'heroicon-m-minus-circle',
+                    }),
+                TextColumn::make('last_active_at')
+                    ->label('Last active')
+                    ->since()
+                    ->dateTimeTooltip('M j, Y H:i')
+                    ->placeholder('Never')
+                    ->sortable(query: fn ($query, string $direction) => $query->orderByRaw('COALESCE(last_active_at, last_login_at) '.($direction === 'asc' ? 'asc' : 'desc'))),
                 BadgeColumn::make('roles.name')
                     ->label('Role')
                     ->colors([
@@ -64,6 +83,10 @@ class UsersTable
                     ->sortable(),
             ])
             ->filters([
+                SelectFilter::make('activity')
+                    ->label('Activity')
+                    ->options(UserActivity::LABELS)
+                    ->query(fn ($query, array $data) => filled($data['value'] ?? null) ? UserActivity::scope($query, $data['value']) : $query),
                 SelectFilter::make('roles')
                     ->relationship('roles', 'name'),
                 TernaryFilter::make('is_suspended'),
