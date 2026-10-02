@@ -45,6 +45,7 @@ use App\Http\Controllers\Dashboard\TikTokController;
 use App\Http\Controllers\Dashboard\UgcController;
 use App\Http\Controllers\Dashboard\XController;
 use App\Http\Controllers\Dashboard\YouTubeController;
+use App\Http\Controllers\FaviconController;
 use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\GoogleSiteAnalyticsController;
@@ -64,7 +65,12 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\TutorialController;
 use Filament\Facades\Filament;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 // Audit item #7 (caching/performance) — every page in this group has no
 // per-visitor content and no form to CSRF-protect, so a browser/CDN is
@@ -454,3 +460,21 @@ Route::middleware('cache-public-page')
 // once every route above has already failed to match, and it deliberately
 // skips the admin panel/API/webhook paths inside the controller itself.
 Route::fallback([RedirectFallbackController::class, 'handle'])->middleware('throttle:120,1');
+
+// --- Agent 01: favicon set for browsers and search engines -----------------
+// Stable root URLs (/favicon.ico, /favicon-48x48.png, /apple-touch-icon.png,
+// /site.webmanifest, ...) generated from the uploaded square logo — see
+// FaviconController/FaviconGenerator. No session/CSRF/cookie middleware: a
+// favicon response must be cacheable and never set a cookie. (Route::fallback
+// above is always matched last regardless of registration order.)
+Route::get('/{file}', [FaviconController::class, 'show'])
+    ->where('file', 'favicon\.ico|favicon-(48x48|96x96|192x192|512x512)\.png|apple-touch-icon\.png|site\.webmanifest')
+    ->withoutMiddleware([
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+        AddQueuedCookiesToResponse::class,
+        EncryptCookies::class,
+    ])
+    ->name('favicons.show');
+// --- end Agent 01 ----------------------------------------------------------

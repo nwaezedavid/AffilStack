@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\BrandLogo;
 use App\Models\HomepageFeature;
-use App\Models\SitePage;
 use App\Models\SiteSetting;
 use App\Models\Testimonial;
 use App\Services\Media\WebpImageConverter;
@@ -35,18 +34,20 @@ class OptimizeExistingImagesToWebp extends Command
      * @var array<class-string, array<int, string>>
      */
     protected const MODEL_COLUMNS = [
-        SitePage::class => ['og_image_path'],
         Testimonial::class => ['avatar_path'],
         BrandLogo::class => ['logo_path'],
         HomepageFeature::class => ['image_path'],
     ];
 
-    /** Every SiteSetting key that stores an uploaded image path. */
+    /**
+     * Every SiteSetting key that stores an uploaded image path shown on a
+     * page. The square site icon and social share images are deliberately
+     * absent: they are read by crawlers (Google's favicon crawler, LinkedIn)
+     * that don't accept WebP — see OriginalImageUpload.
+     */
     protected const SETTING_KEYS = [
         'logo_rectangular_path',
-        'logo_square_path',
         'hero_image_path',
-        'seo_og_image_path',
     ];
 
     public function handle(WebpImageConverter $converter): void

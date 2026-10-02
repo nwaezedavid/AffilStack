@@ -1,7 +1,6 @@
 <?php
     $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
     $logo = \App\Models\SiteSetting::get('logo_rectangular_path');
-    $favicon = \App\Models\SiteSetting::get('logo_square_path');
 
     // "I believe they will need a separate dashboard, different from the
     // users who are actual paid members of the platform" — an
@@ -32,10 +31,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Dashboard') · {{ $isAffiliatePortal ? $siteName.' Partner Portal' : $siteName }}</title>
-    @if ($favicon)
-        <link rel="icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
-        <link rel="apple-touch-icon" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($favicon) }}">
-    @endif
+    @include('partials.seo.icons')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.tracking-head')
     @include('partials.analytics-beacon')

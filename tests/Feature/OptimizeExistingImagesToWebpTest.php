@@ -36,14 +36,17 @@ class OptimizeExistingImagesToWebpTest extends TestCase
 
         $this->artisan('images:optimize-to-webp')->assertSuccessful();
 
-        $this->assertSame('seo/page-share.webp', $page->refresh()->og_image_path);
+        // Social share images are read by crawlers that don't accept WebP
+        // (LinkedIn, Google's favicon/logo crawlers) — left as uploaded.
+        $this->assertSame('seo/page-share.jpg', $page->refresh()->og_image_path);
         $this->assertSame('testimonials/avatar.webp', $testimonial->refresh()->avatar_path);
         $this->assertSame('brand-logos/acme.webp', $logo->refresh()->logo_path);
         $this->assertSame('homepage-features/feature.webp', $feature->refresh()->image_path);
 
         // Originals stay put — nothing is deleted.
-        Storage::disk('public')->assertExists('seo/page-share.jpg');
-        Storage::disk('public')->assertExists('seo/page-share.webp');
+        Storage::disk('public')->assertExists('testimonials/avatar.jpg');
+        Storage::disk('public')->assertExists('testimonials/avatar.webp');
+        Storage::disk('public')->assertMissing('seo/page-share.webp');
     }
 
     public function test_it_converts_every_site_setting_backed_image_and_updates_the_stored_value(): void
@@ -62,9 +65,9 @@ class OptimizeExistingImagesToWebpTest extends TestCase
         $this->artisan('images:optimize-to-webp')->assertSuccessful();
 
         $this->assertSame('branding/wide-logo.webp', SiteSetting::get('logo_rectangular_path'));
-        $this->assertSame('branding/square-logo.webp', SiteSetting::get('logo_square_path'));
+        $this->assertSame('branding/square-logo.jpg', SiteSetting::get('logo_square_path'));
         $this->assertSame('branding/hero.webp', SiteSetting::get('hero_image_path'));
-        $this->assertSame('seo/default-share.webp', SiteSetting::get('seo_og_image_path'));
+        $this->assertSame('seo/default-share.jpg', SiteSetting::get('seo_og_image_path'));
     }
 
     public function test_a_page_with_no_image_is_skipped_without_error(): void

@@ -7,6 +7,7 @@ use App\Filament\Widgets\RevenueOverview;
 use App\Filament\Widgets\SupportInboxWidget;
 use App\Http\Middleware\EnsurePanelLoginCompleted;
 use App\Models\SiteSetting;
+use App\Services\Seo\FaviconGenerator;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -37,9 +38,9 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(fn () => ($logo = SiteSetting::get('logo_rectangular_path'))
                 ? Storage::disk('public')->url($logo)
                 : null)
-            ->favicon(fn () => ($favicon = SiteSetting::get('logo_square_path'))
-                ? Storage::disk('public')->url($favicon)
-                : null)
+            // The generated favicon set (see FaviconGenerator) — a real PNG
+            // from a stable URL, rebuilt whenever the square logo changes.
+            ->favicon(fn () => app(FaviconGenerator::class)->url('favicon-96x96.png'))
             ->login(AdminLogin::class)
             ->multiFactorAuthentication([
                 AppAuthentication::make()->recoverable(),

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Seo\SeoInput;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -11,7 +12,11 @@ use Illuminate\Support\Facades\Cache;
  * and body the admin can edit from Filament without a code deploy. Looked
  * up by slug — see PageController.
  */
-#[Fillable(['slug', 'title', 'seo_title', 'meta_description', 'og_image_path', 'focus_keyword', 'content', 'is_published', 'no_index'])]
+#[Fillable([
+    'slug', 'title', 'seo_title', 'meta_description', 'og_image_path', 'focus_keyword', 'content', 'is_published', 'no_index',
+    'secondary_keywords', 'tags', 'canonical_url', 'no_follow', 'og_title', 'og_description', 'twitter_title',
+    'twitter_description', 'twitter_image_path', 'schema_type', 'custom_schema',
+])]
 class SitePage extends Model
 {
     protected function casts(): array
@@ -19,7 +24,27 @@ class SitePage extends Model
         return [
             'is_published' => 'boolean',
             'no_index' => 'boolean',
+            'no_follow' => 'boolean',
+            'secondary_keywords' => 'array',
+            'tags' => 'array',
         ];
+    }
+
+    /**
+     * The page's SEO fields in the shape SeoHeadBuilder and SeoScore share
+     * with PageSeo — see SeoInput.
+     */
+    public function seoInput(): SeoInput
+    {
+        return SeoInput::fromArray([
+            ...$this->only([
+                'seo_title', 'meta_description', 'focus_keyword', 'secondary_keywords', 'tags', 'canonical_url',
+                'og_title', 'og_description', 'og_image_path', 'twitter_title', 'twitter_description',
+                'twitter_image_path', 'schema_type', 'custom_schema',
+            ]),
+            'index' => ! $this->no_index,
+            'follow' => ! $this->no_follow,
+        ]);
     }
 
     /**
