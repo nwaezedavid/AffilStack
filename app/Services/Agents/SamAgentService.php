@@ -2,8 +2,11 @@
 
 namespace App\Services\Agents;
 
+use App\Mail\LifecycleMail;
 use App\Models\AgentTask;
 use App\Models\CannedReply;
+use App\Models\LifecycleEmail;
+use App\Models\LifecycleEmailLog;
 use App\Models\SupportTicket;
 use App\Models\SupportTicketMessage;
 use App\Models\User;
@@ -14,8 +17,12 @@ use App\Notifications\TicketStatusChanged;
 use App\Notifications\WelcomeAboard;
 use App\Services\AI\AIGenerationException;
 use App\Services\AI\AIProvider;
+use App\Services\Credits\CreditManager;
+use App\Services\Lifecycle\LifecycleEmailDispatcher;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
@@ -177,6 +184,74 @@ class SamAgentService
         }
 
         return $created;
+    }
+
+    /**
+     * Lifecycle emails (birthday, festive season, re-engagement): the
+     * final delivery step for one claimed send — see SendLifecycleEmail
+     * and LifecycleEmailDispatcher. Re-checks that the email is still
+     * wanted (the user may have opted out, been suspended, or — for a
+     * re-engagement nudge — come back since it was queued), grants any
+     * birthday gift credits exactly once through the credit ledger, then
+     * sends. A failed send throws so the queue retries it; the log row
+     * stays "queued" until it succeeds or the job finally fails.
+     */
+    public function deliverLifecycleEmail(LifecycleEmailLog $log): void
+    {
+        if ($log->status !== LifecycleEmailLog::STATUS_QUEUED) {
+            return;
+        }
+
+        $user = $log->user;
+        $email = $log->lifecycleEmail;
+        $skipReason = match (true) {
+            ! $user || ! $email => 'The user or email no longer exists.',
+            $user->is_suspended => 'The account is suspended.',
+            ! $user->marketingEmailsEnabled() => 'The user turned off birthday, holiday and tips emails.',
+            ! $email->enabled => 'The email was switched off before it was sent.',
+            $email->type === LifecycleEmail::TYPE_REENGAGEMENT
+                && LifecycleEmailDispatcher::spellOccurrence($user) !== $log->occurrence => 'The user became active again.',
+            default => null,
+        };
+
+        if ($skipReason !== null) {
+            $log->update(['status' => LifecycleEmailLog::STATUS_SKIPPED, 'error' => $skipReason]);
+
+            return;
+        }
+
+        $bonusCredits = $email->type === LifecycleEmail::TYPE_BIRTHDAY ? $this->grantBirthdayGift($log, $user, $email) : 0;
+
+        Mail::to($user)->send(new LifecycleMail($email, $user, ['bonus_credits' => $bonusCredits]));
+
+        $log->update(['status' => LifecycleEmailLog::STATUS_SENT, 'sent_at' => now(), 'error' => null]);
+    }
+
+    /**
+     * Credits the birthday email's gift (0 by default) once per log row,
+     * even if the send itself is retried. Team seats and affiliate-only
+     * accounts have no credit balance of their own, so they get the
+     * greeting without a gift.
+     */
+    protected function grantBirthdayGift(LifecycleEmailLog $log, User $user, LifecycleEmail $email): int
+    {
+        if ($email->bonus_credits <= 0 || $user->isSeat() || $user->isAffiliateOnly()) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($log, $user, $email) {
+            $locked = LifecycleEmailLog::whereKey($log->id)->lockForUpdate()->first();
+
+            if ($locked->bonus_credits_granted > 0) {
+                return $locked->bonus_credits_granted;
+            }
+
+            app(CreditManager::class)->grant($user, $email->bonus_credits, 'birthday_gift', $locked);
+            $locked->update(['bonus_credits_granted' => $email->bonus_credits]);
+            $log->bonus_credits_granted = $email->bonus_credits;
+
+            return $email->bonus_credits;
+        });
     }
 
     protected function systemPrompt(): string

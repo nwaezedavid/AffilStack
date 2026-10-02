@@ -24,6 +24,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use App\Support\Lifecycle\UserActivity;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
@@ -546,5 +547,30 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             ->where('status', 'requested')
             ->when($currency, fn ($query) => $query->where('currency', $currency))
             ->exists();
+    }
+
+    // ── Profile, lifecycle emails & activity (agent 03) ─────────────────
+
+    /**
+     * "Birthday, holiday and tips emails" (Profile > Notifications) — the
+     * single opt-out every lifecycle email respects. Missing (null) means
+     * the column predates this user's row being loaded, so default on.
+     */
+    public function marketingEmailsEnabled(): bool
+    {
+        return (bool) ($this->marketing_emails_opt_in ?? true);
+    }
+
+    public function lifecycleEmailLogs(): HasMany
+    {
+        return $this->hasMany(LifecycleEmailLog::class);
+    }
+
+    /**
+     * active | idle | inactive | never — see App\Support\Lifecycle\UserActivity.
+     */
+    public function activityStatus(): string
+    {
+        return UserActivity::statusFor($this);
     }
 }

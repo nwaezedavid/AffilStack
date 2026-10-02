@@ -159,3 +159,30 @@ ScheduleMonitoring::track(
     Schedule::command('subscriptions:grant-monthly-credits')->daily()->withoutOverlapping(),
     'subscriptions:grant-monthly-credits',
 );
+
+// ── Lifecycle emails & activity (agent 03) ──────────────────────────────
+// Birthday, festive-season and re-engagement emails — see
+// LifecycleEmailDispatcher. Hourly because each user gets theirs at the
+// send hour (default 9am) in their OWN timezone; every run is idempotent
+// (a unique send-log row is claimed before anything is queued), and the
+// actual sends go through the database queue the cron worker drains.
+ScheduleMonitoring::track(
+    Schedule::command('lifecycle:send-birthday')->hourly()->withoutOverlapping(),
+    'lifecycle:send-birthday',
+);
+
+ScheduleMonitoring::track(
+    Schedule::command('lifecycle:send-festive')->hourly()->withoutOverlapping(),
+    'lifecycle:send-festive',
+);
+
+ScheduleMonitoring::track(
+    Schedule::command('lifecycle:send-reengagement')->hourly()->withoutOverlapping(),
+    'lifecycle:send-reengagement',
+);
+
+// Daily-active-user history behind the admin activity sparkline.
+Schedule::call(fn () => \App\Models\UserActivityDay::where('date', '<', now()->subDays((int) config('lifecycle.activity_history_days', 90))->toDateString())->delete())
+    ->daily()
+    ->name('prune-user-activity-days')
+    ->withoutOverlapping();

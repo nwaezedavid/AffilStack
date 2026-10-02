@@ -11,6 +11,7 @@ use App\Http\Middleware\MeterApiUsage;
 use App\Http\Middleware\RestrictAffiliateOnlyAccounts;
 use App\Http\Middleware\RestrictAgencySeats;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\TrackUserActivity;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -54,6 +55,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'log-api-request' => LogApiRequest::class,
             'cache-public-page' => CachePublicPage::class,
         ]);
+
+        // Agent 03: keeps users.last_active_at fresh (throttled to one
+        // write per user every few minutes) for the admin active/inactive
+        // view and the re-engagement emails — see TrackUserActivity.
+        $middleware->appendToGroup('web', TrackUserActivity::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
