@@ -44,6 +44,7 @@ use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\GoogleSiteAnalyticsController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LinkController;
+use App\Http\Controllers\MobileAppRedirectController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PaymentMethodController;
@@ -376,6 +377,13 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::post('/support/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('support.reply');
     Route::post('/support/{ticket}/rate', [SupportTicketController::class, 'rate'])->name('support.rate');
 });
+
+// --- Agent 02: mobile apps smart link -------------------------------------
+// /app sends Android visitors to Google Play, iPhone/iPad visitors to the App
+// Store and everyone else to the homepage apps section (Content → Mobile
+// Apps). Registered before the /{slug} catch-all below so it isn't swallowed.
+Route::get('/app', MobileAppRedirectController::class)->name('mobile-app.redirect');
+// --- End agent 02 ------------------------------------------------------------
 
 // Any admin-created SitePage whose slug isn't one of the five dedicated
 // routes above (About/Terms/Privacy/Refund Policy/Cookie Policy) lands

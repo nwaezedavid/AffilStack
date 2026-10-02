@@ -115,6 +115,8 @@
                             <span class="font-mono text-gold-400 font-semibold">{{ number_format(auth()->user()->billableUser()->credits_balance) }}</span>
                         </div>
                     </div>
+                    {{-- Mobile apps (agent 02): "Get the mobile app" card, hidden until a store link is set. --}}
+                    @include('partials.dashboard.mobile-app-card')
                 @endunless
                 <a href="{{ route('profile') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm {{ $sidebarText }} {{ $sidebarHover }} hover:text-white">
                     <x-heroicon-o-user-circle class="h-5 w-5 shrink-0 opacity-80" /> Profile & Security

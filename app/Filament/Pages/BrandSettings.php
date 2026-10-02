@@ -9,11 +9,11 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -59,11 +59,6 @@ class BrandSettings extends Page
             'header_announcement' => SiteSetting::get('header_announcement'),
             'support_email' => SiteSetting::get('support_email', 'support@affilstack.com'),
             'footer_text' => SiteSetting::get('footer_text', '© '.date('Y').' AffilStack.'),
-            'hero_headline' => SiteSetting::get('hero_headline'),
-            'hero_subheadline' => SiteSetting::get('hero_subheadline'),
-            'hero_media_type' => SiteSetting::get('hero_media_type', 'none'),
-            'hero_image' => SiteSetting::get('hero_image_path'),
-            'hero_youtube_url' => SiteSetting::get('hero_youtube_url'),
         ]);
     }
 
@@ -106,34 +101,17 @@ class BrandSettings extends Page
                         ColorPicker::make('color_gold')->label('Gold (accent)'),
                     ]),
 
-                Section::make('Homepage hero')
-                    ->description('The main banner at the top of the homepage. Leave the headline/subheadline blank to keep the default copy.')
-                    ->columns(2)
+                // The homepage hero (and every other homepage section) is
+                // edited in Content → Homepage — see HomepageEditor.
+                Section::make('Homepage')
+                    ->description('The hero headline, buttons, image/video and every other homepage section now live in one place: Content → Homepage.')
                     ->components([
-                        TextInput::make('hero_headline')->columnSpanFull(),
-                        Textarea::make('hero_subheadline')->rows(2)->columnSpanFull(),
-                        Select::make('hero_media_type')
-                            ->label('Hero media')
-                            ->options([
-                                'none' => 'None',
-                                'image' => 'Image',
-                                'youtube' => 'YouTube video',
-                            ])
-                            ->default('none')
-                            ->live()
-                            ->columnSpanFull(),
-                        WebpFileUpload::make('hero_image')
-                            ->image()
-                            ->disk('public')
-                            ->directory('branding')
-                            ->visible(fn ($get) => $get('hero_media_type') === 'image')
-                            ->columnSpanFull(),
-                        TextInput::make('hero_youtube_url')
-                            ->label('YouTube URL')
-                            ->url()
-                            ->placeholder('https://www.youtube.com/watch?v=...')
-                            ->visible(fn ($get) => $get('hero_media_type') === 'youtube')
-                            ->columnSpanFull(),
+                        Actions::make([
+                            Action::make('openHomepageEditor')
+                                ->label('Open the homepage editor')
+                                ->url(fn (): string => HomepageEditor::getUrl())
+                                ->color('gray'),
+                        ]),
                     ]),
 
                 Section::make('Navigation menu')
@@ -171,6 +149,11 @@ class BrandSettings extends Page
             'footer_text', 'hero_headline', 'hero_subheadline', 'hero_media_type',
             'hero_image', 'hero_youtube_url',
         ] as $key) {
+            // Hero fields moved to the homepage editor — never overwrite them from here.
+            if (! array_key_exists($key, $data)) {
+                continue;
+            }
+
             $settingKey = match ($key) {
                 'logo_rectangular' => 'logo_rectangular_path',
                 'logo_square' => 'logo_square_path',
