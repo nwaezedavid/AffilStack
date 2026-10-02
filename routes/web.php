@@ -85,6 +85,13 @@ Route::middleware('cache-public-page')->group(function () {
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 
+// --- Agent 02: mobile apps smart link -------------------------------------
+// /app sends Android visitors to Google Play, iPhone/iPad visitors to the App
+// Store and everyone else to the homepage apps section (Content → Mobile
+// Apps). Registered before the /{slug} catch-all below so it isn't swallowed.
+Route::get('/app', MobileAppRedirectController::class)->name('mobile-app.redirect');
+// --- End agent 02 ------------------------------------------------------------
+
 // The ONLY admin URL anyone should ever need to type or bookmark. Every
 // other admin screen lives under /afs-admin/* (see AdminPanelProvider's
 // ->path()) — this route's one job is to be a stable front door into that
@@ -377,13 +384,6 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::post('/support/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('support.reply');
     Route::post('/support/{ticket}/rate', [SupportTicketController::class, 'rate'])->name('support.rate');
 });
-
-// --- Agent 02: mobile apps smart link -------------------------------------
-// /app sends Android visitors to Google Play, iPhone/iPad visitors to the App
-// Store and everyone else to the homepage apps section (Content → Mobile
-// Apps). Registered before the /{slug} catch-all below so it isn't swallowed.
-Route::get('/app', MobileAppRedirectController::class)->name('mobile-app.redirect');
-// --- End agent 02 ------------------------------------------------------------
 
 // Any admin-created SitePage whose slug isn't one of the five dedicated
 // routes above (About/Terms/Privacy/Refund Policy/Cookie Policy) lands
