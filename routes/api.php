@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ExtensionApiController;
+use App\Http\Controllers\Api\ExtensionProspectingController;
 use App\Http\Controllers\Api\V1\Admin\AdminApiController;
 use App\Http\Controllers\Api\V1\CrmContactsController;
 use App\Http\Controllers\Api\V1\GenerationsController;
@@ -23,6 +24,25 @@ Route::middleware(['api-token-auth', 'throttle:api', 'token-scope'])->group(func
     Route::get('/offers', [ExtensionApiController::class, 'offers'])->name('api.offers');
     Route::post('/clips', [ExtensionApiController::class, 'storeClip'])->name('api.clips.store');
 });
+
+// --- Agent 09: Chrome extension v1.2 (begin) --------------------------------
+// Google Maps → CRM lists, LinkedIn outreach and the AI reply assistant. Same
+// bearer-token auth, read-only scope check and per-plan rate limit as the
+// group above; the AI endpoints are also capped by throttle:paid-lookups.
+// See App\Http\Controllers\Api\ExtensionProspectingController.
+Route::middleware(['api-token-auth', 'throttle:api'])->group(function () {
+    // Read-only even though it's a POST (the item list is too large for a
+    // query string), so a read-only token can still badge "already in CRM".
+    Route::post('/crm/contacts/lookup', [ExtensionProspectingController::class, 'lookupContacts'])->name('api.extension.crm.contacts.lookup');
+
+    Route::middleware('token-scope')->group(function () {
+        Route::get('/crm/lists', [ExtensionProspectingController::class, 'lists'])->name('api.extension.crm.lists');
+        Route::post('/crm/contacts', [ExtensionProspectingController::class, 'storeContacts'])->name('api.extension.crm.contacts.store');
+        Route::post('/linkedin/message', [ExtensionProspectingController::class, 'linkedinMessage'])->middleware('throttle:paid-lookups')->name('api.extension.linkedin.message');
+        Route::post('/linkedin/reply', [ExtensionProspectingController::class, 'linkedinReply'])->middleware('throttle:paid-lookups')->name('api.extension.linkedin.reply');
+    });
+});
+// --- Agent 09: Chrome extension v1.2 (end) ----------------------------------
 
 // API roadmap item #4 — publicly readable (no auth, no secrets in it) so
 // Postman/Insomnia and the JS/Python SDKs can import it directly, the same
