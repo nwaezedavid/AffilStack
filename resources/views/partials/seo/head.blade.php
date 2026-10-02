@@ -5,13 +5,16 @@
     sitewide defaults (SEO > SEO settings). Included from layouts/marketing.
 --}}
 <?php
+    // Inline @section('title', ...) values arrive already HTML-escaped by
+    // Blade; decode once so they are escaped exactly once on output.
+    $sectionText = fn (string $name) => html_entity_decode($__env->yieldContent($name), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $seo = app(\App\Services\Seo\SeoHeadBuilder::class)->build([
         'route' => request()->route()?->getName(),
         'page' => $page ?? null,
-        'title' => $__env->yieldContent('title'),
-        'description' => $__env->yieldContent('meta_description'),
-        'og_image' => $__env->yieldContent('og_image'),
-        'robots' => $__env->yieldContent('robots'),
+        'title' => $sectionText('title'),
+        'description' => $sectionText('meta_description'),
+        'og_image' => $sectionText('og_image'),
+        'robots' => $sectionText('robots'),
         'body' => $__env->yieldContent('content').$__env->yieldPushContent('head'),
     ]);
     $gscVerification = \App\Models\SiteSetting::get('seo_gsc_verification');

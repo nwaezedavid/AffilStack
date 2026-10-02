@@ -11,7 +11,7 @@
     $truncate = fn (string $text, int $max) => mb_strlen($text) > $max ? rtrim(mb_substr($text, 0, $max - 1)).'…' : $text;
     $font = "font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;";
 ?>
-<div style="display: grid; gap: 14px;">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; overflow-wrap: anywhere;">
     {{-- Google --}}
     <div>
         <div style="font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; opacity: .6; margin-bottom: 6px;">Google search result</div>
@@ -46,7 +46,7 @@
             @if ($og['image'])
                 <div style="aspect-ratio: 1.91 / 1; background: #f0f2f5 url('{{ $og['image']['url'] }}') center / cover no-repeat;"></div>
             @else
-                <div style="aspect-ratio: 1.91 / 1; background: #f0f2f5; display: flex; align-items: center; justify-content: center; color: #65676b; font-size: 12px; text-align: center; padding: 0 16px;">No social image — upload a 1200×630 image</div>
+                <div style="aspect-ratio: 1.91 / 1; background: #f0f2f5; display: flex; align-items: center; justify-content: center; color: #65676b; font-size: 12px; text-align: center; padding: 0 16px;">No social image — upload a 1200×630 image or set a default in SEO settings</div>
             @endif
             <div style="background: #f0f2f5; padding: 10px 12px; border-top: 1px solid #dadde1;">
                 <div style="font-size: 12px; color: #65676b; text-transform: uppercase;">{{ $host }}</div>
@@ -56,7 +56,7 @@
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 14px; min-width: 0;">
         {{-- X --}}
         <div>
             <div style="font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; opacity: .6; margin-bottom: 6px;">X (Twitter)</div>

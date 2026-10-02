@@ -33,7 +33,7 @@ class FaviconHealth
             ? $this->check('pass', 'A square site icon is uploaded', 'Used to build every favicon size.')
             : $this->check('warn', 'No site icon uploaded yet — a default monogram is being used', 'Upload your square logo (PNG, 512×512 or larger) above.');
 
-        if ($meta) {
+        if ($meta && ($meta['source'] ?? null) === 'upload') {
             $square = $meta['source_width'] === $meta['source_height'];
             $big = min($meta['source_width'], $meta['source_height']) >= 512;
             $checks[] = $this->check(

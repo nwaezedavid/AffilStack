@@ -170,7 +170,8 @@ class SeoSettings extends Page
                     ->description('Served live at /robots.txt. A "Sitemap:" line is added automatically if you leave it out. Rules that would block the homepage, the favicon, /storage images or /build assets are rejected — Google needs them to show your site and its icon.')
                     ->components([
                         Textarea::make('seo_robots_txt')
-                            ->label(false)
+                            ->label('robots.txt')
+                            ->hiddenLabel()
                             ->rows(6)
                             ->rule(fn () => function (string $attribute, mixed $value, \Closure $fail): void {
                                 $blocked = RobotsTxt::blockedEssentialPaths((string) $value);

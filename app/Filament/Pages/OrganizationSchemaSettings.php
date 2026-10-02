@@ -80,7 +80,7 @@ class OrganizationSchemaSettings extends Page
                         TextInput::make('alternate_name')->label('Alternate name')->maxLength(120)
                             ->helperText('Another name or abbreviation, e.g. "Affil Stack".'),
                         TextInput::make('legal_name')->label('Legal name')->maxLength(160)
-                            ->helperText('The registered company name, if different (e.g. "Prime Daddy Technologies Ltd").'),
+                            ->helperText('The registered company name, if different (e.g. "AffilStack Technologies Ltd").'),
                         TextInput::make('url')->label('Website URL')->url()->required(),
                         Textarea::make('description')->label('Description')->rows(3)->maxLength(500)->columnSpanFull(),
                         DatePicker::make('founding_date')->label('Founding date')->native(false)->maxDate(now()),

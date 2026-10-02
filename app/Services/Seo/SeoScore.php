@@ -54,14 +54,14 @@ class SeoScore
             'The snippet under your title in search results; longer text is truncated.',
         );
 
-        $checks[] = $this->check(10, $keyword ? 'pass' : 'fail', 'Focus keyword is set', 'The one phrase this page should rank for.');
+        $checks[] = $this->check(10, $keyword ? 'pass' : 'fail', $keyword ? "Focus keyword: \"{$keyword}\"" : 'No focus keyword yet', 'The one phrase this page should rank for.');
 
         if ($keyword) {
-            $checks[] = $this->check(10, $this->contains($title, $keyword) ? 'pass' : 'fail', 'Focus keyword appears in the SEO title', 'Put it near the start of the title if it reads naturally.');
-            $checks[] = $this->check(10, $this->contains($description, $keyword) ? 'pass' : 'fail', 'Focus keyword appears in the meta description', 'Google bolds matching words in the snippet.');
+            $checks[] = $this->check(10, $this->contains($title, $keyword) ? 'pass' : 'fail', $this->contains($title, $keyword) ? 'Focus keyword appears in the SEO title' : 'Focus keyword is missing from the SEO title', 'Put it near the start of the title if it reads naturally.');
+            $checks[] = $this->check(10, $this->contains($description, $keyword) ? 'pass' : 'fail', $this->contains($description, $keyword) ? 'Focus keyword appears in the meta description' : 'Focus keyword is missing from the meta description', 'Google bolds matching words in the snippet.');
 
             if ($content !== null && $content !== '') {
-                $checks[] = $this->check(10, $this->contains($content, $keyword) ? 'pass' : 'fail', 'Focus keyword appears in the page content', 'Use it naturally in the copy, ideally in a heading.');
+                $checks[] = $this->check(10, $this->contains($content, $keyword) ? 'pass' : 'fail', $this->contains($content, $keyword) ? 'Focus keyword appears in the page content' : 'Focus keyword is missing from the page content', 'Use it naturally in the copy, ideally in a heading.');
             }
 
             if ($url !== '') {
@@ -70,7 +70,7 @@ class SeoScore
         }
 
         $secondary = $input->secondaryKeywords;
-        $checks[] = $this->check(5, $secondary !== [] ? 'pass' : 'warn', 'Secondary keywords are set ('.count($secondary).')', 'Related phrases and synonyms people also search for.');
+        $checks[] = $this->check(5, $secondary !== [] ? 'pass' : 'warn', $secondary !== [] ? count($secondary).' secondary keyword(s) set' : 'No secondary keywords yet', 'Related phrases and synonyms people also search for.');
 
         if ($secondary !== []) {
             $haystack = $title.' '.$description.' '.($content ?? '');

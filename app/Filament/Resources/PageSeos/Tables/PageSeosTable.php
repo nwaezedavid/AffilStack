@@ -31,6 +31,9 @@ class PageSeosTable
         return $table
             ->records(fn (array $filters): array => self::rows($filters))
             ->paginated(false)
+            // ListRecords' defaults type-hint an Eloquent model; rows here are arrays.
+            ->recordAction(null)
+            ->recordUrl(fn (array $record): string => $record['edit_url'])
             ->columns([
                 TextColumn::make('label')
                     ->label('Page')
