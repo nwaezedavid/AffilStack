@@ -44,13 +44,14 @@ class LifecycleEmailForm
                                 self::birthdaySection(),
                                 self::festiveSection(),
                                 self::reengagementSection(),
-                                Section::make('Internal notes')
-                                    ->collapsed()
+                                Section::make('Notes & date caveats')
+                                    ->description('How this email is timed and anything to double-check (e.g. moon-sighting dates).')
+                                    ->collapsed(fn (?LifecycleEmail $record) => blank($record?->admin_notes))
                                     ->schema([
                                         Textarea::make('admin_notes')
                                             ->hiddenLabel()
                                             ->rows(3)
-                                            ->helperText('Only admins see this.'),
+                                            ->helperText('Only admins see this — edit freely.'),
                                     ]),
                             ]),
                         Section::make('Live preview')

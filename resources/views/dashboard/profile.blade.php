@@ -125,8 +125,8 @@
     </div>
 
     {{-- Tabs --}}
-    <div class="mb-5 overflow-x-auto">
-        <div role="tablist" aria-label="Profile sections" class="inline-flex min-w-full gap-1 rounded-2xl border border-line bg-surface p-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)] sm:min-w-0">
+    <div class="mb-5">
+        <div role="tablist" aria-label="Profile sections" class="grid grid-cols-2 gap-1 rounded-2xl border border-line bg-surface p-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)] sm:inline-flex">
             @foreach ($tabs as $key => $meta)
                 <button type="button" role="tab" id="tab-{{ $key }}" data-tab="{{ $key }}"
                         aria-controls="panel-{{ $key }}" aria-selected="{{ $activeTab === $key ? 'true' : 'false' }}" tabindex="{{ $activeTab === $key ? '0' : '-1' }}"

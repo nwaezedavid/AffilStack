@@ -94,7 +94,7 @@
                     {{-- Footer --}}
                     <tr>
                         <td align="center" class="px" style="padding:22px 28px 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#64748B;">
-                            You're receiving this because you have a {{ $siteName }} account and birthday, holiday and tips emails are switched on.
+                            You're receiving this because you have an account with {{ $siteName }} and birthday, holiday and tips emails are switched on.
                             @if ($unsubscribeUrl)
                                 <br>
                                 <a href="{{ $profileUrl }}?tab=notifications" style="color:#64748B;text-decoration:underline;">Email preferences</a>

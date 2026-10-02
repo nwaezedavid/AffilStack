@@ -26,6 +26,7 @@ class LifecycleEmailsTable
     {
         return $table
             ->defaultSort('sort_order')
+            ->defaultPaginationPageOption(25)
             ->modifyQueryUsing(fn ($query) => $query->withCount(['logs as sent_count' => fn ($logs) => $logs->where('status', 'sent')]))
             ->columns([
                 TextColumn::make('name')

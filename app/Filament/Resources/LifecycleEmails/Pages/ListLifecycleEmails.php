@@ -22,7 +22,7 @@ class ListLifecycleEmails extends ListRecords
 
     public function getSubheading(): ?string
     {
-        return 'Birthday, festive-season and re-engagement emails that send themselves at 9am in each user\'s own timezone. Edit any of them, switch them off, or send yourself a test.';
+        return 'Birthday, festive-season and re-engagement emails that send themselves at '.sprintf('%02d:00', LifecycleSettings::sendHour()).' in each user\'s own timezone. Edit any of them, switch them off, or send yourself a test.';
     }
 
     protected function getHeaderActions(): array
