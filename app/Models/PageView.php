@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
  * beacon fires from the browser itself, so a CDN/edge cache in front of
  * the app in production can never make this undercount.
  */
-#[Fillable(['path', 'source', 'referrer_host', 'user_id', 'session_id', 'view_token', 'duration_seconds'])]
+#[Fillable(['path', 'source', 'referrer_host', 'user_id', 'session_id', 'visitor_id', 'analytics_session_id', 'view_token', 'duration_seconds', 'scroll_depth'])]
 class PageView extends Model
 {
     use HasFactory;
@@ -41,6 +41,20 @@ class PageView extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Agent 04: set only when the view was recorded with analytics consent;
+     * a view without one is an anonymous aggregate count.
+     */
+    public function visitor(): BelongsTo
+    {
+        return $this->belongsTo(AnalyticsVisitor::class, 'visitor_id');
+    }
+
+    public function analyticsSession(): BelongsTo
+    {
+        return $this->belongsTo(AnalyticsSession::class, 'analytics_session_id');
     }
 
     /**
