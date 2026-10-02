@@ -47,7 +47,7 @@ class UgcService
     ) {}
 
     /**
-     * @param  array{angles_generation_id?: int, angle_index?: int}|null  $context
+     * @param  array{angles_generation_id?: int, angle_index?: int, avatar_id?: ?string, voice_id?: ?string, avatar_name?: ?string, voice_name?: ?string}|null  $context
      */
     public function queue(User $user, Offer $offer, string $method, ?array $context = null): Generation
     {
@@ -69,6 +69,16 @@ class UgcService
 
             $input['angles_generation_id'] = $anglesGenerationId;
             $input['angle_index'] = $angleIndex;
+
+            // The "choose your character" step on the UGC page happens
+            // before the script is written, so the chosen HeyGen avatar and
+            // voice ride along on the script's own row — the video step
+            // then preselects them instead of asking twice.
+            foreach (['avatar_id', 'voice_id', 'avatar_name', 'voice_name'] as $characterKey) {
+                if (filled($context[$characterKey] ?? null)) {
+                    $input[$characterKey] = (string) $context[$characterKey];
+                }
+            }
         }
 
         $cost = (int) config("credits.costs.{$module}");

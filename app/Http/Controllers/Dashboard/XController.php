@@ -24,6 +24,6 @@ class XController extends Controller
             return back()->with('error', 'Not enough credits for an X thread. Upgrade your plan or buy a credit top-up.');
         }
 
-        return redirect()->route('offers.show', $offer)->with('success', "X thread queued — we'll notify you the moment it's ready.");
+        return redirect()->route('offers.feature', [$offer, 'x'])->with('success', "X thread queued — we'll notify you the moment it's ready.");
     }
 }

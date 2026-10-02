@@ -40,7 +40,12 @@ class UgcVideoService
 
     public function __construct(protected CreditManager $credits) {}
 
-    public function queue(User $user, Offer $offer, Generation $contentGeneration, string $avatarId, string $voiceId): Generation
+    /**
+     * $editedScript is the user's own edit of the AI's spoken script (the
+     * UGC page's editable "Your script" step) — when given, that exact
+     * text is what the avatar reads, not the original AI draft.
+     */
+    public function queue(User $user, Offer $offer, Generation $contentGeneration, string $avatarId, string $voiceId, ?string $editedScript = null): Generation
     {
         if ($contentGeneration->offer_id !== $offer->id
             || $contentGeneration->module !== 'ugc_content'
@@ -48,7 +53,12 @@ class UgcVideoService
             throw new InvalidArgumentException('Pick a completed UGC script for this offer to turn into a video.');
         }
 
-        $videoScript = trim((string) ($contentGeneration->output_meta['video_script'] ?? ''));
+        $videoScript = trim((string) ($editedScript ?? ''));
+        $wasEdited = $videoScript !== '';
+
+        if (! $wasEdited) {
+            $videoScript = trim((string) ($contentGeneration->output_meta['video_script'] ?? ''));
+        }
 
         if ($videoScript === '') {
             throw new RuntimeException('This UGC script has no spoken-video version to generate from — try regenerating the content.');
@@ -72,10 +82,19 @@ class UgcVideoService
                 'avatar_id' => $avatarId,
                 'voice_id' => $voiceId,
                 'video_script' => $videoScript,
+                'script_edited' => $wasEdited,
             ],
             'credits_spent' => 0,
             'status' => 'queued',
         ]);
+
+        // Remember the edit on the script itself, so coming back to the
+        // UGC page shows the user's own version, not the AI's draft.
+        if ($wasEdited) {
+            $contentGeneration->update([
+                'output_meta' => array_merge((array) $contentGeneration->output_meta, ['edited_video_script' => $videoScript]),
+            ]);
+        }
 
         RunUgcVideoGeneration::dispatch($generation);
 

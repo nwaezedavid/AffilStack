@@ -24,6 +24,6 @@ class TikTokController extends Controller
             return back()->with('error', 'Not enough credits for a TikTok video package. Upgrade your plan or buy a credit top-up.');
         }
 
-        return redirect()->route('offers.show', $offer)->with('success', "TikTok video package queued — we'll notify you the moment it's ready.");
+        return redirect()->route('offers.feature', [$offer, 'tiktok'])->with('success', "TikTok video package queued — we'll notify you the moment it's ready.");
     }
 }

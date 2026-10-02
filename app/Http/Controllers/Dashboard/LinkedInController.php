@@ -22,7 +22,7 @@ class LinkedInController extends Controller
             return back()->with('error', 'Not enough credits for that LinkedIn generation. Upgrade your plan or buy a credit top-up.');
         }
 
-        return redirect()->route('offers.show', $offer)->with('success', "LinkedIn content queued — we'll notify you the moment it's ready.");
+        return redirect()->route('offers.feature', [$offer, 'linkedin'])->with('success', "LinkedIn content queued — we'll notify you the moment it's ready.");
     }
 
     public function keywords(Offer $offer, LinkedInService $service): RedirectResponse

@@ -20,6 +20,6 @@ class CompetitorAngleController extends Controller
             return back()->with('error', 'Not enough credits for a competitor angle scan. Upgrade your plan or buy a credit top-up.');
         }
 
-        return redirect()->route('offers.show', $offer)->with('success', "Competitor angle scan queued — we'll notify you the moment it's ready.");
+        return redirect()->route('offers.feature', [$offer, 'competitor'])->with('success', "Competitor angle scan queued — we'll notify you the moment it's ready.");
     }
 }

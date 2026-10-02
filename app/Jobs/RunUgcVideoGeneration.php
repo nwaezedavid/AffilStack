@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Generation;
 use App\Notifications\GenerationCompleted;
 use App\Services\Modules\UgcVideoService;
+use App\Support\OfferFeatures;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -37,7 +38,7 @@ class RunUgcVideoGeneration implements ShouldQueue
             module: $this->generation->module,
             title: $this->generation->offer->product_name,
             success: $this->generation->status === 'completed',
-            url: route('offers.show', $this->generation->offer_id),
+            url: OfferFeatures::urlForGeneration($this->generation),
             errorMessage: $this->generation->error_message,
         ));
     }
