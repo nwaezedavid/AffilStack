@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\SiteSetting;
+use App\Services\Referrals\MarketingKit\BannerCatalog;
+use App\Services\Referrals\MarketingKit\MarketingKit;
 use App\Services\Referrals\ReferralPayoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,7 +15,18 @@ use RuntimeException;
 
 class ReferralController extends Controller
 {
-    public function index(): View
+    /**
+     * @var array<int, string>
+     */
+    public const TABS = ['overview', 'banners', 'emails', 'social', 'links', 'guidelines', 'payouts'];
+
+    /**
+     * The affiliate dashboard: earnings/payouts plus the Marketing Kit
+     * (banners, email swipes, social posts, text links & brand assets,
+     * guidelines). Every tab is rendered up front and switched client-side;
+     * ?tab= deep-links to one and works without JavaScript.
+     */
+    public function index(Request $request, MarketingKit $kit, BannerCatalog $catalog): View
     {
         $user = auth()->user();
 
@@ -36,7 +50,32 @@ class ReferralController extends Controller
 
         $payouts = $user->referralPayouts()->latest('requested_at')->get();
 
-        return view('dashboard.referrals.index', compact('user', 'referrals', 'clickCount', 'totals', 'payouts'));
+        $tab = in_array($request->query('tab'), self::TABS, true) ? $request->query('tab') : 'overview';
+        $stats = $kit->stats($user);
+        $banners = $catalog->all()->map(fn (array $banner): array => $banner + [
+            'snippets' => $kit->snippets($user, $banner),
+            'link' => $kit->bannerLink($user, $banner['key']),
+            'stats' => $stats['banners'][$banner['key']] ?? ['impressions' => 0, 'clicks' => 0, 'ctr' => null],
+        ]);
+        $swipes = $kit->swipesFor($user);
+        $brand = [
+            'site_name' => SiteSetting::get('site_name', 'AffilStack'),
+            'logo_rectangular' => SiteSetting::get('logo_rectangular_path'),
+            'logo_square' => SiteSetting::get('logo_square_path'),
+            'colors' => [
+                ['name' => 'Navy', 'hex' => strtoupper((string) SiteSetting::get('color_navy', '#0B1E3D'))],
+                ['name' => 'Blue', 'hex' => strtoupper((string) SiteSetting::get('color_primary', '#2452D9'))],
+                ['name' => 'Gold', 'hex' => strtoupper((string) SiteSetting::get('color_gold', '#C9A24A'))],
+                ['name' => 'White', 'hex' => '#FFFFFF'],
+            ],
+        ];
+        $links = [
+            'plain' => $user->referral_link,
+            'email' => $kit->trackedLink($user, 'email', 'signature'),
+            'bio' => $kit->trackedLink($user, 'social', 'bio'),
+        ];
+
+        return view('dashboard.referrals.index', compact('user', 'referrals', 'clickCount', 'totals', 'payouts', 'tab', 'stats', 'banners', 'swipes', 'brand', 'links'));
     }
 
     /**

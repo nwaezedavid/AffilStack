@@ -24,11 +24,15 @@ class MarketingKit
     public function __construct(private BannerCatalog $catalog) {}
 
     /**
+     * A /r/{code} link tagged with the channel it's shared on. Banner links
+     * carry the full utm_source/medium/content set; links that appear inside
+     * copy (emails, posts) stay as short as possible so they read cleanly.
+     *
      * @param  array<string, string>  $extra
      */
     public function trackedLink(User $user, string $medium, ?string $content = null, array $extra = []): string
     {
-        $query = array_filter(['utm_source' => 'affiliate', 'utm_medium' => $medium, 'utm_content' => $content] + $extra);
+        $query = array_filter(['utm_source' => $medium === 'banner' ? 'affiliate' : null, 'utm_medium' => $medium, 'utm_content' => $content] + $extra);
 
         return url('/r/'.$user->referralCode()).'?'.http_build_query($query);
     }

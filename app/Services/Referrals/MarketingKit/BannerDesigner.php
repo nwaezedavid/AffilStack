@@ -116,12 +116,24 @@ class BannerDesigner
      */
     public function brandMark(string $variant): BannerScene
     {
-        return match ($variant) {
-            'icon' => tap(new BannerScene(512, 512, 'AffilStack icon'), fn (BannerScene $scene) => $this->logo($scene, 0, 0, 512, self::theme('navy'), false)),
-            'wordmark-light' => tap(new BannerScene(640, 160, 'AffilStack logo'), fn (BannerScene $scene) => $this->logo($scene, 16, 32, 96, self::theme('navy'), true)),
-            'wordmark-dark' => tap(new BannerScene(640, 160, 'AffilStack logo'), fn (BannerScene $scene) => $this->logo($scene, 16, 32, 96, self::theme('light'), true)),
+        if ($variant === 'icon') {
+            $scene = new BannerScene(512, 512, 'AffilStack icon');
+            $this->logo($scene, 0, 0, 512, self::theme('navy'), false);
+
+            return $scene;
+        }
+
+        $theme = match ($variant) {
+            'wordmark-light' => self::theme('navy'),
+            'wordmark-dark' => self::theme('light'),
             default => throw new InvalidArgumentException("Unknown brand mark {$variant}."),
         };
+
+        $scene = new BannerScene(2000, 160, 'AffilStack logo');
+        $width = $this->logo($scene, 16, 32, 96, $theme, true);
+        $scene->width = (int) ceil($width + 32);
+
+        return $scene;
     }
 
     /**

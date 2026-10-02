@@ -1,202 +1,101 @@
 @extends('layouts.app')
 
-@section('title', 'Referrals')
+@section('title', $user->isAffiliateOnly() ? 'Partner Dashboard' : 'Refer & Earn')
+
+@php
+    $commissionPercent = number_format(config('referrals.commission_rate') * 100);
+    $cookieDays = (int) config('referrals.cookie_days');
+    $earnedCents = $totals['pending_cents'] + $totals['approved_cents'] + $totals['paid_cents'];
+    $tabs = [
+        'overview' => ['label' => 'Overview', 'icon' => 'squares-2x2'],
+        'banners' => ['label' => 'Banners', 'icon' => 'photo'],
+        'emails' => ['label' => 'Email swipes', 'icon' => 'envelope'],
+        'social' => ['label' => 'Social posts', 'icon' => 'megaphone'],
+        'links' => ['label' => 'Text links & brand', 'icon' => 'link'],
+        'guidelines' => ['label' => 'Guidelines', 'icon' => 'shield-check'],
+        'payouts' => ['label' => 'Earnings & payouts', 'icon' => 'banknotes'],
+    ];
+@endphp
 
 @section('content')
-    <p class="text-sm text-ink-600 max-w-lg mb-5">Share your link — you earn {{ number_format(config('referrals.commission_rate') * 100) }}% of what everyone you refer pays, for their first payment and every renewal after it.</p>
+    <x-ui.page-header
+        :tone="$user->isAffiliateOnly() ? 'emerald' : 'gold'"
+        icon="megaphone"
+        eyebrow="Marketing kit"
+        :title="'Earn '.$commissionPercent.'% on every payment you refer'"
+        :subtitle="'Share AffilStack with ready-made banners, emails and posts. Every link carries your code, a visitor stays yours for '.$cookieDays.' days, and you earn on their first payment and every renewal.'">
+        <x-slot:actions>
+            <x-ui.copy-button :text="$links['plain']" label="Copy my link" variant="gold" size="md" />
+            <x-ui.button variant="light" :href="route('referrals.index', ['tab' => 'banners'])" icon="photo" data-tab-link="banners">Get banners</x-ui.button>
+        </x-slot:actions>
+    </x-ui.page-header>
 
-    <div class="bg-surface border border-line rounded-lg p-5 mb-6">
-        <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Your referral link</div>
-        <div class="flex flex-wrap items-center gap-3">
-            <code class="text-sm bg-surface-muted rounded px-3 py-1.5">{{ $user->referral_link }}</code>
-            <button type="button" onclick="navigator.clipboard.writeText('{{ $user->referral_link }}')" class="text-xs text-brand-600 hover:text-brand-700 font-medium">Copy</button>
+    {{-- Tab bar: real links (?tab=…) so it works without JS; the script below
+         switches panels in place and keeps the URL in sync. --}}
+    <nav class="-mx-4 sm:mx-0 mb-6 overflow-x-auto px-4 sm:px-0" aria-label="Marketing kit sections">
+        <div class="inline-flex min-w-full sm:min-w-0 gap-1 rounded-2xl border border-line bg-surface p-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)]" role="tablist">
+            @foreach ($tabs as $key => $item)
+                <a href="{{ route('referrals.index', ['tab' => $key]) }}"
+                   role="tab"
+                   id="tab-{{ $key }}"
+                   aria-controls="panel-{{ $key }}"
+                   aria-selected="{{ $tab === $key ? 'true' : 'false' }}"
+                   data-tab="{{ $key }}"
+                   class="kit-tab inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 {{ $tab === $key ? 'bg-navy-900 text-white shadow-sm' : 'text-ink-600 hover:bg-surface-muted hover:text-navy-900' }}">
+                    <x-dynamic-component :component="'heroicon-o-'.$item['icon']" class="h-4 w-4" />
+                    {{ $item['label'] }}
+                </a>
+            @endforeach
         </div>
-    </div>
+    </nav>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="bg-surface border border-line rounded-lg p-5">
-            <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Link clicks</div>
-            <div class="text-2xl font-display font-semibold text-navy-900">{{ number_format($clickCount) }}</div>
-        </div>
-        <div class="bg-surface border border-line rounded-lg p-5">
-            <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Pending</div>
-            <div class="text-2xl font-display font-semibold text-navy-900">${{ number_format($totals['pending_cents'] / 100, 2) }}</div>
-        </div>
-        <div class="bg-surface border border-line rounded-lg p-5">
-            <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Approved</div>
-            <div class="text-2xl font-display font-semibold text-navy-900">${{ number_format($totals['approved_cents'] / 100, 2) }}</div>
-        </div>
-        <div class="bg-surface border border-line rounded-lg p-5">
-            <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Paid out</div>
-            <div class="text-2xl font-display font-semibold text-navy-900">${{ number_format($totals['paid_cents'] / 100, 2) }}</div>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-        <div class="bg-surface border border-line rounded-lg p-6">
-            <h2 class="text-sm font-semibold text-navy-900 mb-3">Payout details</h2>
-            @if ($user->hasPayoutMethodOnFile())
-                <p class="text-sm text-ink-600 mb-3">
-                    On file: <span class="font-medium text-ink-900">{{ config("referrals.payout_methods.{$user->payout_method}", $user->payout_method) }}</span>
-                    @if ($user->payout_method === 'paypal')
-                        ({{ $user->payout_details['paypal_email'] ?? '' }})
-                    @else
-                        ({{ $user->payout_details['bank_name'] ?? '' }})
-                    @endif
-                </p>
-            @endif
-            @php $currentMethod = old('payout_method', $user->payout_method ?? 'paypal'); @endphp
-            <form method="POST" action="{{ route('referrals.payout-method') }}" class="space-y-3">
-                @csrf
-                <div>
-                    <label class="block text-xs font-medium text-ink-900 mb-1">Payout method</label>
-                    <select name="payout_method" onchange="document.getElementById('payout-fields-paypal').classList.toggle('hidden', this.value !== 'paypal'); document.getElementById('payout-fields-bank').classList.toggle('hidden', this.value !== 'bank_transfer')" class="w-full rounded-md border border-line px-2.5 py-2 text-sm">
-                        @foreach (config('referrals.payout_methods') as $value => $label)
-                            <option value="{{ $value }}" @selected($currentMethod === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div id="payout-fields-paypal" class="{{ $currentMethod === 'paypal' ? '' : 'hidden' }}">
-                    <label class="block text-xs font-medium text-ink-900 mb-1">PayPal email</label>
-                    <input type="email" name="paypal_email" value="{{ old('paypal_email', $user->payout_details['paypal_email'] ?? '') }}" class="w-full rounded-md border border-line px-2.5 py-2 text-sm">
-                </div>
-                <div id="payout-fields-bank" class="grid grid-cols-2 gap-3 {{ $currentMethod === 'bank_transfer' ? '' : 'hidden' }}">
-                    <div class="col-span-2">
-                        <label class="block text-xs font-medium text-ink-900 mb-1">Account holder name</label>
-                        <input type="text" name="bank_account_name" value="{{ old('bank_account_name', $user->payout_details['account_name'] ?? '') }}" class="w-full rounded-md border border-line px-2.5 py-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-ink-900 mb-1">Account number</label>
-                        <input type="text" name="bank_account_number" value="{{ old('bank_account_number', $user->payout_details['account_number'] ?? '') }}" class="w-full rounded-md border border-line px-2.5 py-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-ink-900 mb-1">Bank name</label>
-                        <input type="text" name="bank_name" value="{{ old('bank_name', $user->payout_details['bank_name'] ?? '') }}" class="w-full rounded-md border border-line px-2.5 py-2 text-sm">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-medium text-ink-900 mb-1">SWIFT / routing code</label>
-                        <input type="text" name="bank_swift_or_routing" value="{{ old('bank_swift_or_routing', $user->payout_details['swift_or_routing'] ?? '') }}" class="w-full rounded-md border border-line px-2.5 py-2 text-sm">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-medium text-ink-900 mb-1">Flutterwave bank code (Nigeria only, optional)</label>
-                        <input type="text" name="bank_code" value="{{ old('bank_code', $user->payout_details['bank_code'] ?? '') }}" placeholder="e.g. 044" class="w-full rounded-md border border-line px-2.5 py-2 text-sm">
-                        <p class="text-xs text-ink-400 mt-1">Only needed for instant payouts from our payout wallet — find your bank's code on Flutterwave's published bank list. Without it, payouts are still sent, just processed manually.</p>
-                    </div>
-                </div>
-                <button type="submit" class="w-full rounded-md bg-navy-900 text-white text-sm font-medium py-2 hover:bg-navy-800 transition">Save payout details</button>
-            </form>
-        </div>
-
-        <div class="bg-surface border border-line rounded-lg p-6">
-            <h2 class="text-sm font-semibold text-navy-900 mb-3">Request a payout</h2>
-            @php
-                // Audit gap #5: a mixed-currency affiliate used to only ever
-                // be offered whichever currency had the largest unattached
-                // balance — this lists every currency they've earned in so
-                // each can be requested on its own.
-                $balancesByCurrency = $user->unpaidApprovedCommissionByCurrency();
-                $minimumCents = config('referrals.minimum_payout_cents');
-            @endphp
-            @if ($balancesByCurrency->isEmpty())
-                <p class="text-sm text-ink-500">You don't have any approved commissions to pay out yet.</p>
-            @elseif (! $user->hasPayoutMethodOnFile())
-                <p class="text-sm text-ink-500">Add your payout details before requesting a payout.</p>
-            @else
-                <div class="space-y-3">
-                    @foreach ($balancesByCurrency as $currency => $cents)
-                        <div class="flex items-center justify-between gap-3 {{ ! $loop->last ? 'pb-3 border-b border-line' : '' }}">
-                            <p class="text-sm text-ink-600">You have <span class="font-medium text-ink-900">{{ $currency }} {{ number_format($cents / 100, 2) }}</span> in approved commissions.</p>
-                            @if ($user->hasOpenPayoutRequest($currency))
-                                <span class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5 whitespace-nowrap">Request processing</span>
-                            @elseif ($cents < $minimumCents)
-                                <span class="text-xs text-ink-500 whitespace-nowrap">{{ $currency }} {{ number_format(($minimumCents - $cents) / 100, 2) }} short of minimum</span>
-                            @else
-                                <form method="POST" action="{{ route('referrals.payout') }}">
-                                    @csrf
-                                    <input type="hidden" name="currency" value="{{ $currency }}">
-                                    <button type="submit" class="rounded-md bg-navy-900 text-white text-xs font-medium px-3 py-1.5 hover:bg-navy-800 transition whitespace-nowrap">Request {{ $currency }} {{ number_format($cents / 100, 2) }}</button>
-                                </form>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-        </div>
-    </div>
-
-    @if ($payouts->isNotEmpty())
-        <h2 class="text-sm font-semibold text-navy-900 mb-3">Payout history</h2>
-        <div class="bg-surface border border-line rounded-lg overflow-hidden mb-8">
-            <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
-                    <tr>
-                        <th class="text-left px-4 py-2.5">Requested</th>
-                        <th class="text-right px-4 py-2.5">Amount</th>
-                        <th class="text-left px-4 py-2.5">Status</th>
-                        <th class="text-left px-4 py-2.5">Processed</th>
-                        <th class="text-left px-4 py-2.5">Reference</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-line">
-                    @foreach ($payouts as $payout)
-                        <tr>
-                            <td class="px-4 py-3 text-ink-600">{{ $payout->requested_at->format('M j, Y') }}</td>
-                            <td class="px-4 py-3 text-right font-mono text-ink-900">${{ number_format($payout->amount_cents / 100, 2) }} {{ $payout->currency }}</td>
-                            <td class="px-4 py-3">
-                                <span class="text-xs rounded-full px-2 py-0.5 {{ match($payout->status) { 'paid' => 'bg-green-100 text-green-800', 'rejected' => 'bg-red-100 text-red-800', default => 'bg-surface-muted text-ink-600' } }}">
-                                    {{ ucfirst($payout->status) }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-ink-600">{{ $payout->processed_at?->format('M j, Y') ?? '—' }}</td>
-                            <td class="px-4 py-3 text-ink-600">{{ $payout->reference ?? '—' }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            </div>
-        </div>
-    @endif
-
-    <h2 class="text-sm font-semibold text-navy-900 mb-3">People you've referred</h2>
-
-    @if ($referrals->isEmpty())
-        <div class="bg-surface border border-dashed border-line rounded-lg p-8 text-center text-sm text-ink-600">
-            No one has signed up through your link yet. Share it — every signup and every renewal they make earns you a commission.
-        </div>
-    @else
-        <div class="bg-surface border border-line rounded-lg overflow-hidden">
-            <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-surface-muted text-xs uppercase tracking-wide text-ink-400 font-mono">
-                    <tr>
-                        <th class="text-left px-4 py-2.5">Referred user</th>
-                        <th class="text-left px-4 py-2.5">Status</th>
-                        <th class="text-left px-4 py-2.5">Signed up</th>
-                        <th class="text-right px-4 py-2.5">Payments</th>
-                        <th class="text-right px-4 py-2.5">Earned</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-line">
-                    @foreach ($referrals as $referral)
-                        <tr>
-                            <td class="px-4 py-3 text-ink-900">
-                                {{ $referral->referredUser?->name ?? 'Deleted account' }}
-                                <div class="text-xs text-ink-500">{{ $referral->referredUser?->email }}</div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="text-xs rounded-full px-2 py-0.5 {{ $referral->status === 'converted' ? 'bg-green-100 text-green-800' : 'bg-surface-muted text-ink-600' }}">
-                                    {{ $referral->status === 'converted' ? 'Converted' : 'Signed up' }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-ink-600">{{ $referral->created_at->format('M j, Y') }}</td>
-                            <td class="px-4 py-3 text-right font-mono text-ink-900">{{ $referral->events->count() }}</td>
-                            <td class="px-4 py-3 text-right font-mono text-ink-900">${{ number_format($referral->events->sum('amount_cents') / 100, 2) }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            </div>
-        </div>
-    @endif
+    @foreach (array_keys($tabs) as $key)
+        <section id="panel-{{ $key }}" role="tabpanel" aria-labelledby="tab-{{ $key }}" data-panel="{{ $key }}" @if ($tab !== $key) hidden @endif>
+            @include('dashboard.referrals.partials.'.$key)
+        </section>
+    @endforeach
 @endsection
+
+@push('scripts')
+    <script>
+        (function () {
+            var tabs = document.querySelectorAll('[data-tab]');
+            var panels = document.querySelectorAll('[data-panel]');
+            var activeClasses = ['bg-navy-900', 'text-white', 'shadow-sm'];
+            var idleClasses = ['text-ink-600', 'hover:bg-surface-muted', 'hover:text-navy-900'];
+
+            function show(name, push) {
+                var found = false;
+                panels.forEach(function (panel) {
+                    var match = panel.getAttribute('data-panel') === name;
+                    panel.hidden = !match;
+                    found = found || match;
+                });
+                if (!found) { return; }
+                tabs.forEach(function (tab) {
+                    var match = tab.getAttribute('data-tab') === name;
+                    tab.setAttribute('aria-selected', match ? 'true' : 'false');
+                    activeClasses.forEach(function (c) { tab.classList.toggle(c, match); });
+                    idleClasses.forEach(function (c) { tab.classList.toggle(c, !match); });
+                });
+                if (push) {
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('tab', name);
+                    history.replaceState(null, '', url);
+                }
+            }
+
+            document.addEventListener('click', function (event) {
+                var link = event.target.closest('[data-tab], [data-tab-link]');
+                if (!link || event.metaKey || event.ctrlKey) { return; }
+                event.preventDefault();
+                show(link.getAttribute('data-tab') || link.getAttribute('data-tab-link'), true);
+                if (link.hasAttribute('data-tab-link')) {
+                    document.querySelector('[role=tablist]').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                var filter = link.getAttribute('data-size-filter');
+                if (filter && window.affilstackFilterBanners) { window.affilstackFilterBanners(filter); }
+            });
+        })();
+    </script>
+@endpush
