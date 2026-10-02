@@ -39,7 +39,7 @@ class ReferralController extends Controller
             in_array($source, MarketingKit::SOURCES, true) ? $source : null,
         );
 
-        $utm = array_filter($request->only(['utm_source', 'utm_medium', 'utm_campaign', 'utm_content']), fn ($value) => is_string($value) && strlen($value) <= 100);
+        $utm = array_filter($request->only(['utm_source', 'utm_medium', 'utm_campaign', 'utm_content']), fn ($value) => is_string($value) && preg_match('/^[A-Za-z0-9._-]{1,100}$/', $value) === 1);
 
         return redirect()
             ->route('registration.pricing', $utm)

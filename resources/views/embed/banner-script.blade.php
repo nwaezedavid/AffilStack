@@ -1,7 +1,7 @@
 /* AffilStack affiliate banner loader. Usage:
    <script async src=".../embed/banner.js" data-ref="CODE" data-size="300x250" data-design="rotate"></script> */
 (function () {
-    var endpoint = {!! json_encode($endpoint) !!};
+    var endpoint = {!! json_encode($endpoint, JSON_UNESCAPED_SLASHES) !!};
     var sizePattern = /^\d{2,4}x\d{2,4}$/;
 
     function mount(script) {
