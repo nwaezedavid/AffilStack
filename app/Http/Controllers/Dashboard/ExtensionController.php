@@ -123,7 +123,15 @@ class ExtensionController extends Controller
                 continue;
             }
 
-            $relativePath = 'affilstack-extension/'.substr($file->getPathname(), strlen($sourceDir) + 1);
+            $sourceRelative = str_replace('\\', '/', substr($file->getPathname(), strlen($sourceDir) + 1));
+
+            // store/ holds the Chrome Web Store listing texts — for the
+            // owner, not part of the extension customers install.
+            if (str_starts_with($sourceRelative, 'store/')) {
+                continue;
+            }
+
+            $relativePath = 'affilstack-extension/'.$sourceRelative;
 
             // Point the downloaded copy at this site, so customers only
             // paste a token — no API URL to type in.

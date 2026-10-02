@@ -1,10 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "AffilStack Research Capture",
-  "version": "1.1.0",
-  "description": "Save the page you're looking at — a product page, a competitor ad, a LinkedIn post — straight into AffilStack.",
+  "name": "AffilStack — Leads & LinkedIn Assistant",
+  "short_name": "AffilStack",
+  "version": "1.2.0",
+  "description": "Add Google Maps businesses to your AffilStack CRM, write personalised LinkedIn messages and get AI replies that close.",
   "homepage_url": "https://affilstack.com",
   "action": {
+    "default_title": "AffilStack — add leads & write messages",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",

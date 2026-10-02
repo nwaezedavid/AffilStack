@@ -1,67 +1,73 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>AffilStack Capture — Settings</title>
+  <title>AffilStack — Extension settings</title>
+  <link rel="stylesheet" href="popup.css">
   <style>
-    body {
-      max-width: 420px;
-      margin: 40px auto;
-      padding: 0 20px;
-      font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #1a2233;
-      background: #f7f8fa;
-    }
-    h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-    p.lead { color: #667085; font-size: 13px; margin-top: 0; margin-bottom: 20px; }
-    .field { margin-bottom: 14px; }
-    label { display: block; font-size: 12px; color: #667085; margin-bottom: 4px; }
-    input[type="text"], input[type="password"] {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 8px 10px;
-      border: 1px solid #d7dce3;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-    button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 6px;
-      background: #0f1f3d;
-      color: #fff;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-    }
-    #status { margin-top: 12px; font-size: 13px; }
-    #status.error { color: #b42318; }
-    #status.success { color: #027a48; }
-    .hint { font-size: 12px; color: #667085; margin-top: 20px; }
-    summary { font-size: 12px; color: #667085; cursor: pointer; margin-bottom: 6px; }
+    body { width: auto; max-width: 520px; margin: 32px auto; padding: 0 20px; background: #f5f6fa; }
+    .sheet { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: 0 1px 2px rgba(16,24,40,.05); }
+    .sheet .topbar { padding: 16px 20px; }
+    .sheet-body { padding: 20px; }
+    h1 { margin: 0 0 4px; font-size: 16px; color: var(--navy-900); }
+    .status { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0 0; padding: 12px; border-radius: 12px; font-size: 13px; }
+    .status[hidden] { display: none; }
+    .status .dot { width: 9px; height: 9px; margin-top: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .status-ok { background: var(--green-50); color: var(--green-600); }
+    .status-error { background: var(--red-50); color: var(--red-600); }
+    .status-info { background: var(--brand-50); color: var(--navy-800); }
+    .status a { color: inherit; font-weight: 700; }
+    details summary { cursor: pointer; font-size: 12px; color: var(--ink-600); margin-bottom: 8px; }
+    .foot { margin-top: 18px; font-size: 12px; color: var(--ink-600); }
+    .foot ul { padding-left: 18px; margin: 6px 0 0; }
   </style>
 </head>
 <body>
-  <h1>AffilStack Research Capture</h1>
-  <p class="lead">Paste in a token generated from your AffilStack dashboard's Browser Extension page.</p>
+  <div class="sheet">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">AS</span>
+        <div>
+          <p class="brand-name">AffilStack extension</p>
+          <p class="brand-sub">Settings</p>
+        </div>
+      </div>
+    </header>
+    <div class="sheet-body">
+      <h1>Connect your account</h1>
+      <p class="lead">Generate a token on the <a href="#" id="dashboardLink">Browser Extension page</a> of your AffilStack dashboard, then paste it here. Each device should have its own token, so you can revoke one without affecting the others.</p>
 
-  <div class="field">
-    <label for="apiToken">API token</label>
-    <input type="password" id="apiToken" placeholder="aff_...">
+      <div class="field">
+        <label class="label" for="apiToken">API token</label>
+        <input type="password" id="apiToken" placeholder="aff_..." autocomplete="off" spellcheck="false">
+      </div>
+
+      <details class="field">
+        <summary>Advanced</summary>
+        <label class="label" for="apiBaseUrl">AffilStack API URL — leave as it is</label>
+        <input type="text" id="apiBaseUrl" placeholder="https://affilstack.com/api" spellcheck="false">
+      </details>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="save" type="button">Save &amp; verify</button>
+        <button class="btn btn-secondary" id="disconnect" type="button" hidden>Disconnect</button>
+      </div>
+
+      <div id="status" class="status" role="status" aria-live="polite" hidden><span class="dot" aria-hidden="true"></span><div id="statusText"></div></div>
+
+      <div class="foot">
+        <strong>What the extension can read</strong>
+        <ul>
+          <li>Only the tab you're on, and only when you click the AffilStack icon.</li>
+          <li>Business details on Google Maps and profile details on LinkedIn, so you can add them to your CRM or write a message.</li>
+          <li>Nothing is sent to AffilStack until you click Add, Generate or Save.</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
-  <details class="field">
-    <summary>Advanced</summary>
-    <label for="apiBaseUrl">AffilStack API URL — leave as it is</label>
-    <input type="text" id="apiBaseUrl" placeholder="https://affilstack.com/api">
-  </details>
-
-  <button id="save">Save &amp; verify</button>
-  <div id="status"></div>
-
-  <p class="hint">Generate a token from AffilStack under Browser Extension. Each token is tied to one device — revoke it there any time.</p>
-
   <script src="config.js"></script>
+  <script src="api.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

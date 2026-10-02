@@ -1,8 +1,28 @@
-# AffilStack Research Capture
+# AffilStack — Leads & LinkedIn Assistant (v1.2.0)
 
-A small Manifest V3 Chrome extension that saves the page you're on — a
-product page, a competitor ad, a LinkedIn post — into your AffilStack
-account, so you're not copy-pasting URLs and screenshots by hand.
+A Manifest V3 Chrome extension that connects your browsing to AffilStack:
+
+- **Google Maps → CRM.** Search one of your product's Maps keywords, open a
+  business (or keep the results list open) and click the AffilStack icon.
+  Pick the product you're finding customers for and click **Add to CRM** —
+  the business (name, category, address, phone, website, rating, Maps link)
+  is filed in that product's list, ready for a campaign. Businesses already in
+  your CRM are marked so you never add them twice.
+- **LinkedIn messages.** On someone's profile or a company page, pick the
+  product and click **Generate message** for a personalised connection note
+  (within LinkedIn's 200-character limit for free accounts), a first message
+  and two follow-ups. Copy them, or **Insert** straight into LinkedIn's open
+  message / "Add a note" box.
+- **AI reply assistant.** In a LinkedIn conversation, click **Suggest reply**
+  for the best response to the prospect's latest message — it handles
+  objections, proposes one next step and adds your affiliate link only when
+  the prospect is ready. The **Reply helper** tab does the same for a reply
+  you paste from email, WhatsApp or anywhere else.
+- **Save page.** Save any page (a product page, a competitor ad, a post) to
+  your AffilStack research, as in earlier versions.
+
+AffilStack never sends anything on LinkedIn for you: you review every message
+and press Send yourself.
 
 ## Install (unpacked)
 
@@ -11,29 +31,38 @@ account, so you're not copy-pasting URLs and screenshots by hand.
 2. Open `chrome://extensions` in Chrome.
 3. Turn on **Developer mode** (top right).
 4. Click **Load unpacked** and select this `affilstack-extension` folder.
-5. Pin the AffilStack icon to your toolbar if you'd like quick access.
+5. Pin the AffilStack icon to your toolbar for quick access.
+
+Updating from v1.1: download the new zip, replace the old folder's contents,
+then click the reload icon on the extension's card in `chrome://extensions`.
+Your token is kept.
 
 ## Connect it to your account
 
 1. In AffilStack, go to **Browser Extension** in the sidebar and generate a
-   token (give it a name like "Work laptop" — each device should get its
+   token (name it after the device, e.g. "Work laptop" — each device gets its
    own, so you can revoke one without affecting the others).
-2. Click the AffilStack icon in Chrome, then open its options (or
-   right-click the icon → **Options**).
-3. Paste in the token, then **Save & verify**. The API URL is already filled
-   in (under **Advanced**); leave it as it is.
+2. Click the AffilStack icon, then **Add your token** (or right-click the
+   icon → **Options**).
+3. Paste the token and click **Save & verify**. A green "Connected as …"
+   confirms it. The API URL (under **Advanced**) is already filled in.
 
-## Use it
+## Credits
 
-Open the popup on any page you want to save. It picks up the page title and
-URL automatically, and includes any text you'd selected on the page before
-opening the popup. Choose a page type, optionally attach it to one of your
-offers, and save. From the **Browser Extension** page in AffilStack you can
-attach a capture to an offer later, or turn an unattached one straight into
-a new offer.
+Adding contacts is free (your plan's contact limit applies). Generating a
+LinkedIn message pack and suggesting a reply use AI credits — the cost is
+shown on each button.
 
-## Permissions
+## Permissions and privacy
 
-The extension asks for `activeTab`, `scripting`, and `storage` only — it
-never runs on a page unless you open the popup on it, and it doesn't run in
-the background or read pages you haven't opened the popup on.
+The extension asks for `activeTab`, `scripting` and `storage` only — no
+access to all websites, no background script and no content script that runs
+by itself.
+
+- It reads a page only when you click the AffilStack icon on it, and only
+  that tab.
+- On Google Maps it reads the business details shown on the page; on
+  LinkedIn it reads the profile, company or conversation shown on the page.
+- Nothing is sent to AffilStack until you click **Add to CRM**, **Generate**,
+  **Suggest** or **Save** — and then only to your own AffilStack account.
+- Your token and last-used product are stored locally in Chrome.
