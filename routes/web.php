@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AffiliateBannerController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AffiliateSetPasswordController;
 use App\Http\Controllers\AnalyticsBeaconController;
+use App\Http\Controllers\BannerEmbedController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CheckoutCountryController;
 use App\Http\Controllers\ContactController;
@@ -511,3 +513,27 @@ Route::middleware(['auth', 'verified', 'not-suspended'])->group(function () {
     Route::put('/profile/business', [ProfileController::class, 'updateBusiness'])->name('profile.business.update');
     Route::put('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
 });
+
+// ---- Agent 05: affiliate Marketing Kit — public banner images & embeds ----
+// Served outside the "web" middleware group on purpose: no session, no CSRF
+// token, no cookies of any kind — these are loaded by other people's
+// websites and email clients. Only the /embed/* routes may be framed by any
+// site (AllowEmbedding → SecurityHeaders drops X-Frame-Options and sends
+// frame-ancestors *); every other route keeps its existing protections.
+Route::withoutMiddleware('web')->group(function () {
+    Route::get('/banners/{design}/{size}.{format}', [AffiliateBannerController::class, 'image'])
+        ->where(['design' => '[a-z0-9-]{1,40}', 'size' => '\d{2,4}x\d{2,4}', 'format' => 'svg|png'])
+        ->name('affiliate-banners.image');
+    Route::get('/brand-assets/{asset}.{format}', [AffiliateBannerController::class, 'brandAsset'])
+        ->where(['asset' => 'icon|wordmark-light|wordmark-dark', 'format' => 'svg|png'])
+        ->name('affiliate-banners.brand-asset');
+
+    Route::middleware('allow-embedding')->group(function () {
+        Route::get('/embed/banner.js', [BannerEmbedController::class, 'script'])->name('embed.banner-script');
+        Route::get('/embed/banner/{size}', [BannerEmbedController::class, 'frame'])
+            ->where('size', '\d{2,4}x\d{2,4}')
+            ->middleware('throttle:240,1')
+            ->name('embed.banner');
+    });
+});
+// ---- end Agent 05 ----

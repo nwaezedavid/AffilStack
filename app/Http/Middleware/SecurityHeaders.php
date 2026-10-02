@@ -59,7 +59,15 @@ class SecurityHeaders
         header_remove('X-Powered-By');
         $response->headers->remove('X-Powered-By');
 
-        $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        // Agent 05: only routes marked by AllowEmbedding (the affiliate
+        // banner embeds under /embed/*) may be framed by other sites.
+        $frameable = (bool) $request->attributes->get(AllowEmbedding::ATTRIBUTE, false);
+
+        if ($frameable) {
+            $response->headers->remove('X-Frame-Options');
+        } else {
+            $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        }
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         // Allow-lists the third parties the site genuinely loads: the
@@ -76,7 +84,7 @@ class SecurityHeaders
             "font-src 'self' data:",
             "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://analytics.tiktok.com",
             "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.googletagmanager.com",
-            "frame-ancestors 'self'",
+            $frameable ? 'frame-ancestors *' : "frame-ancestors 'self'",
             "base-uri 'self'",
             "object-src 'none'",
         ]));
