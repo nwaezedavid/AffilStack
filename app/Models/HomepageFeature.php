@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\YouTubeUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -101,47 +102,24 @@ class HomepageFeature extends Model
     }
 
     /**
-     * Accepts any common YouTube URL shape (watch?v=, youtu.be/, shorts/,
-     * embed/, with or without extra query params) and returns the video ID,
-     * or null if the value isn't recognizable.
-     *
-     * Static and reused outside this model (e.g. the homepage hero, which
-     * stores its own YouTube URL as a SiteSetting rather than a row here)
-     * so there's exactly one place that understands YouTube's URL shapes.
+     * The video ID for any YouTube URL shape, or null — see YouTubeUrl,
+     * the one place that understands YouTube's URL formats (also used by
+     * the homepage hero and "See it in action" video, which store their
+     * own URLs as SiteSettings rather than rows here).
      */
     public static function youtubeIdFrom(?string $url): ?string
     {
-        if (! $url) {
-            return null;
-        }
-
-        $patterns = [
-            '~youtu\.be/([A-Za-z0-9_-]{6,})~',
-            '~youtube\.com/watch\?[^#]*v=([A-Za-z0-9_-]{6,})~',
-            '~youtube\.com/shorts/([A-Za-z0-9_-]{6,})~',
-            '~youtube\.com/embed/([A-Za-z0-9_-]{6,})~',
-            '~youtube\.com/live/([A-Za-z0-9_-]{6,})~',
-        ];
-
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $url, $matches)) {
-                return $matches[1];
-            }
-        }
-
-        return null;
+        return YouTubeUrl::idFrom($url);
     }
 
     /**
-     * A ready-to-embed URL, or null if the value isn't recognizable —
-     * callers should fall back to a plain link in that case rather than
-     * embedding.
+     * A ready-to-embed (youtube-nocookie) URL, or null if the value isn't
+     * recognizable — callers should fall back to a plain link in that case
+     * rather than embedding.
      */
     public static function youtubeEmbedUrlFrom(?string $url): ?string
     {
-        $id = static::youtubeIdFrom($url);
-
-        return $id ? 'https://www.youtube-nocookie.com/embed/'.$id.'?autoplay=1' : null;
+        return YouTubeUrl::embedUrl($url);
     }
 
     /**
@@ -151,8 +129,6 @@ class HomepageFeature extends Model
      */
     public static function youtubeThumbnailUrlFrom(?string $url): ?string
     {
-        $id = static::youtubeIdFrom($url);
-
-        return $id ? 'https://img.youtube.com/vi/'.$id.'/hqdefault.jpg' : null;
+        return YouTubeUrl::thumbnailUrl($url);
     }
 }
