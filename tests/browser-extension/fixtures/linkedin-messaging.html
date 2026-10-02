@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  Fixture: a LinkedIn MESSAGING thread (linkedin.com/messaging/thread/<id>/).
+  Modelled on LinkedIn's real markup: the thread header shows the other
+  person's name in h2#thread-detail-jump-target; messages are
+  ul.msg-s-message-list-content > li.msg-s-message-list__event. A new sender
+  "group" starts with .msg-s-message-group__meta containing
+  .msg-s-message-group__name; following <li>s from the same sender omit the
+  meta block. Each message body is .msg-s-event-listitem__body, and messages
+  from the other person carry msg-s-event-listitem--other. The logged-in
+  user's name is the alt text of img.global-nav__me-photo. The composer is
+  div.msg-form__contenteditable[contenteditable=true][role=textbox].
+  Load under: https://www.linkedin.com/messaging/thread/2-ZmFrZS10aHJlYWQ=/
+-->
+<html lang="en">
+<head><meta charset="utf-8"><title>(1) Messaging | LinkedIn</title></head>
+<body>
+<header class="global-nav"><div class="global-nav__me"><img class="global-nav__me-photo" alt="Nwaeze David" src="data:,"></div></header>
+<main class="scaffold-layout__main">
+  <div class="msg-thread scaffold-layout__detail">
+    <div class="msg-title-bar"><h2 id="thread-detail-jump-target" class="msg-entity-lockup__entity-title">Ada Obi</h2></div>
+    <div class="msg-s-message-list full-width scrollable">
+      <ul class="msg-s-message-list-content list-style-none full-width">
+        <li class="msg-s-message-list__time-heading">TUESDAY</li>
+        <li class="msg-s-message-list__event clearfix">
+          <div class="msg-s-message-group__meta"><span class="msg-s-message-group__name t-14 t-black t-bold">Nwaeze David</span><time class="msg-s-message-group__timestamp">10:02 AM</time></div>
+          <div class="msg-s-event-listitem"><div class="msg-s-event-listitem__message-bubble"><p class="msg-s-event-listitem__body t-14 t-black--light t-normal">Hi Ada, thanks for connecting! Running three kitchens must keep you busy.</p></div></div>
+        </li>
+        <li class="msg-s-message-list__event clearfix">
+          <div class="msg-s-event-listitem"><p class="msg-s-event-listitem__body">Curious — how do you handle orders at peak lunch hour?</p></div>
+        </li>
+        <li class="msg-s-message-list__event clearfix">
+          <div class="msg-s-message-group__meta"><a class="msg-s-message-group__profile-link" href="/in/ada-obi-12345/"><span class="msg-s-message-group__name">Ada Obi</span></a><time>11:40 AM</time></div>
+          <div class="msg-s-event-listitem msg-s-event-listitem--other"><p class="msg-s-event-listitem__body">Honestly it's chaos. We tried a POS before but it was too expensive for us.</p></div>
+        </li>
+        <li class="msg-s-message-list__event clearfix">
+          <div class="msg-s-event-listitem msg-s-event-listitem--other"><p class="msg-s-event-listitem__body">What does yours cost?</p></div>
+        </li>
+      </ul>
+    </div>
+    <form class="msg-form">
+      <div class="msg-form__msg-content-container">
+        <div class="msg-form__contenteditable t-14 t-black--light t-normal flex-grow-1 full-height notranslate" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Write a message…"><p><br></p></div>
+      </div>
+    </form>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<!--
+  Fixture: a Google Maps SEARCH RESULTS list (google.com/maps/search/...).
+  Modelled on the real markup: results live in div[role=feed] (aria-label
+  "Results for <query>"); each business is a div[role=article] (class Nv2PK)
+  containing an overlay link a.hfpxzc whose aria-label is the name and whose
+  href is the /maps/place/... URL (with !1s<feature id> and !19s<place id>);
+  the visible name is div.qBF1Pd.fontHeadlineSmall; rating span.MW4etd, review
+  count span.UY7F9 "(120)", both also summarised in span[role=img]
+  aria-label "4.5 stars 120 Reviews"; info lines are div.W4Efsd blocks joined
+  with "·"; the phone (when shown) is span.UsdlK; the website button is
+  a.lcr4fd[data-value=Website].
+  Load under: https://www.google.com/maps/search/restaurants+in+Ikeja/@6.60,3.35,14z
+-->
+<html lang="en">
+<head><meta charset="utf-8"><title>restaurants in Ikeja - Google Maps</title></head>
+<body>
+<div role="main" aria-label="Results for restaurants in Ikeja">
+  <div role="feed" aria-label="Results for restaurants in Ikeja" class="m6QErb DxyBCb kA9KIf dS8AEf">
+
+    <div>
+      <div role="article" aria-label="Mama Put Kitchen" class="Nv2PK THOPZb CpccDe">
+        <a class="hfpxzc" aria-label="Mama Put Kitchen" href="https://www.google.com/maps/place/Mama+Put+Kitchen/data=!4m7!3m6!1s0x103b93a1d2f4c5e7:0x9d7c4e2b1a3f5c68!8m2!3d6.6018!4d3.3515!16s%2Fg%2F11c1abcd!19sChIJ5cX00qGTOxARaFw-K0eTn0?authuser=0&amp;hl=en&amp;rclk=1"></a>
+        <div class="bfdHYd Ppzolf OFBs3e">
+          <div class="lI9IFe">
+            <div class="NrDZNb"><div class="qBF1Pd fontHeadlineSmall">Mama Put Kitchen</div></div>
+            <div class="W4Efsd">
+              <div class="AJB7ye">
+                <span class="e4rVHe fontBodyMedium"><span role="img" class="ZkP5Je" aria-label="4.6 stars 1,284 Reviews"><span class="MW4etd" aria-hidden="true">4.6</span><span class="UY7F9" aria-hidden="true">(1,284)</span></span></span>
+              </div>
+            </div>
+            <div class="W4Efsd">
+              <div class="W4Efsd"><span><span>Nigerian restaurant</span></span><span> · </span><span>₦₦</span><span> · </span><span><span>12 Allen Avenue</span></span></div>
+              <div class="W4Efsd"><span><span style="color: rgba(25,134,57,1.00);">Open</span><span> ⋅ Closes 10 pm</span></span><span> · </span><span class="UsdlK">0803 123 4567</span></div>
+            </div>
+          </div>
+          <div class="Rwjeuc"><div class="etWJQ jym1ob kdfrQc"><a class="lcr4fd S9kvJb" data-value="Website" aria-label="Visit Mama Put Kitchen's website" href="https://www.mamaputkitchen.ng/"></a></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div role="article" aria-label="Bukka Hut Allen" class="Nv2PK THOPZb CpccDe">
+        <a class="hfpxzc" aria-label="Bukka Hut Allen" href="https://www.google.com/maps/place/Bukka+Hut+Allen/data=!4m7!3m6!1s0x103b9238ab12cd34:0x1f2e3d4c5b6a7980!8m2!3d6.60!4d3.35!16s%2Fg%2F11f2!19sChIJNNISq0iSOxARgHlqW0w9Lh8?authuser=0&amp;hl=en"></a>
+        <div class="bfdHYd Ppzolf OFBs3e">
+          <div class="lI9IFe">
+            <div class="NrDZNb"><div class="qBF1Pd fontHeadlineSmall">Bukka Hut Allen</div></div>
+            <div class="W4Efsd"><div class="AJB7ye"><span class="e4rVHe fontBodyMedium"><span role="img" class="ZkP5Je" aria-label="4.1 stars 532 Reviews"><span class="MW4etd" aria-hidden="true">4.1</span><span class="UY7F9" aria-hidden="true">(532)</span></span></span></div></div>
+            <div class="W4Efsd">
+              <div class="W4Efsd"><span><span>Fast food restaurant</span></span><span> · </span><span><span>40 Allen Ave</span></span></div>
+              <div class="W4Efsd"><span><span>Open 24 hours</span></span><span> · </span><span class="UsdlK">+234 1 555 0000</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- A result with no rating, phone or website yet — must still be listed. -->
+    <div>
+      <div role="article" aria-label="Iya Basira Buka" class="Nv2PK THOPZb CpccDe">
+        <a class="hfpxzc" aria-label="Iya Basira Buka" href="https://www.google.com/maps/place/Iya+Basira+Buka/data=!4m7!3m6!1s0x103b93ffeedd0011:0x00000000000004d2!8m2!3d6.6!4d3.3?authuser=0&amp;hl=en"></a>
+        <div class="bfdHYd Ppzolf OFBs3e">
+          <div class="lI9IFe">
+            <div class="NrDZNb"><div class="qBF1Pd fontHeadlineSmall">Iya Basira Buka</div></div>
+            <div class="W4Efsd"><div class="W4Efsd"><span><span>Restaurant</span></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- A sponsored card without a place link — skipped. -->
+    <div><div class="kxsZ2b">Sponsored</div></div>
+
+    <div class="m6QErb XiKgde tLjsW"><span class="HlvSq">You've reached the end of the list.</span></div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  Fixture: a Google Maps PLACE page (google.com/maps/place/...), trimmed to the
+  side panel the extractor reads. Modelled on the real markup (2025-26): the
+  panel is div[role=main] whose aria-label is the business name; the name is an
+  h1.DUwDvf; the category is button.DkEaL; rating/review count sit in
+  div.F7nice; contact rows are buttons/links carrying stable data-item-id
+  values ("address", "phone:tel:<digits>", "authority" for the website) and
+  aria-labels like "Address: …" / "Phone: …". Google's obfuscated class names
+  change, which is why the extractor prefers data-item-id and aria-label.
+  URL to load it under:
+  https://www.google.com/maps/place/Mama+Put+Kitchen/@6.6018,3.3515,17z/data=!3m1!4b1!4m6!3m5!1s0x103b93a1d2f4c5e7:0x9d7c4e2b1a3f5c68!8m2!3d6.6018!4d3.3515!16s%2Fg%2F11c1abcd!19sChIJ5cX00qGTOxARaFw-K0eTn0?entry=ttu
+-->
+<html lang="en">
+<head><meta charset="utf-8"><title>Mama Put Kitchen - Google Maps</title></head>
+<body>
+<div id="app">
+  <div role="main" aria-label="Mama Put Kitchen" class="m6QErb WNBkOb">
+    <div class="RcCsl">
+      <div class="lMbq3e">
+        <div><h1 class="DUwDvf lfPIob"><span class="a5H0ec"></span>Mama Put Kitchen<span class="G0bp3e"></span></h1></div>
+        <div class="PPCwl">
+          <div class="F7nice">
+            <span><span aria-hidden="true">4.6</span><span class="ceNzKf" role="img" aria-label="4.6 stars "></span></span>
+            <span><span><span aria-label="1,284 reviews" role="img">(1,284)</span></span></span>
+          </div>
+        </div>
+        <div class="skqShb">
+          <span class="YhemCb">₦₦</span>
+          <span><span><button class="DkEaL" jsaction="pane.wfvdle12.category">Nigerian restaurant</button></span></span>
+        </div>
+      </div>
+    </div>
+    <div role="region" aria-label="Information for Mama Put Kitchen" class="m6QErb">
+      <button class="CsEnBe" aria-label="Address: 12 Allen Avenue, Ikeja, Lagos 101233, Nigeria " data-item-id="address" data-tooltip="Copy address">
+        <div class="AeaXub"><div class="rogA2c"><div class="Io6YTe fontBodyMedium kR99db">12 Allen Avenue, Ikeja, Lagos 101233, Nigeria</div></div></div>
+      </button>
+      <a class="CsEnBe" aria-label="Website: mamaputkitchen.ng " data-item-id="authority" data-tooltip="Open website" href="https://www.mamaputkitchen.ng/?utm_source=gmb">
+        <div class="AeaXub"><div class="rogA2c"><div class="Io6YTe fontBodyMedium kR99db">mamaputkitchen.ng</div></div></div>
+      </a>
+      <button class="CsEnBe" aria-label="Phone: 0803 123 4567 " data-item-id="phone:tel:08031234567" data-tooltip="Copy phone number">
+        <div class="AeaXub"><div class="rogA2c"><div class="Io6YTe fontBodyMedium kR99db">0803 123 4567</div></div></div>
+      </button>
+      <button class="CsEnBe" aria-label="Plus code: J8Q3+P3 Ikeja, Lagos" data-item-id="oloc">
+        <div class="Io6YTe fontBodyMedium kR99db">J8Q3+P3 Ikeja, Lagos</div>
+      </button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

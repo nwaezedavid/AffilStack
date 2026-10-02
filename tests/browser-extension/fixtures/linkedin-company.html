@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  Fixture: a LinkedIn COMPANY page, About tab (linkedin.com/company/<slug>/about/).
+  Modelled on LinkedIn's real markup: the top card has
+  h1.org-top-card-summary__title, p.org-top-card-summary__tagline and
+  div.org-top-card-summary-info-list__info-item entries (industry, location,
+  followers, employees); the About tab's overview is a section.org-about-module
+  with the description in p.break-words.white-space-pre-wrap and a <dl> of
+  <dt>Label</dt><dd>Value</dd> pairs (Website, Industry, Company size,
+  Headquarters).
+  Load under: https://www.linkedin.com/company/paystack/about/
+-->
+<html lang="en">
+<head><meta charset="utf-8"><title>Paystack: About | LinkedIn</title></head>
+<body>
+<main class="scaffold-layout__main">
+  <section class="org-top-card artdeco-card">
+    <div class="org-top-card-primary-content__content">
+      <h1 class="org-top-card-summary__title t-24 t-black truncate" title="Paystack">Paystack</h1>
+      <p class="org-top-card-summary__tagline t-16 t-black">Modern online and offline payments for Africa</p>
+      <div class="org-top-card-summary-info-list t-14 t-black--light">
+        <div class="org-top-card-summary-info-list__info-item">Financial Services</div>
+        <div class="inline-block">
+          <div class="org-top-card-summary-info-list__info-item">Lagos, Lagos</div>
+          <div class="org-top-card-summary-info-list__info-item">412K followers</div>
+          <div class="org-top-card-summary-info-list__info-item">201-500 employees</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="artdeco-card org-page-details-module__card-spacing org-about-module">
+    <h2 class="text-heading-xlarge">Overview</h2>
+    <p class="break-words white-space-pre-wrap t-black--light text-body-medium">Paystack helps businesses in Africa get paid by anyone, anywhere in the world. Over 200,000 businesses use Paystack to accept payments.</p>
+    <dl class="overflow-hidden">
+      <dt class="mb1 text-heading-medium">Website</dt>
+      <dd class="mb4 text-body-medium"><a href="https://paystack.com" class="link-without-visited-state"><span class="link-without-visited-state">https://paystack.com</span></a></dd>
+      <dt class="mb1 text-heading-medium">Industry</dt>
+      <dd class="mb4 text-body-medium">Financial Services</dd>
+      <dt class="mb1 text-heading-medium">Company size</dt>
+      <dd class="t-black--light text-body-medium mb1">201-500 employees</dd>
+      <dd class="t-black--light text-body-medium mb4">387 associated members</dd>
+      <dt class="mb1 text-heading-medium">Headquarters</dt>
+      <dd class="mb4 text-body-medium">Lagos, Lagos</dd>
+    </dl>
+  </section>
+</main>
+</body>
+</html>
