@@ -378,6 +378,15 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::post('/api-access/wallet/checkout', [ApiWalletController::class, 'checkout'])->name('api-access.wallet.checkout');
     Route::patch('/api-access/wallet/settings', [ApiWalletController::class, 'updateSettings'])->name('api-access.wallet.settings');
 
+    // --- Relaunch (agent 07): live connection checks + API hub extras ---
+    // "Test connection" on Connected Accounts (seat-allowed, like the rest
+    // of that page); a sample delivery to one webhook endpoint (owner-only,
+    // like the other webhook routes); SDK downloads for the API hub.
+    Route::post('/social-connections/{provider}/verify', [SocialConnectionController::class, 'verify'])->middleware('throttle:20,1')->name('social-connections.verify');
+    Route::post('/api-access/webhooks/{webhook}/test', [ApiAccessController::class, 'testWebhook'])->middleware('throttle:10,1')->name('api-access.webhooks.test');
+    Route::get('/api-access/sdk/{language}', [ApiAccessController::class, 'downloadSdk'])->whereIn('language', ['js', 'python'])->name('api-access.sdk');
+    // --- end agent 07 ---
+
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 

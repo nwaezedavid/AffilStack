@@ -7,6 +7,7 @@
     'account' => null,
     'checkedAt' => null,
     'message' => null,
+    'avatar' => null,
 ])
 
 {{-- A third-party connection: brand mark, what it's for, live status, and
@@ -20,7 +21,12 @@
             <div class="min-w-0">
                 <h3 class="font-display font-semibold text-[15px] text-navy-900 truncate">{{ $name }}</h3>
                 @if ($account)
-                    <p class="text-xs text-ink-600 truncate">{{ $account }}</p>
+                    <p class="flex items-center gap-1.5 text-xs text-ink-600 min-w-0">
+                        @if ($avatar)
+                            <img src="{{ $avatar }}" alt="" class="h-4 w-4 shrink-0 rounded-full object-cover ring-1 ring-line" loading="lazy" referrerpolicy="no-referrer">
+                        @endif
+                        <span class="truncate">{{ $account }}</span>
+                    </p>
                 @endif
             </div>
         </div>
@@ -39,6 +45,10 @@
             'bg-surface-muted text-ink-600' => ! in_array($status, ['failed', 'expired', 'verified'], true),
         ])>{{ $message }}</p>
     @endif
+
+    @isset($details)
+        <div class="mt-4">{{ $details }}</div>
+    @endisset
 
     <div class="mt-auto pt-4 flex flex-wrap items-center gap-2">
         {{ $slot }}

@@ -208,3 +208,13 @@ Schedule::call(fn () => \App\Models\UserActivityDay::where('date', '<', now()->s
     ->daily()
     ->name('prune-user-activity-days')
     ->withoutOverlapping();
+
+// --- Relaunch (agent 07): daily live re-check of every connected social
+// account (YouTube/LinkedIn/TikTok/Instagram), refreshing tokens where the
+// platform allows and notifying the owner once when one breaks — see
+// VerifySocialConnections / SocialConnectionVerifier.
+ScheduleMonitoring::track(
+    Schedule::command('social-connections:verify')->dailyAt('05:17')->withoutOverlapping(),
+    'social-connections:verify',
+);
+// --- end agent 07 ---

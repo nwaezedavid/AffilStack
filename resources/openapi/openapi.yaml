@@ -59,6 +59,7 @@ tags:
   - name: Generations
   - name: CRM Contacts
   - name: Referrals
+  - name: Zapier
 
 paths:
   /v1/me:
@@ -166,8 +167,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                description: Laravel paginator wrapping Generation objects
+                $ref: '#/components/schemas/PaginatedGenerations'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /v1/generations/{generation}:
     get:
@@ -182,6 +184,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Generation'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -285,6 +291,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrmContact'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
@@ -310,6 +320,10 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CrmContact'
         '403':
           $ref: '#/components/responses/ReadOnlyForbidden'
         '404':
@@ -325,6 +339,70 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferralsSummary'
+
+  /v1/zapier/subscriptions:
+    post:
+      operationId: createZapierSubscription
+      tags: [Zapier]
+      summary: Subscribe a URL to one webhook event (REST Hook)
+      description: |
+        Used by the AffilStack Zapier app's instant triggers, and usable by
+        any tool that supports REST Hooks. Creates a normal webhook
+        endpoint (visible and revocable on the dashboard's Webhooks tab)
+        subscribed to a single event. Account owners only — a team seat's
+        token gets 403.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_url, event]
+              properties:
+                target_url: { type: string, format: uri, maxLength: 2048, description: Public HTTPS URL that will receive the signed POSTs }
+                event:
+                  type: string
+                  enum: [generation.completed, crm_contact.created, referral.converted, earning.recorded, api_wallet.low_balance, api_wallet.topped_up]
+      responses:
+        '201':
+          description: Subscribed — keep the id to unsubscribe later
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+        '403':
+          $ref: '#/components/responses/ReadOnlyForbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /v1/zapier/subscriptions/{webhook}:
+    delete:
+      operationId: deleteZapierSubscription
+      tags: [Zapier]
+      summary: Unsubscribe a REST Hook
+      parameters:
+        - name: webhook
+          in: path
+          required: true
+          description: The id returned when subscribing
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Unsubscribed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+        '404':
+          $ref: '#/components/responses/NotFound'
 
 components:
   securitySchemes:
@@ -482,3 +560,42 @@ components:
         current_page: { type: integer }
         last_page: { type: integer }
         total: { type: integer }
+
+    Generation:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        offer_id: { type: integer, nullable: true }
+        module: { type: string, description: "e.g. research, blog_article, linkedin_post, youtube_script, ugc_video, x_thread, pinterest_pin, email_nurture" }
+        status: { type: string, enum: [pending, completed, failed] }
+        input: { type: object, nullable: true }
+        output: { type: string, nullable: true, description: The generated text (or a video URL for ugc_video) }
+        output_meta: { type: object, nullable: true, description: "Structured fields for the module, e.g. title, headline, tags" }
+        credits_spent: { type: integer }
+        error_message: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    PaginatedGenerations:
+      type: object
+      description: Laravel's standard paginator envelope
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/Generation' }
+        current_page: { type: integer }
+        last_page: { type: integer }
+        total: { type: integer }
+
+    ReferralsSummary:
+      type: object
+      properties:
+        referral_code: { type: string }
+        referral_link: { type: string, format: uri }
+        total_referrals: { type: integer }
+        unpaid_approved_commission_cents: { type: integer }
+        has_open_payout_request: { type: boolean }
+        events_by_status:
+          type: object
+          description: "Count of referral events keyed by status, e.g. pending: 2, approved: 5"

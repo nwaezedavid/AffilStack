@@ -25,7 +25,7 @@ use RuntimeException;
  * output, already public — see UgcVideoService), wait for it to finish
  * processing, then publish the container.
  */
-class InstagramPublishingService implements SocialPublishProvider
+class InstagramPublishingService implements SocialPublishProvider, VerifiesConnection
 {
     protected const AUTHORIZATION_ENDPOINT = 'https://www.facebook.com/v19.0/dialog/oauth';
 
@@ -133,7 +133,7 @@ class InstagramPublishingService implements SocialPublishProvider
         $igUserId = (string) $pageWithInstagram['instagram_business_account']['id'];
 
         $profile = Http::withToken($userAccessToken)
-            ->get(self::GRAPH_BASE."/{$igUserId}", ['fields' => 'username']);
+            ->get(self::GRAPH_BASE."/{$igUserId}", ['fields' => 'username,profile_picture_url']);
 
         return [
             'credentials' => [
@@ -144,6 +144,8 @@ class InstagramPublishingService implements SocialPublishProvider
             ],
             'account_name' => '@'.(string) ($profile->json('username') ?: $igUserId),
             'account_id' => $igUserId,
+            'avatar_url' => $profile->json('profile_picture_url'),
+            'scopes' => explode(',', self::SCOPE),
         ];
     }
 
@@ -223,5 +225,33 @@ class InstagramPublishingService implements SocialPublishProvider
         if (! app()->runningUnitTests()) {
             sleep($seconds);
         }
+    }
+
+    /**
+     * Reads the linked Instagram professional account with the stored Page
+     * token. Meta signals a dead token with OAuthException code 190 (or
+     * 102 for an expired session) — that, or a revoked permission (10/200),
+     * means reconnecting; anything else may be temporary.
+     */
+    public function verify(SocialConnection $connection): ConnectionCheck
+    {
+        $igUserId = (string) $connection->credential('ig_user_id');
+
+        $response = Http::timeout(15)->withToken((string) $connection->credential('page_access_token'))
+            ->get(self::GRAPH_BASE."/{$igUserId}", ['fields' => 'username,profile_picture_url']);
+
+        $errorCode = (int) $response->json('error.code');
+
+        if ($response->status() === 401 || in_array($errorCode, [102, 190, 10, 200], true)) {
+            return ConnectionCheck::expired('Meta says this Instagram access is no longer valid (the password changed, the app was removed, or a permission was withdrawn). Please reconnect Instagram.');
+        }
+
+        if ($response->failed() || ! $response->json('username')) {
+            return ConnectionCheck::failed('Instagram could not be reached just now ('.($response->json('error.message') ?: 'HTTP '.$response->status()).'). We will try again automatically.');
+        }
+
+        $name = '@'.$response->json('username');
+
+        return ConnectionCheck::verified("Connected to the Instagram account {$name}.", $name, $response->json('profile_picture_url'));
     }
 }
