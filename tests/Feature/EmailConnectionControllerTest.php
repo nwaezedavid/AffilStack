@@ -9,6 +9,7 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Crm\PersonalEmailSender;
+use App\Services\Crm\SmtpProbe;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -34,6 +35,9 @@ class EmailConnectionControllerTest extends TestCase
         $this->seed(RolesSeeder::class);
         $this->user = User::factory()->create();
         $this->user->assignRole('user');
+
+        // Saving SMTP now runs a real handshake + AUTH first (ConnectionVerifier).
+        $this->mock(SmtpProbe::class, fn (MockInterface $mock) => $mock->shouldReceive('probe'));
     }
 
     protected function enableGmailSending(): void

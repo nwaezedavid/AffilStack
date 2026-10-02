@@ -159,3 +159,25 @@ ScheduleMonitoring::track(
     Schedule::command('subscriptions:grant-monthly-credits')->daily()->withoutOverlapping(),
     'subscriptions:grant-monthly-credits',
 );
+
+// ---------------------------------------------------------------------
+// Agent 08 — CRM campaigns, reply detection and email-connection checks.
+// Campaign sends are queued jobs; this is the safety net for queued
+// contacts held back by a daily cap and for follow-ups that come due.
+// Reply polling runs within a ~45s budget (config/crm.php) so a tick
+// never outlives shared hosting's limits.
+// ---------------------------------------------------------------------
+ScheduleMonitoring::track(
+    Schedule::command('crm:send-campaigns')->everyFiveMinutes()->withoutOverlapping(),
+    'crm:send-campaigns',
+);
+
+ScheduleMonitoring::track(
+    Schedule::command('crm:poll-replies')->everyFiveMinutes()->withoutOverlapping(),
+    'crm:poll-replies',
+);
+
+ScheduleMonitoring::track(
+    Schedule::command('crm:verify-email-connections')->daily()->withoutOverlapping(),
+    'crm:verify-email-connections',
+);

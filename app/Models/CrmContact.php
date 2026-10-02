@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 #[Fillable([
     'user_id', 'is_sandbox', 'name', 'company', 'title', 'email', 'phone', 'website',
     'source', 'location', 'notes', 'status', 'raw_data',
-    'unsubscribe_token', 'unsubscribed_at',
+    'unsubscribe_token', 'unsubscribed_at', 'replied_at',
 ])]
 class CrmContact extends Model
 {
@@ -23,6 +23,7 @@ class CrmContact extends Model
             'is_sandbox' => 'boolean',
             'raw_data' => 'array',
             'unsubscribed_at' => 'datetime',
+            'replied_at' => 'datetime',
         ];
     }
 
@@ -64,6 +65,50 @@ class CrmContact extends Model
     public function lists(): BelongsToMany
     {
         return $this->belongsToMany(CrmList::class, 'crm_contact_list')->withPivot('added_at');
+    }
+
+    public function campaignRecipients(): HasMany
+    {
+        return $this->hasMany(CrmCampaignRecipient::class);
+    }
+
+    public function replies(): HasMany
+    {
+        return $this->hasMany(CrmReply::class);
+    }
+
+    /**
+     * First word of the name — the {first_name} merge field. Business
+     * listings (Google Maps imports) have a company name instead, so it
+     * falls back to "there" ("Hi there,") rather than "Hi Joe's,".
+     */
+    public function firstName(): string
+    {
+        $name = trim((string) $this->name);
+
+        if ($name === '' || ($this->company && strcasecmp($name, (string) $this->company) === 0)) {
+            return 'there';
+        }
+
+        return (string) str($name)->before(' ');
+    }
+
+    /**
+     * Best-effort city for the {city} merge field: the contact's location
+     * up to its first comma ("Lagos, Nigeria" → "Lagos"), skipping a
+     * leading street address.
+     */
+    public function city(): string
+    {
+        $parts = array_values(array_filter(array_map('trim', explode(',', (string) $this->location))));
+
+        if ($parts === []) {
+            return '';
+        }
+
+        $city = preg_match('/\d/', $parts[0]) && isset($parts[1]) ? $parts[1] : $parts[0];
+
+        return trim((string) preg_replace('/\s+[A-Z0-9][\dA-Z\s-]*\d[\dA-Z\s-]*$/', '', $city));
     }
 
     public function isUnsubscribed(): bool

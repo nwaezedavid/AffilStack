@@ -564,4 +564,18 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return $this->getAttribute('onboarding_completed_at') === null
             && $this->getAttribute('onboarding_dismissed_at') === null;
     }
+
+    // ------------------------------------------------------------------
+    // Agent 08 — CRM campaigns and inbox replies.
+    // ------------------------------------------------------------------
+
+    public function crmCampaigns(): HasMany
+    {
+        return $this->hasMany(CrmCampaign::class);
+    }
+
+    public function crmReplies(): HasMany
+    {
+        return $this->hasMany(CrmReply::class);
+    }
 }

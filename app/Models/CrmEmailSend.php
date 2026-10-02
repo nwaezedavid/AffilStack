@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'user_id', 'crm_contact_id', 'generation_id', 'sequence_step', 'subject', 'body',
     'link_destination', 'status', 'error_message', 'tracking_token',
     'sent_at', 'opened_at', 'open_count', 'first_clicked_at', 'click_count',
+    'kind', 'crm_campaign_id', 'crm_campaign_recipient_id', 'message_id', 'in_reply_to',
+    'provider_message_id', 'provider_thread_id',
 ])]
 class CrmEmailSend extends Model
 {
@@ -41,6 +43,16 @@ class CrmEmailSend extends Model
     public function generation(): BelongsTo
     {
         return $this->belongsTo(Generation::class);
+    }
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(CrmCampaign::class, 'crm_campaign_id');
+    }
+
+    public function recipient(): BelongsTo
+    {
+        return $this->belongsTo(CrmCampaignRecipient::class, 'crm_campaign_recipient_id');
     }
 
     public function recordOpen(): void
