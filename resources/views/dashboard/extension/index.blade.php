@@ -96,7 +96,7 @@
         {{-- Connection status --}}
         <x-ui.connection-card
             brand="googlechrome"
-            name="Chrome extension"
+            name="Your extension"
             class="min-w-0 lg:col-span-2"
             :status="$isConnected ? 'verified' : 'not_connected'"
             :status-label="$isConnected ? 'Extension connected' : 'Not connected yet'"
