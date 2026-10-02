@@ -43,6 +43,7 @@ use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\GoogleSiteAnalyticsController;
 use App\Http\Controllers\HelpController;
+use App\Http\Controllers\LifecycleEmailPreferenceController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
@@ -58,6 +59,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\TutorialController;
 use Filament\Facades\Filament;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 
 // Audit item #7 (caching/performance) — every page in this group has no
@@ -396,3 +398,27 @@ Route::middleware('cache-public-page')
 // once every route above has already failed to match, and it deliberately
 // skips the admin panel/API/webhook paths inside the controller itself.
 Route::fallback([RedirectFallbackController::class, 'handle'])->middleware('throttle:120,1');
+
+// ── Lifecycle email preferences (agent 03) ──────────────────────────────
+// Signed per-user links from the footer of birthday/festive/re-engagement
+// emails — see LifecycleEmailPreferenceController. The POST route is the
+// RFC 8058 one-click target mail clients call directly, so it skips CSRF.
+Route::middleware(['signed', 'throttle:30,1'])->group(function () {
+    Route::get('/email/lifecycle/unsubscribe/{user}', [LifecycleEmailPreferenceController::class, 'unsubscribe'])->name('lifecycle.unsubscribe');
+    Route::post('/email/lifecycle/unsubscribe/{user}', [LifecycleEmailPreferenceController::class, 'oneClickUnsubscribe'])
+        ->withoutMiddleware([PreventRequestForgery::class])
+        ->name('lifecycle.unsubscribe.one-click');
+    Route::post('/email/lifecycle/resubscribe/{user}', [LifecycleEmailPreferenceController::class, 'resubscribe'])->name('lifecycle.resubscribe');
+});
+
+// ── Profile & Security tabs (agent 03) ──────────────────────────────────
+// Self-service profile editing — deliberately outside the seat/affiliate
+// route allowlists' group (like 'profile' itself, every account type may
+// manage its own profile). See ProfileController.
+Route::middleware(['auth', 'verified', 'not-suspended'])->group(function () {
+    Route::put('/profile/personal', [ProfileController::class, 'updatePersonal'])->name('profile.personal.update');
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->middleware('throttle:20,1')->name('profile.photo.update');
+    Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
+    Route::put('/profile/business', [ProfileController::class, 'updateBusiness'])->name('profile.business.update');
+    Route::put('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
+});
