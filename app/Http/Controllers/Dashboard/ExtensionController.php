@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
+use App\Models\Offer;
 use App\Models\ResearchClip;
+use App\Support\ResearchPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -45,7 +47,33 @@ class ExtensionController extends Controller
         $clips = $user->researchClips()->with('offer')->latest()->get();
         $offers = $user->offers()->orderBy('product_name')->get();
 
-        return view('dashboard.extension.index', compact('tokens', 'clips', 'offers'));
+        // "Connected" = the extension has called the API with one of this
+        // account's tokens at least once (ApiTokenAuth stamps last_used_at).
+        $lastUsedToken = $tokens->whereNotNull('last_used_at')->sortByDesc('last_used_at')->first();
+
+        $stats = [
+            'contacts' => $user->crmContacts()->where('raw_data->captured_via', 'chrome_extension')->count(),
+            'replies' => $user->linkedinReplyDrafts()->count(),
+            'clips' => $clips->count(),
+        ];
+
+        // The products' own Maps/LinkedIn keywords (agent 10's research), so
+        // the page shows exactly what to search next.
+        $keywordOffers = $user->offers()
+            ->where('is_sandbox', false)
+            ->where('status', 'ready')
+            ->latest()
+            ->limit(3)
+            ->get()
+            ->map(fn (Offer $offer) => [
+                'offer' => $offer,
+                'research' => new ResearchPresenter($offer, $user),
+                'list' => $user->crmLists()->where('offer_id', $offer->id)->first(),
+            ])
+            ->filter(fn (array $item) => $item['research']->mapsKeywords() !== [] || array_merge(...array_values($item['research']->linkedinKeywords())) !== [])
+            ->values();
+
+        return view('dashboard.extension.index', compact('tokens', 'clips', 'offers', 'lastUsedToken', 'stats', 'keywordOffers'));
     }
 
     public function createToken(Request $request): RedirectResponse
@@ -123,7 +151,15 @@ class ExtensionController extends Controller
                 continue;
             }
 
-            $relativePath = 'affilstack-extension/'.substr($file->getPathname(), strlen($sourceDir) + 1);
+            $sourceRelative = str_replace('\\', '/', substr($file->getPathname(), strlen($sourceDir) + 1));
+
+            // store/ holds the Chrome Web Store listing texts — for the
+            // owner, not part of the extension customers install.
+            if (str_starts_with($sourceRelative, 'store/')) {
+                continue;
+            }
+
+            $relativePath = 'affilstack-extension/'.$sourceRelative;
 
             // Point the downloaded copy at this site, so customers only
             // paste a token — no API URL to type in.

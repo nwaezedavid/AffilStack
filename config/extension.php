@@ -19,4 +19,21 @@ return [
     // the dashboard offers a one-click "Add to Chrome" instead of the
     // developer-mode install steps.
     'store_url' => env('CHROME_EXTENSION_STORE_URL'),
+
+    // Version of resources/browser-extension/manifest.json — shown on the
+    // dashboard page so people know which build they're installing.
+    'version' => '1.2.0',
+
+    // Most businesses one "Add to CRM" click can send from a Maps results list.
+    'max_contacts_per_request' => (int) env('EXTENSION_MAX_CONTACTS_PER_REQUEST', 50),
+
+    /*
+     * LinkedIn caps a connection-request note at 200 characters on free
+     * accounts (300 on Premium/Sales Navigator). The generated note is kept
+     * within the free limit so it fits every account without editing.
+     */
+    'linkedin_connection_note_limit' => (int) env('EXTENSION_LINKEDIN_NOTE_LIMIT', 200),
+
+    // How many recent messages of a conversation the reply assistant reads.
+    'reply_max_messages' => 20,
 ];

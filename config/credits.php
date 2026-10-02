@@ -38,5 +38,16 @@ return [
         // the account's own activity/plan-usage numbers — priced like a
         // single research/analysis call, not a content-generation module.
         'intelligence_centre' => 10,
+
+        // --- Agent 09: Chrome extension v1.2 (begin) ---------------------
+        // One personalised LinkedIn outreach pack generated from the profile
+        // or company page the user is viewing: a connection note, a longer
+        // DM and two follow-ups (POST /api/linkedin/message).
+        'extension_linkedin_message' => 5,
+        // One AI-suggested reply to a prospect's message — a LinkedIn thread
+        // read from the page, or a pasted email/WhatsApp reply
+        // (POST /api/linkedin/reply). Priced like linkedin_reply_draft.
+        'extension_reply_suggestion' => 3,
+        // --- Agent 09: Chrome extension v1.2 (end) -----------------------
     ],
 ];

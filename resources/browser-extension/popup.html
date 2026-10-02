@@ -1,103 +1,87 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>AffilStack Capture</title>
-  <style>
-    body {
-      width: 320px;
-      margin: 0;
-      padding: 14px;
-      font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #1a2233;
-      background: #ffffff;
-    }
-    h1 {
-      font-size: 13px;
-      font-weight: 600;
-      margin: 0 0 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    h1 .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 18px;
-      height: 18px;
-      border-radius: 4px;
-      background: #0f1f3d;
-      color: #e8b64c;
-      font-size: 10px;
-    }
-    .field { margin-bottom: 10px; }
-    label { display: block; font-size: 11px; color: #667085; margin-bottom: 3px; }
-    input[type="text"], select {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 6px 8px;
-      border: 1px solid #d7dce3;
-      border-radius: 6px;
-      font-size: 13px;
-    }
-    .page-title { font-size: 12px; color: #667085; word-break: break-word; margin-bottom: 10px; }
-    .selection-note { font-size: 11px; color: #667085; margin-bottom: 10px; }
-    button {
-      width: 100%;
-      padding: 8px;
-      border: none;
-      border-radius: 6px;
-      background: #0f1f3d;
-      color: #fff;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-    }
-    button:disabled { opacity: .5; cursor: default; }
-    #status { margin-top: 10px; font-size: 12px; }
-    #status.error { color: #b42318; }
-    #status.success { color: #027a48; }
-    .setup {
-      font-size: 12px;
-      color: #667085;
-    }
-    .setup a { color: #0f1f3d; }
-  </style>
+  <title>AffilStack</title>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <h1><span class="badge">AS</span> Capture this page</h1>
-
-  <div id="setup" class="setup" hidden>
-    Not connected yet — <a href="#" id="openOptions">add your API token</a> first.
-  </div>
-
-  <div id="form">
-    <div class="page-title" id="pageTitle"></div>
-    <div class="selection-note" id="selectionNote"></div>
-
-    <div class="field">
-      <label for="pageType">Page type</label>
-      <select id="pageType">
-        <option value="product_page">Product page</option>
-        <option value="competitor_ad">Competitor ad</option>
-        <option value="linkedin_post">LinkedIn post</option>
-        <option value="other">Other</option>
-      </select>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">AS</span>
+      <div>
+        <p class="brand-name">AffilStack</p>
+        <p class="brand-sub" id="connectionText">Checking your connection…</p>
+        <p class="brand-credits" id="creditsText" hidden></p>
+      </div>
     </div>
+    <span class="pill pill-checking" id="connectionPill" role="status"><span class="dot" aria-hidden="true"></span><span id="connectionPillText">Checking</span></span>
+  </header>
 
-    <div class="field">
-      <label for="offer">Attach to (optional)</label>
-      <select id="offer">
-        <option value="">Not attached</option>
-      </select>
-    </div>
+  <nav class="tabs" role="tablist" aria-label="AffilStack tools">
+    <button class="tab" role="tab" id="tab-page" aria-controls="panel-page" aria-selected="true">This page</button>
+    <button class="tab" role="tab" id="tab-reply" aria-controls="panel-reply" aria-selected="false" tabindex="-1">Reply helper</button>
+    <button class="tab" role="tab" id="tab-clip" aria-controls="panel-clip" aria-selected="false" tabindex="-1">Save page</button>
+  </nav>
 
-    <button id="save">Save to AffilStack</button>
-    <div id="status"></div>
-  </div>
+  <main>
+    <section class="panel" role="tabpanel" id="panel-page" aria-labelledby="tab-page">
+      <div class="skeleton" id="pageLoading" aria-label="Reading this page">
+        <div class="sk sk-title"></div><div class="sk"></div><div class="sk sk-short"></div>
+      </div>
+      <div id="pageContent"></div>
+    </section>
+
+    <section class="panel" role="tabpanel" id="panel-reply" aria-labelledby="tab-reply" hidden>
+      <p class="lead">Paste a prospect's reply — email, WhatsApp, anywhere — and get the best response to move them toward a sale.</p>
+      <div class="field">
+        <span class="label" id="channelLabel">Where did they reply?</span>
+        <div class="segmented" role="radiogroup" aria-labelledby="channelLabel" id="channelGroup">
+          <button type="button" role="radio" aria-checked="true" data-channel="email">Email</button>
+          <button type="button" role="radio" aria-checked="false" data-channel="whatsapp" tabindex="-1">WhatsApp</button>
+          <button type="button" role="radio" aria-checked="false" data-channel="linkedin" tabindex="-1">LinkedIn</button>
+          <button type="button" role="radio" aria-checked="false" data-channel="other" tabindex="-1">Other</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="replyMessage" class="label">Their message</label>
+        <textarea id="replyMessage" rows="5" placeholder="e.g. Sounds interesting, but how much does it cost?"></textarea>
+      </div>
+      <div class="field">
+        <label for="replyOffer" class="label">Product you're promoting</label>
+        <select id="replyOffer"><option value="">No specific product</option></select>
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="replySubmit">Suggest a response</button>
+      <div id="replyResult" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" role="tabpanel" id="panel-clip" aria-labelledby="tab-clip" hidden>
+      <p class="lead">Save this page — a product page, a competitor's ad, a post — to your AffilStack research.</p>
+      <div class="clip-page">
+        <p class="clip-title" id="clipTitle"></p>
+        <p class="hint" id="clipSelection"></p>
+      </div>
+      <div class="field">
+        <label for="clipType" class="label">Page type</label>
+        <select id="clipType">
+          <option value="product_page">Product page</option>
+          <option value="competitor_ad">Competitor ad</option>
+          <option value="linkedin_post">LinkedIn post</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="clipOffer" class="label">Attach to (optional)</label>
+        <select id="clipOffer"><option value="">Not attached</option></select>
+      </div>
+      <button type="button" class="btn btn-primary btn-block" id="clipSave">Save to AffilStack</button>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="config.js"></script>
+  <script src="api.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

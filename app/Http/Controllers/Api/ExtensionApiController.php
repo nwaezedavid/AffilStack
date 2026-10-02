@@ -21,11 +21,27 @@ use Illuminate\Validation\Rule;
  */
 class ExtensionApiController extends Controller
 {
+    /**
+     * v1.2 adds the fields after email (credits, plan gating, dashboard
+     * links) — additive only, so a v1.1 client reading name/email still works.
+     */
     public function me(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         return response()->json([
-            'name' => $request->user()->name,
-            'email' => $request->user()->email,
+            'name' => $user->name,
+            'email' => $user->email,
+            'credits_balance' => (int) $user->billableUser()->credits_balance,
+            'can_use_google_maps' => $user->canUseChannel('google_maps'),
+            'is_seat' => $user->isSeat(),
+            'costs' => [
+                'linkedin_message' => (int) config('credits.costs.extension_linkedin_message'),
+                'reply_suggestion' => (int) config('credits.costs.extension_reply_suggestion'),
+            ],
+            'dashboard_url' => route('dashboard'),
+            'extension_url' => route('extension.index'),
+            'billing_url' => route('billing.index'),
         ]);
     }
 
