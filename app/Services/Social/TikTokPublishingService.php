@@ -25,7 +25,7 @@ use RuntimeException;
  * acknowledges it — the video appears in the user's TikTok inbox/drafts
  * shortly after, not instantly.
  */
-class TikTokPublishingService implements SocialPublishProvider
+class TikTokPublishingService implements SocialPublishProvider, VerifiesConnection
 {
     protected const AUTHORIZATION_ENDPOINT = 'https://www.tiktok.com/v2/auth/authorize/';
 
@@ -101,7 +101,7 @@ class TikTokPublishingService implements SocialPublishProvider
         }
 
         $profile = Http::withToken($token->json('access_token'))
-            ->get(self::USERINFO_ENDPOINT, ['fields' => 'open_id,display_name']);
+            ->get(self::USERINFO_ENDPOINT, ['fields' => 'open_id,display_name,avatar_url']);
 
         $user = $profile->json('data.user');
 
@@ -117,6 +117,8 @@ class TikTokPublishingService implements SocialPublishProvider
             ],
             'account_name' => (string) ($user['display_name'] ?? 'TikTok account'),
             'account_id' => (string) ($user['open_id'] ?? ''),
+            'avatar_url' => $user['avatar_url'] ?? null,
+            'scopes' => array_values(array_filter(explode(',', (string) $token->json('scope', self::SCOPE)))),
         ];
     }
 
@@ -134,6 +136,10 @@ class TikTokPublishingService implements SocialPublishProvider
             'refresh_token' => $connection->credential('refresh_token'),
             'grant_type' => 'refresh_token',
         ]);
+
+        if (in_array($response->status(), [400, 401], true) || in_array($response->json('error'), ['invalid_grant', 'invalid_request'], true)) {
+            throw new ConnectionExpiredException('TikTok rejected the saved access — it was revoked or has expired. Please reconnect TikTok.');
+        }
 
         if ($response->failed() || ! $response->json('access_token')) {
             throw new RuntimeException('Could not refresh the TikTok connection — it may have been revoked. Please reconnect TikTok.');
@@ -184,5 +190,39 @@ class TikTokPublishingService implements SocialPublishProvider
         }
 
         return ['url' => null, 'external_id' => (string) $response->json('data.publish_id')];
+    }
+
+    /**
+     * Refreshes the access token if needed (TikTok's last 24 hours), then
+     * reads the connected profile.
+     */
+    public function verify(SocialConnection $connection): ConnectionCheck
+    {
+        try {
+            $accessToken = $this->freshAccessToken($connection);
+        } catch (ConnectionExpiredException $e) {
+            return ConnectionCheck::expired($e->getMessage());
+        } catch (RuntimeException $e) {
+            return ConnectionCheck::failed($e->getMessage());
+        }
+
+        $response = Http::timeout(15)->withToken($accessToken)
+            ->get(self::USERINFO_ENDPOINT, ['fields' => 'open_id,display_name,avatar_url']);
+
+        $errorCode = $response->json('error.code');
+
+        if ($response->status() === 401 || in_array($errorCode, ['access_token_invalid', 'scope_not_authorized'], true)) {
+            return ConnectionCheck::expired('TikTok says this access is no longer valid. Please reconnect TikTok.');
+        }
+
+        $user = $response->json('data.user');
+
+        if ($response->failed() || ! $user || ($errorCode && $errorCode !== 'ok')) {
+            return ConnectionCheck::failed('TikTok could not be reached just now ('.($response->json('error.message') ?: 'HTTP '.$response->status()).'). We will try again automatically.');
+        }
+
+        $name = (string) ($user['display_name'] ?? $connection->account_name);
+
+        return ConnectionCheck::verified("Connected to the TikTok account {$name}.", $name, $user['avatar_url'] ?? null);
     }
 }

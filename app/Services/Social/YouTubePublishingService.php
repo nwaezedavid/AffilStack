@@ -18,7 +18,7 @@ use RuntimeException;
  * Dashboard\SocialPublishController falls back to "download and post
  * manually" rather than calling publish() at all.
  */
-class YouTubePublishingService implements SocialPublishProvider
+class YouTubePublishingService implements SocialPublishProvider, VerifiesConnection
 {
     protected const AUTHORIZATION_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 
@@ -28,7 +28,12 @@ class YouTubePublishingService implements SocialPublishProvider
 
     protected const RESUMABLE_UPLOAD_ENDPOINT = 'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status';
 
-    protected const SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
+    /**
+     * youtube.upload publishes; youtube.readonly is what channels.list
+     * (mine=true) actually requires — used at connect time to resolve the
+     * channel and by verify() to prove the connection still works.
+     */
+    protected const SCOPE = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly';
 
     protected GoogleOauthSetting $settings;
 
@@ -112,6 +117,8 @@ class YouTubePublishingService implements SocialPublishProvider
             ],
             'account_name' => (string) ($channelData['snippet']['title'] ?? 'YouTube channel'),
             'account_id' => (string) $channelData['id'],
+            'avatar_url' => $channelData['snippet']['thumbnails']['default']['url'] ?? null,
+            'scopes' => array_values(array_filter(explode(' ', (string) $token->json('scope', self::SCOPE)))),
         ];
     }
 
@@ -129,6 +136,10 @@ class YouTubePublishingService implements SocialPublishProvider
             'refresh_token' => $connection->credential('refresh_token'),
             'grant_type' => 'refresh_token',
         ]);
+
+        if (in_array($response->status(), [400, 401], true)) {
+            throw new ConnectionExpiredException('Google rejected the saved YouTube access — it was revoked or has expired. Please reconnect YouTube.');
+        }
 
         if ($response->failed() || ! $response->json('access_token')) {
             throw new RuntimeException('Could not refresh the YouTube connection — it may have been revoked. Please reconnect YouTube.');
@@ -191,5 +202,49 @@ class YouTubePublishingService implements SocialPublishProvider
         $videoId = (string) $upload->json('id');
 
         return ['url' => "https://www.youtube.com/watch?v={$videoId}", 'external_id' => $videoId];
+    }
+
+    /**
+     * Refreshes the access token if needed, then reads the connected
+     * channel (channels.list mine=true — 1 quota unit).
+     */
+    public function verify(SocialConnection $connection): ConnectionCheck
+    {
+        try {
+            $accessToken = $this->freshAccessToken($connection);
+        } catch (ConnectionExpiredException $e) {
+            return ConnectionCheck::expired($e->getMessage());
+        } catch (RuntimeException $e) {
+            return ConnectionCheck::failed($e->getMessage());
+        }
+
+        $response = Http::timeout(15)->withToken($accessToken)
+            ->get(self::CHANNELS_ENDPOINT, ['part' => 'snippet', 'mine' => 'true']);
+
+        if ($response->status() === 401) {
+            return ConnectionCheck::expired('Google says this YouTube access is no longer valid. Please reconnect YouTube.');
+        }
+
+        if ($response->status() === 403 && in_array($response->json('error.errors.0.reason'), ['insufficientPermissions', 'forbidden'], true)) {
+            return ConnectionCheck::expired('This connection is missing permission to read your channel. Reconnect YouTube and approve every permission requested.');
+        }
+
+        if ($response->failed()) {
+            return ConnectionCheck::failed('YouTube could not be reached just now ('.($response->json('error.message') ?: 'HTTP '.$response->status()).'). We will try again automatically.');
+        }
+
+        $channel = $response->json('items.0');
+
+        if (! $channel) {
+            return ConnectionCheck::failed('That Google account no longer has a YouTube channel. Create one, then reconnect.');
+        }
+
+        $title = (string) ($channel['snippet']['title'] ?? $connection->account_name);
+
+        return ConnectionCheck::verified(
+            "Connected to the YouTube channel \"{$title}\".",
+            $title,
+            $channel['snippet']['thumbnails']['default']['url'] ?? null,
+        );
     }
 }

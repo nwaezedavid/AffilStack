@@ -4,26 +4,28 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\SocialConnection;
-use App\Services\Social\InstagramPublishingService;
-use App\Services\Social\LinkedInOAuthService;
+use App\Services\Social\SocialConnectionVerifier;
 use App\Services\Social\SocialOAuthProvider;
+use App\Services\Social\SocialProviderRegistry;
 use App\Services\Social\SocialPublishProvider;
-use App\Services\Social\TikTokPublishingService;
-use App\Services\Social\YouTubePublishingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 
 /**
  * A single "Connected Accounts" hub for every user-owned social OAuth
  * connection — LinkedIn (task #3, identity-only) and YouTube/TikTok/
  * Instagram (task #2, real publish-capable connections — see
- * SocialPublishProvider and Dashboard\SocialPublishController). Owner-only,
- * matching every other CRM/content-account-level feature — see
- * config('agency.seat_allowed_routes').
+ * SocialPublishProvider and Dashboard\SocialPublishController). The list of
+ * providers and their copy lives in SocialProviderRegistry.
+ *
+ * Every connection is verified live (SocialConnectionVerifier) right after
+ * connecting, whenever the user clicks "Test connection", and daily by
+ * social-connections:verify, so each card shows whether it really works.
  */
 class SocialConnectionController extends Controller
 {
@@ -31,35 +33,35 @@ class SocialConnectionController extends Controller
 
     protected const SESSION_PROVIDER_KEY = 'social_connect_provider';
 
-    /**
-     * @return array<string, SocialOAuthProvider>
-     */
-    protected function providers(): array
-    {
-        return [
-            'linkedin' => app(LinkedInOAuthService::class),
-            'youtube' => app(YouTubePublishingService::class),
-            'tiktok' => app(TikTokPublishingService::class),
-            'instagram' => app(InstagramPublishingService::class),
-        ];
-    }
+    public function __construct(
+        protected SocialProviderRegistry $registry,
+        protected SocialConnectionVerifier $verifier,
+    ) {}
 
     protected function resolveProvider(string $provider): SocialOAuthProvider
     {
-        return $this->providers()[$provider] ?? throw new InvalidArgumentException("Unknown social provider [{$provider}].");
+        return $this->registry->get($provider);
     }
 
     public function index(): View
     {
         $connections = auth()->user()->socialConnections()->get()->keyBy('provider');
-        $providers = collect($this->providers())->map(fn (SocialOAuthProvider $p) => [
+        $providers = collect($this->registry->all())->map(fn (SocialOAuthProvider $p) => [
+            ...$this->registry->meta($p->key()),
             'key' => $p->key(),
             'available' => $p->isAvailable(),
             'approved' => $p instanceof SocialPublishProvider ? $p->isApprovedForPublishing() : null,
             'publishes' => $p instanceof SocialPublishProvider,
         ]);
 
-        return view('dashboard.social-connections.index', compact('connections', 'providers'));
+        $summary = [
+            'connected' => $connections->count(),
+            'verified' => $connections->where('verification_status', SocialConnection::STATUS_VERIFIED)->count(),
+            'attention' => $connections->filter(fn (SocialConnection $c) => $c->isBroken())->count(),
+            'available' => $providers->where('available', true)->count(),
+        ];
+
+        return view('dashboard.social-connections.index', compact('connections', 'providers', 'summary'));
     }
 
     public function redirectToProvider(Request $request, string $provider): RedirectResponse
@@ -71,7 +73,7 @@ class SocialConnectionController extends Controller
         }
 
         if (! $service->isAvailable()) {
-            return back()->with('error', ucfirst($provider).' connections are not available right now.');
+            return back()->with('error', $this->registry->meta($provider)['label'].' connections are not available right now.');
         }
 
         $state = Str::random(40);
@@ -103,23 +105,69 @@ class SocialConnectionController extends Controller
             return redirect()->route('social-connections.index')->with('error', $e instanceof RuntimeException ? $e->getMessage() : 'That connection is not available.');
         }
 
-        SocialConnection::updateOrCreate(
+        $connection = SocialConnection::updateOrCreate(
             ['user_id' => auth()->id(), 'provider' => $provider],
             [
                 'credentials' => $result['credentials'],
                 'account_name' => $result['account_name'],
                 'account_id' => $result['account_id'],
+                'avatar_url' => $result['avatar_url'] ?? null,
+                'granted_scopes' => $result['scopes'] ?? null,
                 'connected_at' => now(),
+                'last_verified_at' => null,
+                'verification_status' => null,
+                'verification_message' => null,
+                'broken_notified_at' => null,
             ]
         );
 
-        return redirect()->route('social-connections.index')->with('success', ucfirst($provider)." connected as {$result['account_name']}.");
+        $label = $this->registry->meta($provider)['label'];
+
+        // Prove the fresh token actually works before calling it done. A
+        // check that blows up unexpectedly must never undo a good connect —
+        // the card simply stays "Connected" until the next check.
+        try {
+            $check = $this->verifier->verify($connection, notify: false);
+        } catch (Throwable $e) {
+            report($e);
+
+            return redirect()->route('social-connections.index')->with('success', "{$label} connected as {$result['account_name']}.");
+        }
+
+        return $check->isVerified()
+            ? redirect()->route('social-connections.index')->with('success', "{$label} connected and verified as {$connection->fresh()->account_name}.")
+            : redirect()->route('social-connections.index')->with('error', "{$label} connected, but the first check failed: {$check->message}");
+    }
+
+    /**
+     * "Test connection" — a live check the user asked for, so the result is
+     * shown inline rather than also sent to the bell.
+     */
+    public function verify(string $provider): RedirectResponse
+    {
+        abort_unless($this->registry->has($provider), 404);
+
+        $connection = auth()->user()->socialConnections()->where('provider', $provider)->first();
+        $label = $this->registry->meta($provider)['label'];
+
+        if (! $connection) {
+            return redirect()->route('social-connections.index')->with('error', "{$label} isn't connected yet.");
+        }
+
+        $check = $this->verifier->verify($connection, notify: false);
+
+        return redirect()->route('social-connections.index')->with(
+            $check->isVerified() ? 'success' : 'error',
+            $check->isVerified() ? "{$label} is working. {$check->message}" : "{$label} check failed: {$check->message}",
+        );
     }
 
     public function disconnect(string $provider): RedirectResponse
     {
         auth()->user()->socialConnections()->where('provider', $provider)->delete();
 
-        return redirect()->route('social-connections.index')->with('success', ucfirst($provider).' disconnected.');
+        $label = $this->registry->has($provider) ? $this->registry->meta($provider)['label'] : ucfirst($provider);
+
+        return redirect()->route('social-connections.index')->with('success', "{$label} disconnected.");
     }
 }

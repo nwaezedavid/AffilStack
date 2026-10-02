@@ -64,6 +64,10 @@ return [
         'notifications.poll',
         'notifications.read-all',
         'logout',
+        // Relaunch (agent 07): Connected Accounts "Test connection" and the
+        // API hub's SDK downloads, alongside the pages seats can already open.
+        'social-connections.verify',
+        'api-access.sdk',
     ],
 
     // Route names allowed only for a seat on a "shared" (Business tier)

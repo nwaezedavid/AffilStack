@@ -3,6 +3,7 @@
 namespace App\Services\Social;
 
 use App\Models\LinkedInOauthSetting;
+use App\Models\SocialConnection;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -17,7 +18,7 @@ use RuntimeException;
  * generated content is exported in the context of a real, named LinkedIn
  * identity rather than an anonymous download.
  */
-class LinkedInOAuthService implements SocialOAuthProvider
+class LinkedInOAuthService implements SocialOAuthProvider, VerifiesConnection
 {
     protected const AUTHORIZATION_ENDPOINT = 'https://www.linkedin.com/oauth/v2/authorization';
 
@@ -88,9 +89,33 @@ class LinkedInOAuthService implements SocialOAuthProvider
         return [
             'credentials' => [
                 'access_token' => $token->json('access_token'),
+                'expires_at' => $token->json('expires_in') ? now()->addSeconds((int) $token->json('expires_in'))->toIso8601String() : null,
             ],
             'account_name' => (string) ($profile->json('name') ?: $profile->json('email') ?: 'LinkedIn member'),
             'account_id' => (string) $profile->json('sub'),
+            'avatar_url' => $profile->json('picture'),
+            'scopes' => array_values(array_filter(preg_split('/[\s,]+/', (string) $token->json('scope', 'openid profile email')))),
         ];
+    }
+
+    /**
+     * LinkedIn's standard OIDC tokens last ~60 days and can't be refreshed,
+     * so an expired or revoked token always means "reconnect".
+     */
+    public function verify(SocialConnection $connection): ConnectionCheck
+    {
+        $response = Http::timeout(15)->withToken((string) $connection->credential('access_token'))->get(self::USERINFO_ENDPOINT);
+
+        if ($response->status() === 401) {
+            return ConnectionCheck::expired('Your LinkedIn sign-in has expired (LinkedIn asks members to reconnect about every 60 days). Please reconnect LinkedIn.');
+        }
+
+        if ($response->failed() || ! $response->json('sub')) {
+            return ConnectionCheck::failed('LinkedIn could not be reached just now ('.($response->json('message') ?: 'HTTP '.$response->status()).'). We will try again automatically.');
+        }
+
+        $name = (string) ($response->json('name') ?: $response->json('email') ?: $connection->account_name);
+
+        return ConnectionCheck::verified("Signed in to LinkedIn as {$name}.", $name, $response->json('picture'));
     }
 }
