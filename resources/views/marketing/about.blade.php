@@ -274,19 +274,21 @@
                     </div>
                     <ul class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-{{ min(4, max(2, $teamMembers->count())) }}" role="list">
                         @foreach ($teamMembers as $member)
-                            <li class="group flex flex-col rounded-3xl bg-white p-6 ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(11,30,61,.35)]">
+                            <li class="group grid grid-cols-[5.5rem_1fr] items-start gap-x-4 rounded-3xl bg-white p-5 ring-1 sm:flex sm:flex-col sm:p-6 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(11,30,61,.35)]">
                                 @if ($member->photoUrl())
-                                    <img src="{{ $member->photoUrl() }}" alt="{{ $member->name }}, {{ $member->role }}" class="aspect-square w-full rounded-2xl object-cover" loading="lazy">
+                                    <img src="{{ $member->photoUrl() }}" alt="{{ $member->name }}, {{ $member->role }}" class="row-span-2 aspect-square w-full rounded-2xl object-cover" loading="lazy">
                                 @else
-                                    <span class="flex aspect-square w-full items-center justify-center rounded-2xl bg-gradient-to-br from-navy-900 to-brand-600 font-display text-5xl font-semibold text-gold-300" aria-hidden="true">{{ $member->initials() }}</span>
+                                    <span class="row-span-2 flex aspect-square w-full items-center justify-center rounded-2xl bg-gradient-to-br from-navy-900 to-brand-600 font-display text-2xl sm:text-5xl font-semibold text-gold-300" aria-hidden="true">{{ $member->initials() }}</span>
                                 @endif
-                                <h3 class="mt-5 font-display text-lg font-semibold text-navy-900">{{ $member->name }}</h3>
+                                <div class="min-w-0 sm:mt-5">
+                                <h3 class="font-display text-lg font-semibold text-navy-900">{{ $member->name }}</h3>
                                 <p class="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-gold-600">{{ $member->role }}</p>
                                 @if ($member->bio)
                                     <p class="mt-3 text-sm leading-relaxed text-ink-600">{{ $member->bio }}</p>
                                 @endif
+                                </div>
                                 @if ($links = $member->profileLinks())
-                                    <div class="mt-auto flex gap-2 pt-5">
+                                    <div class="col-start-2 mt-auto flex gap-2 pt-4 sm:pt-5">
                                         @foreach ($links as $type => $url)
                                             <a href="{{ $url }}" target="_blank" rel="noopener noreferrer" class="flex h-9 w-9 items-center justify-center rounded-full bg-surface-muted text-navy-900 transition hover:bg-navy-900 hover:text-white" aria-label="{{ $member->name }} on {{ ['linkedin' => 'LinkedIn', 'x' => 'X', 'website' => 'their website'][$type] }}">
                                                 @if ($type === 'website')

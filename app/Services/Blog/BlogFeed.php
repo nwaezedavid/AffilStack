@@ -277,7 +277,7 @@ class BlogFeed
         $text = trim((string) preg_replace('/\s+/u', ' ', $text));
         $text = trim((string) preg_replace('/\s*(\[(…|\.\.\.)\]|(Continue reading|Read more)\b.*)$/iu', '', $text));
 
-        return Str::limit($text, $limit);
+        return Str::limit($text, $limit, '…', preserveWords: true);
     }
 
     protected static function isHttpUrl(string $url): bool

@@ -33,7 +33,7 @@
                     @if ($screenshot = MobileApps::screenshotUrl())
                         <img src="{{ $screenshot }}" alt="{{ MobileApps::screenshotAlt() }}" class="aspect-[9/19] w-full rounded-[2.2rem] object-cover" loading="lazy">
                     @else
-                        <div class="aspect-[9/19] w-full overflow-hidden rounded-[2.2rem] bg-gradient-to-b from-surface-muted to-white px-4 pt-12 text-navy-900" aria-hidden="true">
+                        <div class="flex aspect-[9/19] w-full flex-col overflow-hidden rounded-[2.2rem] bg-gradient-to-b from-surface-muted to-white px-4 pt-12 text-navy-900" aria-hidden="true">
                             <p class="text-[10px] text-ink-400">Good morning</p>
                             <p class="font-display text-base font-semibold">Your earnings</p>
                             <div class="mt-3 rounded-2xl bg-navy-900 p-3.5 text-white">
@@ -46,11 +46,16 @@
                                 </div>
                             </div>
                             <div class="mt-3 space-y-2">
-                                @foreach ([['map-pin', 'bg-emerald-50 text-emerald-600', '12 new buyers', 'Google Maps'], ['envelope', 'bg-violet-50 text-violet-600', 'Campaign sent', '5 replies'], ['link', 'bg-brand-50 text-brand-600', '348 clicks', 'Today']] as [$icon, $tone, $title, $meta])
+                                @foreach ([['map-pin', 'bg-emerald-50 text-emerald-600', '12 new buyers', 'Google Maps'], ['envelope', 'bg-violet-50 text-violet-600', 'Campaign sent', '5 replies'], ['link', 'bg-brand-50 text-brand-600', '348 clicks', 'Today'], ['banknotes', 'bg-amber-50 text-amber-600', '+$48.00 commission', 'Just now']] as [$icon, $tone, $title, $meta])
                                     <div class="flex items-center gap-2.5 rounded-xl bg-white p-2.5 ring-1 ring-line">
                                         <span class="flex h-7 w-7 items-center justify-center rounded-lg {{ $tone }}">@include('marketing.home.partials.icon', ['icon' => $icon, 'class' => 'h-4 w-4'])</span>
                                         <span class="leading-tight"><span class="block text-[11px] font-semibold">{{ $title }}</span><span class="block text-[9px] text-ink-400">{{ $meta }}</span></span>
                                     </div>
+                                @endforeach
+                            </div>
+                            <div class="-mx-4 mt-auto flex items-center justify-around border-t border-line bg-white px-4 pb-5 pt-3 text-ink-400">
+                                @foreach (['home', 'magnifying-glass', 'user-group', 'chart-bar'] as $tab)
+                                    <span class="{{ $loop->first ? 'text-brand-600' : '' }}">@include('marketing.home.partials.icon', ['icon' => $tab, 'class' => 'h-5 w-5'])</span>
                                 @endforeach
                             </div>
                         </div>

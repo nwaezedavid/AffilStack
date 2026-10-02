@@ -154,8 +154,8 @@ class HomepageEditor extends Page
                     ->hiddenLabel()
                     ->addable(false)
                     ->deletable(false)
-                    ->reorderable(false)
                     ->reorderableWithButtons()
+                    ->grid(2)
                     ->itemLabel(fn (array $state): string => (HomepageContent::SECTIONS[$state['key'] ?? '']['label'] ?? 'Section').(($state['enabled'] ?? true) ? '' : ' — hidden'))
                     ->schema([
                         Hidden::make('key'),
