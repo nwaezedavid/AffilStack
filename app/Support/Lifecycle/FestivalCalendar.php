@@ -119,12 +119,14 @@ class FestivalCalendar
      */
     public static function occurrenceForSendDate(LifecycleEmail $email, CarbonImmutable $localDate, ?string $country = null): ?CarbonImmutable
     {
-        $localDate = $localDate->startOfDay();
+        // Compare calendar dates, not instants: $localDate is in the
+        // user's timezone while festival dates are timezone-less days.
+        $target = $localDate->toDateString();
         $daysBefore = max(0, (int) $email->days_before);
 
         foreach ([$localDate->year, $localDate->year + 1] as $year) {
             foreach (self::datesInYear($email, $year, $country) as $festival) {
-                if ($festival->subDays($daysBefore)->equalTo($localDate)) {
+                if ($festival->subDays($daysBefore)->toDateString() === $target) {
                     return $festival;
                 }
             }
@@ -139,11 +141,11 @@ class FestivalCalendar
      */
     public static function nextOccurrence(LifecycleEmail $email, CarbonImmutable $from, ?string $country = null): ?CarbonImmutable
     {
-        $from = $from->startOfDay();
+        $from = $from->toDateString();
 
-        foreach ([$from->year, $from->year + 1] as $year) {
+        foreach ([(int) substr($from, 0, 4), (int) substr($from, 0, 4) + 1] as $year) {
             $dates = collect(self::datesInYear($email, $year, $country))
-                ->filter(fn (CarbonImmutable $date) => $date->greaterThanOrEqualTo($from))
+                ->filter(fn (CarbonImmutable $date) => $date->toDateString() >= $from)
                 ->sort()
                 ->values();
 
