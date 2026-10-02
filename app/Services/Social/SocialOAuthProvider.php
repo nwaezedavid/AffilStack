@@ -25,9 +25,10 @@ interface SocialOAuthProvider
 
     /**
      * Exchanges an authorization code for whatever SocialConnection needs
-     * to persist a connection.
+     * to persist a connection. avatar_url and scopes (the permissions the
+     * platform actually granted) are optional extras shown on the card.
      *
-     * @return array{credentials: array<string, mixed>, account_name: string, account_id: ?string}
+     * @return array{credentials: array<string, mixed>, account_name: string, account_id: ?string, avatar_url?: ?string, scopes?: array<int, string>}
      */
     public function exchangeCode(string $code, string $redirectUri): array;
 }

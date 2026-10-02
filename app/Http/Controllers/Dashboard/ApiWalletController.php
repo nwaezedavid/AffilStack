@@ -45,7 +45,7 @@ class ApiWalletController extends Controller
         $enabledGateways = $gateways->enabledForCountry($countries->isNigeria($request) ? 'NG' : 'US');
 
         if (empty($enabledGateways)) {
-            return back()->with('error', 'Payments are temporarily unavailable — please try again shortly.');
+            return back()->with('api_tab', 'usage')->with('error', 'Payments are temporarily unavailable — please try again shortly.');
         }
 
         $gateway = collect($enabledGateways)->first(fn ($g) => $g->key() === $request->input('gateway')) ?? $enabledGateways[0];
@@ -62,7 +62,7 @@ class ApiWalletController extends Controller
         } catch (RuntimeException $e) {
             report($e);
 
-            return back()->with('error', 'We could not start checkout right now. Please try again in a moment.');
+            return back()->with('api_tab', 'usage')->with('error', 'We could not start checkout right now. Please try again in a moment.');
         }
 
         PaymentTransaction::create([
@@ -106,15 +106,15 @@ class ApiWalletController extends Controller
         $paymentMethodId = $validated['payment_method_id'] ?? $user->api_wallet_payment_method_id;
 
         if ($enabled && ! $paymentMethodId) {
-            return back()->with('error', 'Pick a saved card for auto-recharge first — top up once with a card below if you don\'t have one saved yet.');
+            return back()->with('api_tab', 'usage')->with('error', 'Pick a saved card for auto-recharge first — top up once with a card below if you don\'t have one saved yet.');
         }
 
         if ($enabled && (empty($validated['auto_recharge_threshold_cents']) && ! $user->api_wallet_auto_recharge_threshold_cents)) {
-            return back()->withInput()->with('error', 'Set a balance threshold to trigger auto-recharge at.');
+            return back()->with('api_tab', 'usage')->withInput()->with('error', 'Set a balance threshold to trigger auto-recharge at.');
         }
 
         if ($enabled && (empty($validated['auto_recharge_amount_cents']) && ! $user->api_wallet_auto_recharge_amount_cents)) {
-            return back()->withInput()->with('error', 'Set an amount to recharge each time.');
+            return back()->with('api_tab', 'usage')->withInput()->with('error', 'Set an amount to recharge each time.');
         }
 
         $user->update([
@@ -124,6 +124,6 @@ class ApiWalletController extends Controller
             'api_wallet_payment_method_id' => $paymentMethodId,
         ]);
 
-        return back()->with('success', $enabled ? 'Auto-recharge turned on — your wallet will top up automatically from now on.' : 'Auto-recharge settings saved.');
+        return back()->with('api_tab', 'usage')->with('success', $enabled ? 'Auto-recharge turned on — your wallet will top up automatically from now on.' : 'Auto-recharge settings saved.');
     }
 }
