@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\SitePages\Schemas;
 
+use App\Filament\Resources\PageSeos\PageSeoResource;
 use App\Filament\Support\SeoFormFields;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 class SitePageForm
@@ -25,6 +28,12 @@ class SitePageForm
                     ->helperText('The page URL, e.g. "about" for /about. Changing this breaks any existing links to the page.'),
                 RichEditor::make('content')->required()->columnSpanFull()->live(onBlur: true),
                 Toggle::make('is_published')->default(true),
+
+                Placeholder::make('about_seo_notice')
+                    ->hiddenLabel()
+                    ->columnSpanFull()
+                    ->visible(fn ($get) => $get('slug') === 'about')
+                    ->content(fn () => new HtmlString('<strong>About page:</strong> its SEO is managed under <a href="'.e(PageSeoResource::getUrl('index')).'" style="text-decoration: underline;">SEO &gt; Page SEO &gt; About</a>. The SEO title, description and image below are only used as a fallback while that page\'s own fields are blank.')),
 
                 Section::make('SEO & social')
                     ->description('Control how this page appears in Google, Bing and when shared on Facebook, LinkedIn, X and WhatsApp. Every field is optional — blanks fall back to the page title and the sitewide defaults in SEO > SEO settings.')
