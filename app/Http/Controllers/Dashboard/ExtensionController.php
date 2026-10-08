@@ -6,12 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\ApiToken;
 use App\Models\Offer;
 use App\Models\ResearchClip;
+use App\Services\Extension\ExtensionPackager;
 use App\Support\ResearchPresenter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use ZipArchive;
 
 /**
  * Feature 11 (Phase 3 backlog, item 11): the browser capture extension's
@@ -135,49 +135,26 @@ class ExtensionController extends Controller
      * committed binary — the download is always exactly the source in this
      * repo, nothing to keep in sync.
      */
-    public function download(): BinaryFileResponse
+    public function download(ExtensionPackager $packager): BinaryFileResponse
     {
-        $sourceDir = resource_path('browser-extension');
         // A fresh file per download, so two simultaneous downloads can't
         // overwrite or delete each other's zip mid-send.
-        $zipPath = tempnam(sys_get_temp_dir(), 'affilstack-extension-');
-
-        $zip = new ZipArchive;
-        $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-
-        /** @var \SplFileInfo $file */
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($sourceDir)) as $file) {
-            if ($file->isDir()) {
-                continue;
-            }
-
-            $sourceRelative = str_replace('\\', '/', substr($file->getPathname(), strlen($sourceDir) + 1));
-
-            // store/ holds the Chrome Web Store listing texts — for the
-            // owner, not part of the extension customers install.
-            if (str_starts_with($sourceRelative, 'store/')) {
-                continue;
-            }
-
-            $relativePath = 'affilstack-extension/'.$sourceRelative;
-
-            // Point the downloaded copy at this site, so customers only
-            // paste a token — no API URL to type in.
-            if ($file->getFilename() === 'config.js') {
-                $zip->addFromString($relativePath, str_replace(
-                    self::STORE_BUILD_API_BASE_URL,
-                    self::apiBaseUrl(),
-                    (string) file_get_contents($file->getPathname()),
-                ));
-
-                continue;
-            }
-
-            $zip->addFile($file->getPathname(), $relativePath);
-        }
-
-        $zip->close();
+        $zipPath = $packager->build((string) tempnam(sys_get_temp_dir(), 'affilstack-extension-'));
 
         return response()->download($zipPath, 'affilstack-extension.zip')->deleteFileAfterSend();
+    }
+
+    /**
+     * Super-admin only: the zip to upload to the Chrome Web Store —
+     * manifest at the root, the store's default API address, and the
+     * site's uploaded logo as the extension icon.
+     */
+    public function storePackage(ExtensionPackager $packager): BinaryFileResponse
+    {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+
+        $zipPath = $packager->build((string) tempnam(sys_get_temp_dir(), 'affilstack-store-'), forStore: true);
+
+        return response()->download($zipPath, 'affilstack-extension-chrome-store-v'.$packager->version().'.zip')->deleteFileAfterSend();
     }
 }

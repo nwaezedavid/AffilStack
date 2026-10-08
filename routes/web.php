@@ -359,6 +359,7 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::patch('/extension/clips/{clip}', [ExtensionController::class, 'attachClip'])->name('extension.clips.attach');
     Route::delete('/extension/clips/{clip}', [ExtensionController::class, 'destroyClip'])->name('extension.clips.destroy');
     Route::get('/extension/download', [ExtensionController::class, 'download'])->name('extension.download');
+    Route::get('/extension/store-package', [ExtensionController::class, 'storePackage'])->name('extension.store-package');
 
     // The general-purpose API's dashboard side (task #6) — deliberately
     // available to team seats (both isolated and shared), unlike the

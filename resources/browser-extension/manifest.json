@@ -1,24 +1,29 @@
 {
   "manifest_version": 3,
-  "name": "AffilStack — Leads & LinkedIn Assistant",
+  "name": "AffilStack \u2014 Leads & LinkedIn Assistant",
   "short_name": "AffilStack",
   "version": "1.2.0",
   "description": "Add Google Maps businesses to your AffilStack CRM, write personalised LinkedIn messages and get AI replies that close.",
   "homepage_url": "https://affilstack.com",
   "action": {
-    "default_title": "AffilStack — add leads & write messages",
+    "default_title": "AffilStack \u2014 add leads & write messages",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
     }
   },
   "icons": {
     "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "options_page": "options.html",
-  "permissions": ["activeTab", "scripting", "storage"]
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ]
 }

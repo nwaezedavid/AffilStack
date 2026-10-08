@@ -230,3 +230,4 @@ select:focus, textarea:focus, input:focus { border-color: var(--brand-500); outl
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .lead a { color: var(--brand-600); font-weight: 600; }
+img.logo { object-fit: contain; background: #fff; padding: 2px; }

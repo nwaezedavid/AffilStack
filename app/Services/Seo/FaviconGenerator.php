@@ -200,6 +200,19 @@ class FaviconGenerator
         ];
     }
 
+    /**
+     * The uploaded square icon (or the default monogram) as a PNG of the
+     * given size — used to brand the Chrome extension's toolbar icons.
+     * Returns null when no icon has been uploaded.
+     */
+    public function uploadedIconPng(int $size): ?string
+    {
+        $warnings = [];
+        $source = $this->loadSource(SiteSetting::get('logo_square_path'), $warnings);
+
+        return $source ? $this->png($this->resize($this->squareCanvas($source), $size)) : null;
+    }
+
     public function manifest(): string
     {
         $siteName = (string) SiteSetting::get('site_name', 'AffilStack');
