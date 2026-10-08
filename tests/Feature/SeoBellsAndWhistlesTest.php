@@ -24,7 +24,7 @@ use Tests\TestCase;
  * Covers the concrete pieces actually built: per-page SEO/social overrides
  * (title, meta description, OG image, noindex) on SitePage, the AI meta
  * assistant, the sitewide Organization/WebSite JSON-LD graph, breadcrumb
- * schema, FAQPage schema on the help page, ad pixels, and social profile
+ * schema, FAQPage schema on the FAQ page, ad pixels, and social profile
  * links feeding sameAs.
  */
 class SeoBellsAndWhistlesTest extends TestCase
@@ -209,20 +209,23 @@ class SeoBellsAndWhistlesTest extends TestCase
         $response->assertSee('aria-current="page"', false);
     }
 
-    public function test_the_help_page_carries_faq_page_schema_once_faqs_are_published(): void
+    public function test_the_faq_page_carries_faq_page_schema_once_faqs_are_published(): void
     {
         FaqItem::create(['question' => 'How do I cancel?', 'answer' => 'From Billing.', 'category' => 'billing', 'is_published' => true, 'sort_order' => 1]);
 
-        $response = $this->get('/help');
+        // The questions (and their schema) live on the dedicated /faq page;
+        // the Help Centre only links to them.
+        $this->get('/help')->assertOk()->assertDontSee('"@type":"FAQPage"', false);
+        $response = $this->get('/faq');
 
         $response->assertOk();
         $response->assertSee('"@type":"FAQPage"', false);
         $response->assertSee('How do I cancel?', false);
     }
 
-    public function test_the_help_page_omits_faq_page_schema_when_there_are_no_published_faqs(): void
+    public function test_the_faq_page_omits_faq_page_schema_when_there_are_no_published_faqs(): void
     {
-        $response = $this->get('/help');
+        $response = $this->get('/faq');
 
         $response->assertOk();
         $response->assertDontSee('FAQPage', false);

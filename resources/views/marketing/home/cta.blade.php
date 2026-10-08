@@ -1,5 +1,5 @@
 @use('App\Support\Homepage\HomepageContent')
-<section class="bg-white py-20 sm:py-24" aria-labelledby="cta-heading">
+<section id="start" class="bg-white py-20 sm:py-24" aria-labelledby="cta-heading">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="relative isolate overflow-hidden rounded-[2.5rem] bg-navy-950 px-6 py-16 text-center shadow-[0_40px_80px_-40px_rgba(11,30,61,.8)] sm:px-16 sm:py-20" data-reveal>
             <div class="absolute inset-0 -z-10" aria-hidden="true" style="background: radial-gradient(60% 80% at 50% 0%, rgba(36,82,217,.6) 0%, transparent 70%), radial-gradient(40% 60% at 100% 100%, rgba(201,162,74,.45) 0%, transparent 70%), radial-gradient(40% 60% at 0% 100%, rgba(16,185,129,.25) 0%, transparent 70%);"></div>
@@ -13,7 +13,7 @@
                     {{ HomepageContent::text('home_cta_button_label') }}
                     <x-heroicon-m-arrow-right class="h-4 w-4 transition group-hover:translate-x-0.5" aria-hidden="true" />
                 </a>
-                <a href="{{ route('contact.show') }}" class="inline-flex w-full items-center justify-center rounded-full px-8 py-4 text-sm font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/10 sm:w-auto">Talk to us</a>
+                <a href="{{ route('contact.show') }}" class="inline-flex w-full items-center justify-center rounded-full px-8 py-4 text-sm font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/10 sm:w-auto">{{ \App\Support\Homepage\HomepageContent::text('home_cta_secondary_label') }}</a>
             </div>
         </div>
     </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FaqItem;
+use App\Models\FeaturePage;
 use App\Models\PageSeo;
 use App\Models\Plan;
 use App\Models\SitePage;
@@ -39,6 +40,8 @@ class SeoController extends Controller
             'affiliate.landing' => '0.9',
             'tutorials.index' => '0.7',
             'help.index' => '0.5',
+            'features.index' => '0.8',
+            'faq.index' => '0.6',
             'about' => '0.5',
             'contact.show' => '0.5',
         ];
@@ -53,6 +56,11 @@ class SeoController extends Controller
                 'priority' => $priorities[$routeName] ?? '0.5',
                 'lastmod' => $this->routeLastModified($routeName)?->toAtomString(),
             ]);
+        }
+
+        // Agent 11: one URL per published feature page (Website → Features).
+        foreach (FeaturePage::publishedList() as $featurePage) {
+            $urls[] = ['loc' => $featurePage->url(), 'priority' => '0.7', 'lastmod' => $featurePage->updated_at?->toAtomString()];
         }
 
         if ($blogUrl = SiteSetting::get('seo_blog_url')) {
@@ -116,7 +124,8 @@ class SeoController extends Controller
 
         $dates[] = match ($routeName) {
             'registration.pricing' => Plan::max('updated_at'),
-            'help.index' => FaqItem::max('updated_at'),
+            'help.index', 'faq.index' => FaqItem::max('updated_at'),
+            'features.index' => FeaturePage::max('updated_at'),
             'tutorials.index' => Tutorial::max('updated_at'),
             'about' => SitePage::where('slug', 'about')->value('updated_at'),
             default => null,

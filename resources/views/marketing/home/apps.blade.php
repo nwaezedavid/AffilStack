@@ -22,7 +22,7 @@
                     @endif
                 </div>
                 @if (MobileApps::hasAnyLink())
-                    <p class="mt-5 text-sm text-white/55">On your phone? <a href="{{ route('mobile-app.redirect') }}" class="font-semibold text-gold-300 underline-offset-4 hover:underline">Open the right store for your device</a>.</p>
+                    <p class="mt-5 text-sm text-white/55">{{ \App\Support\Homepage\HomepageContent::text('home_apps_phone_text') }} <a href="{{ route('mobile-app.redirect') }}" class="font-semibold text-gold-300 underline-offset-4 hover:underline">{{ \App\Support\Homepage\HomepageContent::text('home_apps_phone_link') }}</a>.</p>
                 @endif
             </div>
 

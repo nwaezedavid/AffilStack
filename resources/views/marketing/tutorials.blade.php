@@ -62,7 +62,7 @@
 
         <div class="text-center border-t border-line pt-10 mt-4">
             <p class="text-sm text-ink-600">Still have questions?</p>
-            <a href="{{ route('help.index') }}" class="text-sm font-medium text-brand-600 underline">Visit Help &amp; FAQ →</a>
+            <a href="{{ route('help.index') }}" class="text-sm font-medium text-brand-600 underline">Visit the Help Centre →</a>
         </div>
     </div>
 

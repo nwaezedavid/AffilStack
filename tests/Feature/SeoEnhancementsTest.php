@@ -73,6 +73,6 @@ class SeoEnhancementsTest extends TestCase
         $response = $this->get('/');
 
         $response->assertOk();
-        $response->assertSee('Get started');
+        $response->assertSee('Get Started');
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Media\LogoNormalizer;
 use Database\Factories\BrandLogoFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -53,5 +54,18 @@ class BrandLogo extends Model
     public function logoUrl(): string
     {
         return Storage::disk('public')->url($this->logo_path);
+    }
+
+    /**
+     * Trims and fits the uploaded logo to the shared box (LogoNormalizer)
+     * — called by the admin create/edit pages and brand-logos:normalize.
+     */
+    public static function normalizedPath(?string $path): ?string
+    {
+        if (blank($path) || LogoNormalizer::isNormalized($path)) {
+            return $path;
+        }
+
+        return app(LogoNormalizer::class)->normalize('public', $path);
     }
 }

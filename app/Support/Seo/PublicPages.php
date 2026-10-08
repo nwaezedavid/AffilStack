@@ -14,7 +14,7 @@ final class PublicPages
 {
     /**
      * Schema.org types an admin may pick for a page. FAQPage is only
-     * emitted by pages that actually render questions (Help, Affiliate);
+     * emitted by pages that actually render questions (FAQ, Affiliate);
      * anywhere else it degrades to WebPage rather than publishing an empty
      * FAQ that Google would flag as invalid.
      *
@@ -40,7 +40,9 @@ final class PublicPages
             'home' => ['label' => 'Homepage', 'schema' => 'WebPage', 'description' => 'The front door — the page Google shows for a brand search.'],
             'about' => ['label' => 'About', 'schema' => 'AboutPage', 'description' => 'Who you are and why you built the product.'],
             'registration.pricing' => ['label' => 'Pricing', 'schema' => 'SoftwareApplication', 'description' => 'Plans and prices — usually the highest-intent page.'],
-            'help.index' => ['label' => 'Help & FAQ', 'schema' => 'FAQPage', 'description' => 'Help centre and published FAQs.'],
+            'help.index' => ['label' => 'Help Centre', 'schema' => 'WebPage', 'description' => 'Help centre: support channels, guides and tutorials.'],
+            'faq.index' => ['label' => 'FAQ', 'schema' => 'FAQPage', 'description' => 'Every published FAQ, with FAQPage structured data.'],
+            'features.index' => ['label' => 'Features', 'schema' => 'CollectionPage', 'description' => 'Every AffilStack tool. Each tool\'s own page has its SEO fields in Website → Features.'],
             'tutorials.index' => ['label' => 'Learning Centre', 'schema' => 'CollectionPage', 'description' => 'Video tutorials.'],
             'contact.show' => ['label' => 'Contact', 'schema' => 'ContactPage', 'description' => 'Contact form and support details.'],
             'affiliate.landing' => ['label' => 'Affiliate program', 'schema' => 'WebPage', 'description' => 'Affiliate program landing page (only live while the program is switched on).'],

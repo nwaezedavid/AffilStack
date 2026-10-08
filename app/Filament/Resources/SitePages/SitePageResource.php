@@ -25,7 +25,11 @@ class SitePageResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+    protected static string|\UnitEnum|null $navigationGroup = 'Website';
+
+    protected static ?string $navigationLabel = 'Legal & other pages';
+
+    protected static ?int $navigationSort = 9;
 
     protected static ?string $recordTitleAttribute = 'title';
 

@@ -31,9 +31,11 @@ class BrandLogoResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+    protected static string|\UnitEnum|null $navigationGroup = 'Website';
 
-    protected static ?string $navigationLabel = 'Brand Logos';
+    protected static ?int $navigationSort = 10;
+
+    protected static ?string $navigationLabel = 'Company logos (homepage)';
 
     protected static ?string $recordTitleAttribute = 'name';
 
