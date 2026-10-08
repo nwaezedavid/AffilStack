@@ -50,5 +50,8 @@
             @yield('content')
         </div>
     </div>
+
+    {{-- Agent 04: cookie consent banner + preferences (no trackers load on these pages). --}}
+    @include('partials.consent.banner', ['context' => 'guest'])
 </body>
 </html>

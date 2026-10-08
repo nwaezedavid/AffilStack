@@ -79,6 +79,8 @@ class NavigationMenu
             'privacy' => ['label' => 'Privacy', 'description' => 'Privacy policy.', 'icon' => 'shield-check'],
             'refunds' => ['label' => 'Refunds', 'description' => 'Refund policy.', 'icon' => 'receipt-refund'],
             'cookies' => ['label' => 'Cookies', 'description' => 'Cookie policy.', 'icon' => 'finger-print'],
+            // Agent 04's consent banner re-opens on this link (public/js/afs-consent.js).
+            'cookie-settings' => ['label' => 'Cookie settings', 'description' => 'Change your cookie choices.', 'icon' => 'adjustments-horizontal'],
             'custom' => ['label' => 'Custom link', 'description' => '', 'icon' => 'link'],
         ];
     }
@@ -118,6 +120,7 @@ class NavigationMenu
             'privacy' => $route('privacy'),
             'refunds' => $route('refund-policy'),
             'cookies' => $route('cookie-policy'),
+            'cookie-settings' => '#cookie-settings',
             'custom' => $customUrl && (str_starts_with(trim($customUrl), '#') || SafeHtml::isSafeUrl($customUrl)) ? trim($customUrl) : null,
             default => null,
         };
@@ -200,7 +203,7 @@ class NavigationMenu
             ['heading' => 'Product', 'links' => [$link('features'), $link('how-it-works'), $link('pricing'), $link('mobile-apps')]],
             ['heading' => 'Resources', 'links' => [$link('learn'), $link('blog', 'Visit our blog'), $link('faq', 'FAQ'), $link('help')]],
             ['heading' => 'Company', 'links' => [$link('about'), $link('affiliate'), $link('contact'), $link('login')]],
-            ['heading' => 'Legal', 'links' => [$link('terms'), $link('privacy'), $link('refunds'), $link('cookies')]],
+            ['heading' => 'Legal', 'links' => [$link('terms'), $link('privacy'), $link('refunds'), $link('cookies'), $link('cookie-settings')]],
         ];
     }
 
