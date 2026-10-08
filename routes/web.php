@@ -47,7 +47,9 @@ use App\Http\Controllers\Dashboard\TikTokController;
 use App\Http\Controllers\Dashboard\UgcController;
 use App\Http\Controllers\Dashboard\XController;
 use App\Http\Controllers\Dashboard\YouTubeController;
+use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FaviconController;
+use App\Http\Controllers\FeaturePageController;
 use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\GoogleSiteAnalyticsController;
@@ -460,6 +462,18 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::delete('/email-connections/imap', [EmailConnectionController::class, 'destroyImap'])->name('email-connections.imap.destroy');
     Route::patch('/email-connections/settings', [EmailConnectionController::class, 'updateSettings'])->name('email-connections.settings');
 });
+
+// --- Agent 11: public feature pages + dedicated FAQ page -------------------
+// Registered before the generic /{slug} SitePage route below, which would
+// otherwise swallow /features and /faq. Content: Website → Features / FAQ.
+Route::middleware('cache-public-page')->group(function () {
+    Route::get('/features', [FeaturePageController::class, 'index'])->name('features.index');
+    Route::get('/features/{slug}', [FeaturePageController::class, 'show'])
+        ->where('slug', '[a-z0-9-]{1,100}')
+        ->name('features.show');
+    Route::get('/faq', [FaqController::class, 'index'])->name('faq.index');
+});
+// --- end Agent 11 ----------------------------------------------------------
 
 // Any admin-created SitePage whose slug isn't one of the five dedicated
 // routes above (About/Terms/Privacy/Refund Policy/Cookie Policy) lands

@@ -35,6 +35,18 @@ class CachePublicPage
             return $response;
         }
 
+        // The header differs for signed-in visitors (Login hidden, "Get
+        // started" becomes "Dashboard"): never reuse their copy, and Vary on
+        // the cookie so a page cached while signed out isn't shown again
+        // after logging in (login regenerates the session cookie).
+        $response->headers->set('Vary', trim($response->headers->get('Vary', '').', Cookie', ', '));
+
+        if ($request->user()) {
+            $response->headers->set('Cache-Control', 'private, no-cache');
+
+            return $response;
+        }
+
         // private, not public: every response also carries this visitor's
         // session cookie, and a shared cache (LiteSpeed Cache, a CDN) that
         // honoured "public" could hand one visitor's session to everyone.
