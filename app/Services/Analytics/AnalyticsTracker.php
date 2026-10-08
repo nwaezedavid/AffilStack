@@ -280,7 +280,7 @@ class AnalyticsTracker
 
         try {
             return AnalyticsVisitor::create(array_merge(
-                ['uuid' => $uuid, 'first_seen_at' => $now, 'last_seen_at' => $now],
+                ['uuid' => $uuid, 'first_seen_at' => $now, 'last_seen_at' => $now, 'sessions_count' => 0, 'pageviews_count' => 0, 'events_count' => 0],
                 $this->touchAttributes('ft', $attribution, $consent, $path, $now),
                 $this->touchAttributes('lt', $attribution, $consent, $path, $now),
                 UserAgentParser::parse($request->userAgent()),
@@ -313,6 +313,10 @@ class AnalyticsTracker
             'user_id' => $visitor->user_id ?? $request->user()?->getKey(),
             'started_at' => $now,
             'last_activity_at' => $now,
+            'duration_seconds' => 0,
+            'engaged_seconds' => 0,
+            'pageviews' => 0,
+            'events' => 0,
             'landing_path' => $path,
             'exit_path' => $path,
             'channel' => $attribution->channel,
