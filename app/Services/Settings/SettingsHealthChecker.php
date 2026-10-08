@@ -135,7 +135,7 @@ class SettingsHealthChecker
         $brain = BrainAgentSetting::current();
         $anthropicResult = (new AnthropicClient(
             apiKey: (string) $brain->credential('anthropic_api_key'),
-            model: (string) ($brain->credential('anthropic_model') ?: 'claude-sonnet-5'),
+            model: (string) ($brain->credential('anthropic_model') ?: (string) config('ai.anthropic.model')),
         ))->verifyApiKey();
         $brain->update([
             'anthropic_verified_at' => now(),
@@ -146,7 +146,7 @@ class SettingsHealthChecker
         if ($brain->credential('meta_mcp_url')) {
             $mcpResult = (new AnthropicClient(
                 apiKey: (string) $brain->credential('anthropic_api_key'),
-                model: (string) ($brain->credential('anthropic_model') ?: 'claude-sonnet-5'),
+                model: (string) ($brain->credential('anthropic_model') ?: (string) config('ai.anthropic.model')),
             ))->verifyMcpConnection((string) $brain->credential('meta_mcp_url'), $brain->credential('meta_mcp_token'));
             $brain->update([
                 'meta_mcp_verified_at' => now(),

@@ -95,7 +95,7 @@ class BrainAgentSettings extends Page
                             ->helperText('From console.anthropic.com — this is your own account, not AffilStack\'s.'),
                         TextInput::make('anthropic_model')
                             ->label('Model (optional)')
-                            ->placeholder('claude-sonnet-5')
+                            ->placeholder((string) config('ai.anthropic.model'))
                             ->helperText('Leave blank to use the default.'),
                     ]),
 
@@ -200,7 +200,7 @@ class BrainAgentSettings extends Page
 
         $result = (new AnthropicClient(
             apiKey: (string) $settings->credential('anthropic_api_key'),
-            model: (string) ($settings->credential('anthropic_model') ?: 'claude-sonnet-5'),
+            model: (string) ($settings->credential('anthropic_model') ?: (string) config('ai.anthropic.model')),
         ))->verifyApiKey();
 
         $settings->update([
@@ -223,7 +223,7 @@ class BrainAgentSettings extends Page
 
         $result = (new AnthropicClient(
             apiKey: (string) $settings->credential('anthropic_api_key'),
-            model: (string) ($settings->credential('anthropic_model') ?: 'claude-sonnet-5'),
+            model: (string) ($settings->credential('anthropic_model') ?: (string) config('ai.anthropic.model')),
         ))->verifyMcpConnection(
             (string) $settings->credential('meta_mcp_url'),
             $settings->credential('meta_mcp_token'),

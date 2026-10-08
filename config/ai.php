@@ -19,4 +19,18 @@ return [
         'image_model' => env('OPENAI_IMAGE_MODEL', 'gpt-image-2'),
         'timeout' => env('OPENAI_TIMEOUT', 90),
     ],
+
+    // Claude (Anthropic) as a text engine — chosen in Admin → AI Agents →
+    // AI Engine, which can also hold the key. Uses an Anthropic API key
+    // from console.anthropic.com (pay as you go), not a Claude.ai
+    // subscription: Anthropic doesn't allow subscription logins to power
+    // third-party apps.
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+        'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
+        'model' => env('ANTHROPIC_TEXT_MODEL', 'claude-sonnet-5-5'),
+        'version' => '2023-06-01',
+        'max_tokens' => env('ANTHROPIC_MAX_TOKENS', 8000),
+        'timeout' => env('ANTHROPIC_TIMEOUT', 120),
+    ],
 ];

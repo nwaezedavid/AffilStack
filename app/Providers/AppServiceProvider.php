@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\ApiToken;
 use App\Services\AI\AIProvider;
 use App\Services\AI\OpenAIProvider;
+use App\Services\AI\RoutingAIProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -17,17 +18,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(AIProvider::class, function () {
-            return match (config('ai.provider')) {
-                default => new OpenAIProvider(
-                    apiKey: (string) config('ai.openai.api_key'),
-                    baseUrl: (string) config('ai.openai.base_url'),
-                    textModel: (string) config('ai.openai.text_model'),
-                    imageModel: (string) config('ai.openai.image_model'),
-                    timeout: (int) config('ai.openai.timeout'),
-                ),
-            };
-        });
+        $this->app->singleton(OpenAIProvider::class, fn () => new OpenAIProvider(
+            apiKey: (string) config('ai.openai.api_key'),
+            baseUrl: (string) config('ai.openai.base_url'),
+            textModel: (string) config('ai.openai.text_model'),
+            imageModel: (string) config('ai.openai.image_model'),
+            timeout: (int) config('ai.openai.timeout'),
+        ));
+
+        // Text goes to the engine picked in Admin → AI Agents → AI Engine
+        // (OpenAI or Claude, with automatic fallback); images use OpenAI.
+        $this->app->singleton(AIProvider::class, fn ($app) => new RoutingAIProvider($app->make(OpenAIProvider::class)));
     }
 
     /**

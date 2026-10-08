@@ -192,7 +192,7 @@ class BrainAgentService
     {
         return new AnthropicClient(
             apiKey: (string) $settings->credential('anthropic_api_key'),
-            model: (string) ($settings->credential('anthropic_model') ?: 'claude-sonnet-5'),
+            model: (string) ($settings->credential('anthropic_model') ?: (string) config('ai.anthropic.model')),
         );
     }
 
