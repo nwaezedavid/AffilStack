@@ -1,4 +1,6 @@
-@php($nurtureContact = \App\Models\CrmContact::find($gen->input['contact_id'] ?? null))
+@php
+    $nurtureContact = \App\Models\CrmContact::find($gen->input['contact_id'] ?? null);
+@endphp
 <p class="flex items-center gap-2 text-sm">
     <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-700">{{ $nurtureContact ? mb_strtoupper(mb_substr($nurtureContact->name ?: '?', 0, 1)) : '?' }}</span>
     <span><span class="text-ink-400">To:</span> <span class="font-medium text-navy-900">{{ $nurtureContact ? $nurtureContact->name.($nurtureContact->company ? ' · '.$nurtureContact->company : '') : 'Contact no longer exists' }}</span></span>
