@@ -38,7 +38,7 @@
         <polyline points="{{ $line('visitors') }}" fill="none" stroke="#0d9488" stroke-width="1.75" stroke-dasharray="4 3" stroke-linejoin="round" />
         @foreach ($series as $i => $point)
             <circle cx="{{ round($x($i), 1) }}" cy="{{ round($y($point['views']), 1) }}" r="{{ $n > 45 ? 0 : 2.5 }}" fill="#2452d9"><title>{{ $point['label'] }}: {{ $point['views'] }} page views, {{ $point['sessions'] }} visits, {{ $point['visitors'] }} visitors</title></circle>
-            @if ($i % $labelEvery === 0 || $i === $n - 1)
+            @if ($i % $labelEvery === 0 || ($i === $n - 1 && $i % $labelEvery >= $labelEvery / 2))
                 <text x="{{ round($x($i), 1) }}" y="{{ $h - 8 }}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".55">{{ $point['label'] }}</text>
             @endif
         @endforeach

@@ -31,7 +31,8 @@
     .afs-ins-grid { display: grid; gap: 1.25rem; }
     .afs-ins-kpis { display: grid; gap: .875rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     @media (min-width: 768px) { .afs-ins-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } .afs-ins-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .afs-ins-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    @media (min-width: 1280px) { .afs-ins-kpis--6 { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+    @media (min-width: 768px) { .afs-ins-kpis--6 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (min-width: 1600px) { .afs-ins-kpis--6 { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 
     .afs-ins-card { border-radius: 1rem; border: 1px solid var(--ins-line); background: var(--ins-card); padding: 1.25rem; min-width: 0; box-shadow: 0 1px 2px rgba(11,30,61,.04); }
     .afs-ins-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; margin-bottom: .875rem; }
@@ -64,12 +65,13 @@
     .afs-ins-donut { width: 8.5rem; height: 8.5rem; flex-shrink: 0; }
 
     .afs-ins-funnel { display: flex; flex-direction: column; gap: .625rem; }
-    .afs-ins-funnel-step { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) auto; gap: .75rem; align-items: center; font-size: .8125rem; }
+    .afs-ins-funnel-step { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .35rem .75rem; align-items: center; font-size: .8125rem; }
+    .afs-ins-funnel-step .afs-ins-funnel-bar { grid-column: 1 / -1; grid-row: 2; }
     .afs-ins-funnel-bar { height: 2.25rem; border-radius: .625rem; background: var(--ins-soft); overflow: hidden; }
     .afs-ins-funnel-fill { height: 100%; border-radius: .625rem; display: flex; align-items: center; padding: 0 .75rem; color: #fff; font-weight: 650; font-variant-numeric: tabular-nums; min-width: 2.5rem; background: linear-gradient(90deg, #2452d9, #4f75ec); }
-    .afs-ins-funnel-rate { min-width: 7.5rem; text-align: right; font-size: .75rem; color: var(--ins-muted); }
+    .afs-ins .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .afs-ins-funnel-rate { text-align: right; font-size: .75rem; color: var(--ins-muted); }
     .afs-ins-funnel-rate b { color: var(--ins-ink); }
-    @media (max-width: 640px) { .afs-ins-funnel-step { grid-template-columns: 1fr auto; } .afs-ins-funnel-bar { grid-column: 1 / -1; grid-row: 2; } }
 
     .afs-ins-table-wrap { overflow-x: auto; margin: 0 -.25rem; }
     .afs-ins-table { width: 100%; border-collapse: collapse; font-size: .8125rem; }
