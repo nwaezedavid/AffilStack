@@ -5,9 +5,9 @@
     <section id="logos" class="border-b border-line bg-white py-10" aria-label="Brands we've worked with">
         <p class="text-center font-mono text-[11px] uppercase tracking-[0.2em] text-ink-400">{{ HomepageContent::text('home_logos_heading') }}</p>
         <div class="marquee-mask mt-6 overflow-hidden">
-            <div class="marquee-track flex items-center gap-14">
+            <div class="marquee-track flex items-center gap-10">
                 @foreach ($brandLogos->concat($brandLogos) as $logo)
-                    @php $img = '<img src="'.e($logo->logoUrl()).'" alt="'.($loop->index >= $brandLogos->count() ? '' : e($logo->name)).'" class="h-8 w-auto object-contain grayscale opacity-60 transition hover:opacity-100 hover:grayscale-0" loading="lazy">'; @endphp
+                    @php $img = '<img src="'.e($logo->logoUrl()).'" alt="'.($loop->index >= $brandLogos->count() ? '' : e($logo->name)).'" class="h-12 w-32 object-contain grayscale opacity-60 transition hover:opacity-100 hover:grayscale-0" width="128" height="48" loading="lazy">'; @endphp
                     @if ($logo->url && \App\Support\SafeHtml::isSafeUrl($logo->url))
                         <a href="{{ $logo->url }}" target="_blank" rel="noopener sponsored" class="shrink-0" @if ($loop->index >= $brandLogos->count()) tabindex="-1" aria-hidden="true" @endif>{!! $img !!}</a>
                     @else

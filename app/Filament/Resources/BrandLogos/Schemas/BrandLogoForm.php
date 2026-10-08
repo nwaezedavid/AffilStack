@@ -24,7 +24,7 @@ class BrandLogoForm
                     ->disk('public')
                     ->directory('brand-logos')
                     ->required()
-                    ->helperText('A transparent PNG/SVG on a light background works best in the scrolling row.')
+                    ->helperText('Any PNG, JPG or WebP. It is trimmed and resized automatically to a uniform 320 × 120 px box (transparent background) so every logo in the homepage row is the same size. A transparent PNG works best.')
                     ->columnSpanFull(),
                 TextInput::make('url')
                     ->label('Link (optional)')

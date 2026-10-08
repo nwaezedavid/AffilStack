@@ -140,7 +140,7 @@ class SeoPageMetaTest extends TestCase
         $response = $this->get('/help');
 
         $response->assertOk();
-        $this->assertStringContainsString('<title>Help &amp; FAQ · AffilStack</title>', $this->headOf($response));
+        $this->assertStringContainsString('<title>Help Centre · AffilStack</title>', $this->headOf($response));
         $this->assertStringNotContainsString('name="robots"', $this->headOf($response));
     }
 
