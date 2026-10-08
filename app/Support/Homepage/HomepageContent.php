@@ -2,6 +2,7 @@
 
 namespace App\Support\Homepage;
 
+use App\Models\FeaturePage;
 use App\Models\SiteSetting;
 use App\Support\SafeHtml;
 use Illuminate\Support\HtmlString;
@@ -77,6 +78,30 @@ class HomepageContent
             'home_cta_subtext' => 'Pick a plan and be researching your first product in minutes.',
             'home_cta_button_label' => 'See plans & pricing',
             'home_cta_button_url' => '',
+            // Small labels and buttons that used to be fixed in the templates.
+            'home_hero_works_with' => 'Works with the channels you already use',
+            'home_how_eyebrow' => 'How it works',
+            'home_how_step_link_label' => 'See how it works',
+            'home_how_footer_text' => 'Want a closer look?',
+            'home_how_footer_link' => 'Watch free tutorials in our Learning Centre',
+            'home_features_eyebrow' => 'Features',
+            'home_features_link_label' => 'Learn more',
+            'home_features_all_label' => 'Explore all features',
+            'home_video_eyebrow' => 'Product tour',
+            'home_testimonials_eyebrow' => 'Testimonials',
+            'home_pricing_eyebrow' => 'Pricing',
+            'home_pricing_featured_label' => 'Most popular',
+            'home_pricing_button_label' => 'Get started',
+            'home_pricing_link_label' => 'See the full plan comparison',
+            'home_faq_eyebrow' => 'FAQ',
+            'home_faq_help_label' => 'See all questions',
+            'home_faq_contact_label' => 'Ask us anything',
+            'home_blog_eyebrow' => 'From the blog',
+            'home_blog_link_label' => 'Visit our blog',
+            'home_blog_read_label' => 'Read article',
+            'home_apps_phone_text' => 'On your phone?',
+            'home_apps_phone_link' => 'Open the right store for your device',
+            'home_cta_secondary_label' => 'Talk to us',
         ];
     }
 
@@ -84,15 +109,18 @@ class HomepageContent
      * The journey shown in "How it works" when an admin hasn't written
      * their own steps.
      *
-     * @return array<int, array{icon: string, title: string, description: string}>
+     * Each step ships with a real screenshot (public/images/features) that
+     * an uploaded image_path replaces.
+     *
+     * @return array<int, array{icon: string, title: string, description: string, default_image: string, image_alt: string, link_url: string}>
      */
     public static function defaultSteps(): array
     {
         return [
-            ['icon' => 'magnifying-glass', 'title' => 'Research a product', 'description' => 'Paste a product name or affiliate link. Get demand, buyer angles, objections and a clear go / no-go in minutes.'],
-            ['icon' => 'map-pin', 'title' => 'Find buyers on Maps & LinkedIn', 'description' => 'Pull real businesses from Google Maps and decision-makers from LinkedIn straight into your CRM.'],
-            ['icon' => 'sparkles', 'title' => 'Launch AI campaigns & content', 'description' => 'Personalised email campaigns, plus blog, LinkedIn, YouTube, UGC video, TikTok, X and Pinterest content written for you.'],
-            ['icon' => 'banknotes', 'title' => 'Track clicks & earnings', 'description' => 'Every link click, lead and commission in one dashboard, so you know exactly what is paying.'],
+            ['icon' => 'magnifying-glass', 'title' => 'Research a product', 'description' => 'Paste a product name or affiliate link. Get the ideal buyer, their pain points, the best channel and angle — plus Google Maps and LinkedIn keywords to find them — in minutes.', 'default_image' => 'offer-research.webp', 'image_alt' => 'AffilStack research results for a product, showing the ideal buyer and the best channel to promote it', 'link_url' => '/features/offer-research'],
+            ['icon' => 'map-pin', 'title' => 'Find buyers on Maps & LinkedIn', 'description' => 'Pull real businesses from Google Maps and decision-makers from LinkedIn straight into a CRM list for that product — in one click with the Chrome extension.', 'default_image' => 'local-leads.webp', 'image_alt' => 'Google Maps business results ready to add to the CRM', 'link_url' => '/features/google-maps-lead-finder'],
+            ['icon' => 'sparkles', 'title' => 'Launch AI campaigns & content', 'description' => 'A personalised email campaign to the whole list, sent from your own inbox — plus blog, LinkedIn, YouTube, UGC video, TikTok, X and Pinterest content written for you.', 'default_image' => 'campaign-results.webp', 'image_alt' => 'An email campaign showing who opened, clicked and replied', 'link_url' => '/features/ai-email-campaigns'],
+            ['icon' => 'banknotes', 'title' => 'Track clicks & earnings', 'description' => 'Every link click and commission in one dashboard, by product and by channel, so you know exactly what is paying.', 'default_image' => 'earnings.webp', 'image_alt' => 'Earnings by product and channel with pending, approved and paid totals', 'link_url' => '/features/earnings-tracker'],
         ];
     }
 
@@ -224,7 +252,30 @@ class HomepageContent
      */
     public static function steps(): array
     {
-        return static::list('home_steps', static::defaultSteps());
+        $defaults = static::defaultSteps();
+        $steps = static::list('home_steps', $defaults);
+
+        // Steps saved before screenshots existed keep the shipped one for
+        // their position until an image is uploaded or explicitly cleared.
+        foreach ($steps as $index => $step) {
+            if (! array_key_exists('default_image', $step) && isset($defaults[$index])) {
+                $steps[$index] += array_intersect_key($defaults[$index], array_flip(['default_image', 'image_alt', 'link_url']));
+            }
+        }
+
+        return $steps;
+    }
+
+    /**
+     * A step's screenshot: an uploaded image, else its shipped default.
+     *
+     * @param  array<string, mixed>  $step
+     */
+    public static function stepImage(array $step): ?string
+    {
+        $uploaded = $step['image_path'] ?? null;
+
+        return FeaturePage::imageUrl(is_array($uploaded) ? (reset($uploaded) ?: null) : $uploaded, $step['default_image'] ?? null);
     }
 
     /**

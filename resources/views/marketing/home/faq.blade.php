@@ -1,18 +1,18 @@
 @use('App\Support\Homepage\HomepageContent')
 {{-- The first few published FAQs (Support → FAQ items); the full list and
-     its FAQPage schema live on /help. --}}
+     its FAQPage schema live on /faq. --}}
 @if ($faqs->isNotEmpty())
     <section id="faq" class="bg-surface-muted py-20 sm:py-28" aria-labelledby="faq-heading">
         <div class="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
             <div class="lg:col-span-4" data-reveal>
-                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-sky-600">FAQ</p>
+                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-sky-600">{{ \App\Support\Homepage\HomepageContent::text('home_faq_eyebrow') }}</p>
                 <h2 id="faq-heading" class="mt-3 font-display text-3xl font-semibold tracking-tight text-navy-900 text-balance sm:text-4xl">{{ HomepageContent::text('home_faq_heading') }}</h2>
                 <p class="mt-4 text-base text-ink-600">{{ HomepageContent::text('home_faq_subheading') }}</p>
                 <div class="mt-8 flex flex-wrap gap-3">
-                    <a href="{{ route('help.index') }}" class="inline-flex items-center gap-2 rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-navy-800">
-                        <x-heroicon-m-lifebuoy class="h-4 w-4 text-gold-300" aria-hidden="true" /> Visit the Help Centre
+                    <a href="{{ route('faq.index') }}" class="inline-flex items-center gap-2 rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-navy-800">
+                        <x-heroicon-m-lifebuoy class="h-4 w-4 text-gold-300" aria-hidden="true" /> {{ \App\Support\Homepage\HomepageContent::text('home_faq_help_label') }}
                     </a>
-                    <a href="{{ route('contact.show') }}" class="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-navy-900 ring-1 ring-line bg-white transition hover:bg-surface-muted">Ask us anything</a>
+                    <a href="{{ route('contact.show') }}" class="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-navy-900 ring-1 ring-line bg-white transition hover:bg-surface-muted">{{ \App\Support\Homepage\HomepageContent::text('home_faq_contact_label') }}</a>
                 </div>
             </div>
             <div class="space-y-3 lg:col-span-8" data-reveal>

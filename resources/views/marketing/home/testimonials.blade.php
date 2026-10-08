@@ -2,10 +2,10 @@
 {{-- Shown only once at least 3 testimonials are published (see
      Testimonial::published()) — fully populated or absent, never sparse. --}}
 @if ($testimonials->isNotEmpty())
-    <section class="bg-surface-muted py-20 sm:py-28" aria-labelledby="testimonials-heading">
+    <section id="testimonials" class="bg-surface-muted py-20 sm:py-28" aria-labelledby="testimonials-heading">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center" data-reveal>
-                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-emerald-600">Testimonials</p>
+                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-emerald-600">{{ \App\Support\Homepage\HomepageContent::text('home_testimonials_eyebrow') }}</p>
                 <h2 id="testimonials-heading" class="mt-3 font-display text-3xl font-semibold tracking-tight text-navy-900 text-balance sm:text-4xl">{{ HomepageContent::text('home_testimonials_heading') }}</h2>
             </div>
             <div class="mt-14 columns-1 gap-5 md:columns-2 lg:columns-3">

@@ -1,7 +1,7 @@
 @use('App\Support\Homepage\HomepageContent')
 @php $stats = HomepageContent::stats(); @endphp
 
-<section class="bg-white py-16 sm:py-20" aria-labelledby="stats-heading">
+<section id="results" class="bg-white py-16 sm:py-20" aria-labelledby="stats-heading">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-navy-900 via-navy-800 to-brand-700 px-6 py-12 text-white shadow-[0_30px_60px_-30px_rgba(11,30,61,.6)] sm:px-12" data-reveal>
             <div class="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-gold-400/25 blur-3xl" aria-hidden="true"></div>

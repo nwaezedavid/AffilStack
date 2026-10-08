@@ -14,7 +14,7 @@
         <div class="absolute inset-0 -z-10" aria-hidden="true" style="background: radial-gradient(50% 60% at 85% 30%, rgba(36,82,217,.45) 0%, transparent 65%), radial-gradient(40% 50% at 10% 90%, rgba(201,162,74,.25) 0%, transparent 70%);"></div>
         <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
             <div class="lg:col-span-5" data-reveal>
-                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-gold-300">Product tour</p>
+                <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-gold-300">{{ \App\Support\Homepage\HomepageContent::text('home_video_eyebrow') }}</p>
                 <h2 id="video-heading" class="mt-3 font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
                     {{ HomepageContent::highlight(HomepageContent::text('home_video_heading'), 'text-gold-300') }}
                 </h2>

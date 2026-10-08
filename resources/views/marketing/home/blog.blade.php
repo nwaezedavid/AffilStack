@@ -7,12 +7,12 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between" data-reveal>
                 <div class="max-w-2xl">
-                    <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-rose-600">From the blog</p>
+                    <p class="font-mono text-[11px] uppercase tracking-[0.2em] text-rose-600">{{ \App\Support\Homepage\HomepageContent::text('home_blog_eyebrow') }}</p>
                     <h2 id="blog-heading" class="mt-3 font-display text-3xl font-semibold tracking-tight text-navy-900 text-balance sm:text-4xl">{{ \App\Services\Blog\BlogFeed::title() }}</h2>
                     <p class="mt-4 text-base text-ink-600 sm:text-lg">{{ \App\Services\Blog\BlogFeed::subtitle() }}</p>
                 </div>
                 <a href="{{ $blogBase }}" rel="noopener" class="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full px-5 py-2.5 text-sm font-semibold text-navy-900 ring-1 ring-line transition hover:bg-surface-muted sm:self-auto">
-                    Visit our blog <x-heroicon-m-arrow-up-right class="h-4 w-4" aria-hidden="true" />
+                    {{ \App\Support\Homepage\HomepageContent::text('home_blog_link_label') }} <x-heroicon-m-arrow-up-right class="h-4 w-4" aria-hidden="true" />
                 </a>
             </div>
 
@@ -47,7 +47,7 @@
                             @if ($post['excerpt'])
                                 <p class="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-600">{{ $post['excerpt'] }}</p>
                             @endif
-                            <span class="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold {{ $accent['text'] }}" aria-hidden="true">Read article <x-heroicon-m-arrow-right class="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
+                            <span class="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold {{ $accent['text'] }}" aria-hidden="true">{{ \App\Support\Homepage\HomepageContent::text('home_blog_read_label') }} <x-heroicon-m-arrow-right class="h-4 w-4 transition group-hover:translate-x-0.5" /></span>
                         </div>
                     </article>
                 @endforeach

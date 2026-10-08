@@ -9,7 +9,7 @@
     $worksWith = ['googlemaps' => 'Google Maps', 'linkedin' => 'LinkedIn', 'gmail' => 'Gmail', 'youtube' => 'YouTube', 'tiktok' => 'TikTok', 'x' => 'X', 'pinterest' => 'Pinterest', 'wordpress' => 'WordPress'];
 @endphp
 
-<section class="relative isolate overflow-hidden bg-navy-950 text-white" aria-labelledby="hero-heading">
+<section id="hero" class="relative isolate overflow-hidden bg-navy-950 text-white" aria-labelledby="hero-heading">
     <div class="absolute inset-0 -z-10" aria-hidden="true">
         <div class="absolute inset-0" style="background: radial-gradient(60% 70% at 15% 10%, rgba(36,82,217,.55) 0%, transparent 60%), radial-gradient(45% 55% at 90% 85%, rgba(201,162,74,.32) 0%, transparent 65%), radial-gradient(40% 40% at 70% 15%, rgba(124,58,237,.25) 0%, transparent 70%);"></div>
         <div class="home-grid-pattern absolute inset-0"></div>
@@ -49,7 +49,7 @@
             @endif
 
             <div class="mt-10 border-t border-white/10 pt-6">
-                <p class="text-[11px] font-mono uppercase tracking-[0.18em] text-white/45">Works with the channels you already use</p>
+                <p class="text-[11px] font-mono uppercase tracking-[0.18em] text-white/45">{{ \App\Support\Homepage\HomepageContent::text('home_hero_works_with') }}</p>
                 <ul class="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 lg:justify-start" role="list">
                     @foreach ($worksWith as $brand => $label)
                         <li class="text-white/55 transition hover:text-white" title="{{ $label }}">

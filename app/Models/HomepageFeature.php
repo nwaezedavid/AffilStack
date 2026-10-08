@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SafeHtml;
 use App\Support\YouTubeUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
  * A feature card on the public homepage. Admin-managed (Filament, "Content"
  * group) so the page can showcase every module without a code deploy.
  */
-#[Fillable(['title', 'description', 'icon', 'media_type', 'image_path', 'youtube_url', 'sort_order', 'is_active'])]
+#[Fillable(['title', 'description', 'icon', 'media_type', 'image_path', 'default_image', 'youtube_url', 'link_url', 'sort_order', 'is_active'])]
 class HomepageFeature extends Model
 {
     /**
@@ -130,5 +131,23 @@ class HomepageFeature extends Model
     public static function youtubeThumbnailUrlFrom(?string $url): ?string
     {
         return YouTubeUrl::thumbnailUrl($url);
+    }
+
+    /**
+     * The card's picture: an uploaded image, else its shipped screenshot.
+     */
+    public function imageUrl(): ?string
+    {
+        return FeaturePage::imageUrl($this->media_type === 'image' ? $this->image_path : null, $this->default_image);
+    }
+
+    /**
+     * "Learn more" target — a site path or http(s) link only.
+     */
+    public function safeLinkUrl(): ?string
+    {
+        $url = trim((string) $this->link_url);
+
+        return $url !== '' && SafeHtml::isSafeUrl($url) ? $url : null;
     }
 }

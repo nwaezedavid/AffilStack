@@ -2,7 +2,7 @@
 {{-- Brand logos marquee — admin-managed (Content → Brand Logos). The list is
      duplicated once so the CSS animation loops seamlessly. --}}
 @if ($brandLogos->isNotEmpty())
-    <section class="border-b border-line bg-white py-10" aria-label="Brands we've worked with">
+    <section id="logos" class="border-b border-line bg-white py-10" aria-label="Brands we've worked with">
         <p class="text-center font-mono text-[11px] uppercase tracking-[0.2em] text-ink-400">{{ HomepageContent::text('home_logos_heading') }}</p>
         <div class="marquee-mask mt-6 overflow-hidden">
             <div class="marquee-track flex items-center gap-14">
