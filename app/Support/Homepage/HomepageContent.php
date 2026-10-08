@@ -28,16 +28,16 @@ class HomepageContent
      */
     public const SECTIONS = [
         'hero' => ['label' => 'Hero', 'description' => 'Headline, buttons and the hero image or video.'],
-        'logos' => ['label' => 'Brand logo marquee', 'description' => 'The scrolling "trusted by" logos (Content → Brand Logos). Hidden until a logo exists.'],
+        'logos' => ['label' => 'Brand logo marquee', 'description' => 'The scrolling "trusted by" logos (Website → Company logos). Hidden until a logo exists.'],
         'how_it_works' => ['label' => 'How it works', 'description' => 'The four-step journey: research → buyers → campaigns → earnings.'],
-        'features' => ['label' => 'Feature highlights', 'description' => 'Feature cards (Content → Homepage Features).'],
+        'features' => ['label' => 'Feature highlights', 'description' => 'Feature cards with screenshots (Website → Homepage feature cards).'],
         'video' => ['label' => 'See AffilStack in action (video)', 'description' => 'Your product video. Hidden until a YouTube link is saved.'],
         'stats' => ['label' => 'Results / stats band', 'description' => 'Four big numbers on a navy band.'],
         'testimonials' => ['label' => 'Testimonials', 'description' => 'Shown once at least 3 testimonials are published.'],
         'pricing' => ['label' => 'Pricing teaser', 'description' => 'Up to three plans, linking to /pricing.'],
         'faq' => ['label' => 'FAQ teaser', 'description' => 'The first few published FAQs. Hidden when there are none.'],
         'blog' => ['label' => 'Latest blog articles', 'description' => 'Pulled from your WordPress blog. Hidden when off or unreachable.'],
-        'apps' => ['label' => 'Mobile apps band', 'description' => 'Google Play / App Store badges (Content → Mobile Apps). Hidden until a link is set.'],
+        'apps' => ['label' => 'Mobile apps band', 'description' => 'Google Play / App Store badges (Website → Mobile Apps). Hidden until a link is set.'],
         'cta' => ['label' => 'Final call to action', 'description' => 'The closing "ready to start?" banner.'],
     ];
 

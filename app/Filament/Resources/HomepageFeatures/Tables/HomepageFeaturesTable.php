@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -18,7 +19,8 @@ class HomepageFeaturesTable
         return $table
             ->defaultSort('sort_order')
             ->columns([
-                TextColumn::make('icon')->label(''),
+                ImageColumn::make('preview')->label('')->state(fn ($record): ?string => $record->imageUrl())->height(40),
+                TextColumn::make('icon')->label('Icon'),
                 TextColumn::make('title')->searchable(),
                 TextColumn::make('media_type')->badge(),
                 IconColumn::make('is_active')->boolean(),

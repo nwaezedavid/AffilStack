@@ -34,7 +34,9 @@ class ContactPageSettings extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelope;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Site';
+    protected static string|\UnitEnum|null $navigationGroup = 'Website';
+
+    protected static ?int $navigationSort = 8;
 
     protected static ?string $navigationLabel = 'Contact Page';
 

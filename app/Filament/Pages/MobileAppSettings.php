@@ -35,7 +35,9 @@ class MobileAppSettings extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDevicePhoneMobile;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+    protected static string|\UnitEnum|null $navigationGroup = 'Website';
+
+    protected static ?int $navigationSort = 13;
 
     protected static ?string $navigationLabel = 'Mobile Apps';
 
