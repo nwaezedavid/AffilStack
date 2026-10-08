@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AnalyticsExportController;
 use App\Http\Controllers\AffiliateBannerController;
 use App\Http\Controllers\AffiliateController;
 use App\Http\Controllers\AffiliateSetPasswordController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\AnalyticsBeaconController;
 use App\Http\Controllers\BannerEmbedController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CheckoutCountryController;
+use App\Http\Controllers\ConsentController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CreativeTaskPreviewController;
 use App\Http\Controllers\CreditTopupController;
@@ -68,6 +70,8 @@ use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\TutorialController;
+use App\Http\Middleware\EnsurePanelLoginCompleted;
+use App\Http\Middleware\RejectCrossSiteBeacon;
 use Filament\Facades\Filament;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -147,7 +151,8 @@ Route::get('/crm/unsubscribe/{token}', [CrmController::class, 'unsubscribe'])->n
 // partials/analytics-beacon.blade.php on every marketing/dashboard page
 // load. Excluded from CSRF in bootstrap/app.php alongside the webhooks,
 // for the same "can't always guarantee a fresh token" reason.
-Route::middleware('throttle:120,1')->group(function () {
+// Agent 04: + RejectCrossSiteBeacon (refuses cross-site posts, since these skip CSRF).
+Route::middleware(['throttle:120,1', RejectCrossSiteBeacon::class])->group(function () {
     Route::post('/internal/analytics/view', [AnalyticsBeaconController::class, 'record'])->name('analytics.beacon.view');
     Route::post('/internal/analytics/duration', [AnalyticsBeaconController::class, 'duration'])->name('analytics.beacon.duration');
 });
@@ -546,3 +551,28 @@ Route::withoutMiddleware('web')->group(function () {
     });
 });
 // ---- end Agent 05 ----
+
+// ---- Agent 04: cookie consent + first-party analytics ---------------------
+// Behaviour events from window.affilstackTrack() and the consent log. Same
+// rules as the page-view beacon above: no auth (logged-out visitors too), no
+// CSRF token (cached pages), cross-site posts refused, rate-limited per IP.
+Route::middleware(RejectCrossSiteBeacon::class)
+    ->withoutMiddleware(PreventRequestForgery::class)
+    ->group(function () {
+        Route::post('/internal/analytics/event', [AnalyticsBeaconController::class, 'event'])
+            ->middleware('throttle:analytics-events')
+            ->name('analytics.beacon.event');
+        Route::post('/internal/consent', [ConsentController::class, 'store'])
+            ->middleware('throttle:analytics-consent')
+            ->name('consent.store');
+    });
+
+// Streamed CSV downloads for Analytics → Downloads / Audiences in the admin
+// panel. Same session as the panel; EnsurePanelLoginCompleted signs out any
+// session that didn't pass the panel's two-factor login, and the controller
+// itself only serves full admins and audit-logs every export.
+Route::middleware(['auth', EnsurePanelLoginCompleted::class, 'throttle:30,1'])
+    ->get('/admin/analytics/export/{type}', [AnalyticsExportController::class, 'download'])
+    ->where('type', '[a-z_]{3,30}')
+    ->name('admin.analytics.export');
+// ---- end Agent 04 -----------------------------------------------------------

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\SitePage;
+use App\Support\Analytics\CookiePolicyContent;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -154,6 +155,7 @@ class SitePagesSeeder extends Seeder
 
                     <h2>4. Cookies</h2>
                     <p>We use cookies to keep you signed in, remember preferences, and understand how the Platform is used. See our <a href="/cookie-policy">Cookie Policy</a> for details and how to control them.</p>
+                    <p data-afs-cookie-addendum>Analytics and advertising cookies are only used with your consent, which you can give, refuse or withdraw at any time from <a href="/cookie-policy#cookie-settings">Cookie settings</a>. We honour Global Privacy Control and Do Not Track signals. Our analytics only measures activity on AffilStack's own website and dashboard — never on other sites.</p>
 
                     <h2>5. Data retention</h2>
                     <p>We keep your account data for as long as your account is active. Generated video files created by the UGC feature are automatically deleted after 72 hours regardless of account status, to manage server load — download anything you want to keep before then. You may request deletion of your account and associated personal data by contacting us; some records (such as billing history) may be retained longer where required for legal or accounting purposes.</p>
@@ -204,28 +206,8 @@ class SitePagesSeeder extends Seeder
                 'title' => 'Cookie Policy',
                 'meta_description' => 'What cookies AffilStack uses, why, and how to control them.',
                 'is_published' => true,
-                'content' => <<<'HTML'
-                    <p>This Cookie Policy explains what cookies AffilStack uses and why.</p>
-
-                    <h2>What are cookies</h2>
-                    <p>Cookies are small text files stored on your device that help a website remember information about your visit.</p>
-
-                    <h2>Cookies we use</h2>
-                    <ul>
-                        <li><strong>Essential cookies:</strong> required to keep you signed in and to remember basic security tokens (such as CSRF protection). The Platform cannot function without these.</li>
-                        <li><strong>Analytics cookies:</strong> help us understand how visitors use the Platform (for example, via Google Analytics, where enabled) so we can improve it. These are only set if analytics is enabled in our site settings.</li>
-                        <li><strong>Advertising cookies:</strong> may be used on our marketing pages to measure the effectiveness of ad campaigns that brought you to the site.</li>
-                    </ul>
-
-                    <h2>Controlling cookies</h2>
-                    <p>Most browsers let you block or delete cookies through their settings. Blocking essential cookies will prevent you from signing in or using the dashboard. Blocking analytics or advertising cookies will not affect your ability to use the Platform.</p>
-
-                    <h2>Changes to this policy</h2>
-                    <p>We may update this Cookie Policy as our use of cookies changes. Check back periodically for updates.</p>
-
-                    <h2>Contact</h2>
-                    <p>Questions about this Cookie Policy can be sent through our <a href="/contact">Contact page</a>.</p>
-                    HTML,
+                // Agent 04: shared with the 2026_10_03_040008 migration.
+                'content' => CookiePolicyContent::html(),
             ],
         ];
     }

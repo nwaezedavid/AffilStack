@@ -58,5 +58,8 @@
     </main>
 
     @include('partials.marketing.footer')
+
+    {{-- Agent 04: cookie consent banner + preferences (gates every optional tag above). --}}
+    @include('partials.consent.banner')
 </body>
 </html>

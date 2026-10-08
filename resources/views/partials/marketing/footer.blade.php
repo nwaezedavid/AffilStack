@@ -32,6 +32,8 @@
             ['label' => 'Privacy', 'url' => route('privacy')],
             ['label' => 'Refunds', 'url' => route('refund-policy')],
             ['label' => 'Cookies', 'url' => route('cookie-policy')],
+            // Agent 04: re-opens the cookie preferences (public/js/afs-consent.js).
+            ['label' => 'Cookie settings', 'url' => '#cookie-settings'],
         ],
     ];
 ?>

@@ -295,5 +295,8 @@
     @include('partials.onboarding-tour')
 
     @stack('scripts')
+
+    {{-- Agent 04: cookie consent banner + preferences (gates every optional tag above). --}}
+    @include('partials.consent.banner', ['context' => 'dashboard'])
 </body>
 </html>
