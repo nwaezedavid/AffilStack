@@ -84,9 +84,9 @@ class RegistrationController extends Controller
             ]);
         }
 
-        // A previous abandoned checkout with this email shouldn't block a
-        // retry — replace it rather than erroring on a stale unique row.
-        PendingSignup::where('email', $validated['email'])->where('status', 'pending')->delete();
+        // Earlier unfinished checkouts for this email are kept, not deleted:
+        // the customer may still pay one of them (a second tab, a late bank
+        // transfer), and that payment must still find its signup record.
 
         $pending = PendingSignup::create([
             'name' => $validated['name'],
@@ -144,6 +144,7 @@ class RegistrationController extends Controller
     public function callback(Request $request, PaymentGatewayManager $gateways, PaymentProcessor $processor): RedirectResponse
     {
         $gatewayKey = (string) $request->query('gateway', 'flutterwave');
+        abort_unless($gateways->has($gatewayKey), 404);
         $gateway = $gateways->get($gatewayKey);
         $result = $gateway->resolveFromCallback($request);
 

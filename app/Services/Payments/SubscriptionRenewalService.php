@@ -98,6 +98,7 @@ class SubscriptionRenewalService
             'type' => 'renewal',
             'gateway' => 'stripe',
             'gateway_tx_id' => $event['gateway_tx_id'] ?? null,
+            'gateway_reference' => $event['gateway_reference'] ?? null,
             'tx_ref' => 'renewal_'.Str::uuid(),
             'amount_cents' => (int) round(($event['amount'] ?? 0) * 100),
             'currency' => $event['currency'] ?? $subscription->plan?->currency ?? 'USD',

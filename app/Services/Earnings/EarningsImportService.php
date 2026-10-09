@@ -3,6 +3,7 @@
 namespace App\Services\Earnings;
 
 use App\Models\Earning;
+use App\Models\Offer;
 use App\Models\TrackedLink;
 use App\Models\User;
 use Carbon\Carbon;
@@ -89,10 +90,15 @@ class EarningsImportService
             ? TrackedLink::where('user_id', $user->id)->find($data['tracked_link_id'])
             : null;
 
+        // Only an offer this user can actually open may be attached — an
+        // arbitrary id would leak another account's offer name and skew its totals.
+        $offer = isset($data['offer_id']) ? Offer::find($data['offer_id']) : null;
+        $offerId = $offer && $offer->isAccessibleBy($user) ? $offer->id : null;
+
         return Earning::create([
             'user_id' => $user->id,
             'tracked_link_id' => $trackedLink?->id,
-            'offer_id' => $trackedLink?->offer_id ?? $data['offer_id'] ?? null,
+            'offer_id' => $trackedLink?->offer_id ?? $offerId,
             'network' => $data['network'],
             'source' => 'manual',
             'amount_cents' => (int) round(((float) $data['amount']) * 100),

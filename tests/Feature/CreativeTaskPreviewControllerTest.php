@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\EnsurePanelLoginCompleted;
 use App\Models\AgentTask;
 use App\Models\FaqItem;
 use App\Models\HomepageFeature;
@@ -48,7 +49,8 @@ class CreativeTaskPreviewControllerTest extends TestCase
     {
         $task = $this->creativeTask('faq_item', ['question' => 'Q', 'answer' => 'A', 'category' => 'general']);
 
-        $this->actingAs(User::factory()->create())
+        $this->actingAs($nonAdmin = User::factory()->create())
+            ->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $nonAdmin->id])
             ->get(route('creative-tasks.preview', $task))
             ->assertForbidden();
     }
@@ -58,6 +60,7 @@ class CreativeTaskPreviewControllerTest extends TestCase
         $task = $this->creativeTask('site_page', ['title' => 'Careers', 'slug' => 'careers', 'meta_description' => 'M', 'content' => '<p>Join us</p>']);
 
         $this->actingAs($this->admin)
+            ->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $this->admin->id])
             ->get(route('creative-tasks.preview', $task))
             ->assertOk()
             ->assertSeeText('Careers')
@@ -73,6 +76,7 @@ class CreativeTaskPreviewControllerTest extends TestCase
         $task = $this->creativeTask('homepage_feature', ['title' => 'Draft Feature', 'description' => 'Not live yet.']);
 
         $this->actingAs($this->admin)
+            ->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $this->admin->id])
             ->get(route('creative-tasks.preview', $task))
             ->assertOk()
             ->assertSeeText('Real Feature')
@@ -87,6 +91,7 @@ class CreativeTaskPreviewControllerTest extends TestCase
         $task = $this->creativeTask('faq_item', ['question' => 'Draft Q', 'answer' => 'Draft A.', 'category' => 'general']);
 
         $this->actingAs($this->admin)
+            ->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $this->admin->id])
             ->get(route('creative-tasks.preview', $task))
             ->assertOk()
             ->assertSeeText('Existing Q')
@@ -101,6 +106,7 @@ class CreativeTaskPreviewControllerTest extends TestCase
         $task = $this->creativeTask('branding', ['footer_text' => 'Draft footer.']);
 
         $this->actingAs($this->admin)
+            ->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $this->admin->id])
             ->get(route('creative-tasks.preview', $task))
             ->assertOk()
             ->assertSeeText('Draft footer.');

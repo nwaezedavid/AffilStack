@@ -59,7 +59,15 @@ class PaystackGateway implements PaymentGateway
 
     protected function exchangeRate(): float
     {
-        return (float) ($this->settings->credential('usd_to_ngn_rate') ?: config('services.paystack.usd_to_ngn_rate', 1600));
+        $rate = (float) ($this->settings->credential('usd_to_ngn_rate') ?: config('services.paystack.usd_to_ngn_rate', 1600));
+
+        // Refuse to charge with an implausible rate (a typo such as 1.6 for
+        // 1,600) rather than sell a plan for a tiny fraction of its price.
+        if ($rate < 100 || $rate > 100000) {
+            throw new RuntimeException('The USD to NGN exchange rate for Paystack looks wrong — check it in Payment Gateways.');
+        }
+
+        return $rate;
     }
 
     public function initiateSignupCheckout(string $email, string $name, Plan $plan, string $billingCycle, int $pendingSignupId): array

@@ -3,7 +3,6 @@
 namespace App\Services\Crm;
 
 use App\Models\EmailConnection;
-use App\Support\OutboundUrlGuard;
 use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 use RuntimeException;
@@ -83,23 +82,19 @@ class PersonalEmailSender
      */
     protected function sendViaSmtp(EmailConnection $connection, string $toEmail, string $subject, string $htmlBody, array $options = []): ?array
     {
-        // Re-checked at send time: the hostname's DNS could have been
-        // re-pointed at a private address since it was saved.
+        // Re-checked at send time and pinned to the vetted IP: the hostname's
+        // DNS could have been re-pointed at a private address since it was saved.
         try {
-            OutboundUrlGuard::resolveSafeHost((string) $connection->credential('host'));
+            $transport = PinnedSmtpTransport::make([
+                'host' => (string) $connection->credential('host'),
+                'port' => (int) $connection->credential('port'),
+                'username' => $connection->credential('username'),
+                'password' => $connection->credential('password'),
+                'encryption' => $connection->credential('encryption'),
+            ]);
         } catch (InvalidArgumentException $e) {
             throw new RuntimeException('SMTP send refused: '.$e->getMessage(), previous: $e);
         }
-
-        $transport = Mail::createSymfonyTransport([
-            'transport' => 'smtp',
-            'timeout' => 15,
-            'host' => $connection->credential('host'),
-            'port' => (int) $connection->credential('port'),
-            'username' => $connection->credential('username'),
-            'password' => $connection->credential('password'),
-            'scheme' => $connection->credential('encryption') === 'ssl' || (int) $connection->credential('port') === 465 ? 'smtps' : 'smtp',
-        ]);
 
         $fromName = $connection->credential('from_name');
         $fromEmail = (string) $connection->credential('from_email');

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\GoogleSiteAnalyticsSettings;
+use App\Http\Middleware\EnsurePanelLoginCompleted;
 use App\Models\GoogleOauthSetting;
 use App\Models\GoogleSiteAnalyticsSetting;
 use App\Models\SiteSetting;
@@ -227,7 +228,7 @@ class GoogleSiteAnalyticsTest extends TestCase
     {
         $this->enableGoogleOauth();
 
-        $response = $this->actingAs($this->admin)->get(route('google-site-analytics.connect'));
+        $response = $this->actingAs($this->admin)->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $this->admin->id])->get(route('google-site-analytics.connect'));
 
         $response->assertRedirect();
         $this->assertStringContainsString('accounts.google.com', $response->headers->get('Location'));
@@ -235,7 +236,7 @@ class GoogleSiteAnalyticsTest extends TestCase
 
     public function test_the_connect_route_redirects_back_with_an_error_when_google_oauth_is_not_set_up(): void
     {
-        $response = $this->actingAs($this->admin)->get(route('google-site-analytics.connect'));
+        $response = $this->actingAs($this->admin)->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $this->admin->id])->get(route('google-site-analytics.connect'));
 
         $response->assertRedirect(route('filament.admin.pages.google-site-analytics-settings'));
         $response->assertSessionHas('error');
@@ -246,15 +247,15 @@ class GoogleSiteAnalyticsTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('user');
 
-        $this->actingAs($user)->get(route('google-site-analytics.connect'))->assertForbidden();
+        $this->actingAs($user)->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $user->id])->get(route('google-site-analytics.connect'))->assertForbidden();
     }
 
     public function test_the_callback_route_rejects_a_mismatched_state(): void
     {
         $this->enableGoogleOauth();
-        $this->actingAs($this->admin)->get(route('google-site-analytics.connect'));
+        $this->actingAs($this->admin)->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $this->admin->id])->get(route('google-site-analytics.connect'));
 
-        $response = $this->actingAs($this->admin)->get(route('google-site-analytics.callback', ['state' => 'wrong', 'code' => 'abc']));
+        $response = $this->actingAs($this->admin)->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $this->admin->id])->get(route('google-site-analytics.callback', ['state' => 'wrong', 'code' => 'abc']));
 
         $response->assertRedirect(route('filament.admin.pages.google-site-analytics-settings'));
         $response->assertSessionHas('error');

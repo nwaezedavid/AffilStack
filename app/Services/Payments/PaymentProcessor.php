@@ -11,6 +11,7 @@ use App\Services\ApiWallet\ApiWalletManager;
 use App\Services\Credits\CreditManager;
 use App\Services\Referrals\ReferralService;
 use Carbon\Carbon;
+use Filament\Notifications\Notification;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -225,9 +226,9 @@ class PaymentProcessor
         $pending = $transaction->pendingSignup;
 
         if (! $pending) {
-            Log::error('Signup payment succeeded but pending signup record is missing', ['tx_ref' => $transaction->tx_ref]);
+            $this->holdForReview($transaction, 'A signup was paid for but its signup record no longer exists, so no account could be created.');
 
-            return $transaction;
+            return $transaction->fresh();
         }
 
         if ($pending->status === 'completed') {
@@ -292,6 +293,17 @@ class PaymentProcessor
         }
 
         $existing = Subscription::where('user_id', $transaction->user_id)->where('status', 'active')->first();
+
+        // A discounted upgrade is only redeemable against the exact
+        // subscription period its discount was worked out from. Opening
+        // several upgrade checkouts and paying them all (or refunding the
+        // old plan first) would otherwise buy extra full periods of the new
+        // plan at the discounted price.
+        if ($transaction->upgrade_from_subscription_id && ! $this->upgradeBasisStillValid($transaction, $existing, $plan)) {
+            $this->holdForReview($transaction, 'The plan this upgrade discount was based on had already changed when the payment arrived.');
+
+            return;
+        }
 
         // Paying again for the plan and cycle you're already on is a
         // renewal (the only way to renew on the one-time-charge gateways):
@@ -365,6 +377,48 @@ class PaymentProcessor
                 'stripe_subscription_id' => $subscriptionId,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * The subscription the upgrade discount came from must still be the
+     * active one, on the same paid-up period, and not already on the plan
+     * being bought.
+     */
+    protected function upgradeBasisStillValid(PaymentTransaction $transaction, ?Subscription $existing, Plan $plan): bool
+    {
+        if (! $existing || $existing->id !== $transaction->upgrade_from_subscription_id) {
+            return false;
+        }
+
+        if ($existing->plan_id === $plan->id && $existing->billing_cycle === $transaction->billing_cycle) {
+            return false;
+        }
+
+        $recordedEnd = $transaction->upgrade_from_period_end;
+
+        return $recordedEnd === null
+            || ($existing->current_period_end !== null && $existing->current_period_end->equalTo($recordedEnd));
+    }
+
+    /**
+     * Money was received but nothing can be granted automatically: mark the
+     * payment for a person to refund or apply by hand, and tell the admins.
+     */
+    protected function holdForReview(PaymentTransaction $transaction, string $reason): void
+    {
+        $transaction->update(['status' => 'needs_review']);
+
+        Log::critical('Payment held for review', ['tx_ref' => $transaction->tx_ref, 'user_id' => $transaction->user_id, 'reason' => $reason]);
+
+        $admins = User::role(['admin', 'super-admin'])->get();
+
+        if ($admins->isNotEmpty()) {
+            Notification::make()
+                ->title('Payment needs review: '.$transaction->tx_ref)
+                ->body($reason.' Refund it in the gateway or apply it manually.')
+                ->danger()
+                ->sendToDatabase($admins);
         }
     }
 }

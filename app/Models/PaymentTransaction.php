@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id', 'subscription_id', 'pending_signup_id', 'credit_package_id', 'type', 'gateway', 'gateway_tx_id', 'gateway_reference', 'tx_ref',
     'amount_cents', 'currency', 'status', 'raw_payload', 'processed_at',
-    'plan_id', 'billing_cycle', 'credited_amount_cents',
+    'plan_id', 'billing_cycle', 'credited_amount_cents', 'upgrade_from_subscription_id', 'upgrade_from_period_end',
 ])]
 class PaymentTransaction extends Model
 {
@@ -18,6 +18,7 @@ class PaymentTransaction extends Model
         return [
             'raw_payload' => 'array',
             'processed_at' => 'datetime',
+            'upgrade_from_period_end' => 'datetime',
         ];
     }
 

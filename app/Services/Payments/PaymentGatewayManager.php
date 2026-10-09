@@ -21,6 +21,11 @@ class PaymentGatewayManager
         'paypal' => PayPalGateway::class,
     ];
 
+    public function has(string $key): bool
+    {
+        return isset($this->gateways[$key]);
+    }
+
     public function get(string $key): PaymentGateway
     {
         if (! isset($this->gateways[$key])) {

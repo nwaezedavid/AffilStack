@@ -397,6 +397,10 @@ class StripeGateway implements PaymentGateway
             'kind' => 'renewed',
             'gateway_subscription_id' => $subscriptionId,
             'gateway_tx_id' => (string) ($invoice['id'] ?? ''),
+            // The charge behind this invoice, so a later refund or dispute
+            // (which names the payment_intent, and on newer API versions no
+            // longer the invoice) can find this renewal.
+            'gateway_reference' => $this->invoicePaymentIntentId($invoice),
             'amount' => ((float) ($invoice['amount_paid'] ?? 0)) / 100,
             'currency' => strtoupper((string) ($invoice['currency'] ?? '')),
             'raw' => $invoice,
@@ -506,6 +510,7 @@ class StripeGateway implements PaymentGateway
         return [
             'kind' => 'refunded',
             'gateway_tx_ids' => array_map('strval', array_values($ids)),
+            'gateway_references' => array_values(array_filter([isset($charge['payment_intent']) ? (string) $charge['payment_intent'] : null])),
             'amount' => ((float) ($charge['amount_refunded'] ?? 0)) / 100,
             'currency' => strtoupper((string) ($charge['currency'] ?? '')),
             'raw' => $charge,
@@ -527,6 +532,7 @@ class StripeGateway implements PaymentGateway
         return [
             'kind' => 'charged_back',
             'gateway_tx_ids' => array_map('strval', array_values($ids)),
+            'gateway_references' => array_map('strval', array_values($ids)),
             'amount' => ((float) ($dispute['amount'] ?? 0)) / 100,
             'currency' => strtoupper((string) ($dispute['currency'] ?? '')),
             'raw' => $dispute,
@@ -744,5 +750,22 @@ class StripeGateway implements PaymentGateway
         if ($response->failed()) {
             throw new RuntimeException('Stripe subscription price update failed: '.$response->body());
         }
+    }
+
+    /**
+     * The payment_intent id behind an invoice: a plain id or an expanded
+     * object on API 2024-06-20, or inside invoice.payments on newer versions.
+     *
+     * @param  array<string, mixed>  $invoice
+     */
+    protected function invoicePaymentIntentId(array $invoice): ?string
+    {
+        $intent = $invoice['payment_intent'] ?? data_get($invoice, 'payments.data.0.payment.payment_intent');
+
+        if (is_array($intent)) {
+            $intent = $intent['id'] ?? null;
+        }
+
+        return is_string($intent) && $intent !== '' ? $intent : null;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\EnsurePanelLoginCompleted;
 use App\Models\AgentTask;
 use App\Models\FaqItem;
 use App\Models\HomepageFeature;
@@ -191,6 +192,7 @@ class HomepageRedesignTest extends TestCase
         ]);
 
         $this->actingAs($admin)
+            ->withSession([EnsurePanelLoginCompleted::SESSION_KEY => $admin->id])
             ->get(route('creative-tasks.preview', $task))
             ->assertOk()
             ->assertSee('Draft')

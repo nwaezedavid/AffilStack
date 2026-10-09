@@ -29,7 +29,7 @@ class EarningsController extends Controller
         $epcCents = $totalClicks > 0 ? (int) round($totals['total_cents'] / $totalClicks) : 0;
 
         $byOffer = $user->offers()
-            ->withSum('earnings as earnings_cents', 'amount_cents')
+            ->withSum(['earnings as earnings_cents' => fn ($query) => $query->where('earnings.user_id', $user->id)], 'amount_cents')
             ->withSum('trackedLinks as clicks', 'clicks_count')
             ->get()
             ->filter(fn ($offer) => $offer->earnings_cents > 0 || $offer->clicks > 0)

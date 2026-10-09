@@ -30,6 +30,15 @@ class AiEngineSettings extends Page
 
     protected static string $department = 'ai_agents';
 
+    /**
+     * Super-admin only: whoever controls the AI key decides where every
+     * customer prompt and generation is sent.
+     */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCpuChip;
 
     protected static string|\UnitEnum|null $navigationGroup = 'AI Agents';

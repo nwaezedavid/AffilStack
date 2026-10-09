@@ -151,6 +151,11 @@
                     <x-ui.field label="Email address" for="email" :error="$personalErrors->first('email')" hint="We send receipts and sign-in links here.">
                         <input id="email" name="email" type="email" autocomplete="email" required value="{{ old('email', $user->email) }}" class="{{ $input }} {{ $personalErrors->has('email') ? $inputError : '' }}">
                     </x-ui.field>
+                    @unless ($user->google_id)
+                        <x-ui.field label="Current password" for="current_password" :error="$personalErrors->first('current_password')" hint="Only needed when you change your email address.">
+                            <input id="current_password" name="current_password" type="password" autocomplete="current-password" class="{{ $input }} {{ $personalErrors->has('current_password') ? $inputError : '' }}">
+                        </x-ui.field>
+                    @endunless
                 </div>
             </x-ui.card>
 

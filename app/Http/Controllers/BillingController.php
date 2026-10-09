@@ -157,6 +157,10 @@ class BillingController extends Controller
             'amount_cents' => $checkout['amount_cents'],
             'currency' => $checkout['currency'],
             'status' => 'pending',
+            // A discounted upgrade remembers what the discount was based on
+            // (see PaymentProcessor::activateSubscription).
+            'upgrade_from_subscription_id' => $overrideAmountCents !== null ? $subscription->id : null,
+            'upgrade_from_period_end' => $overrideAmountCents !== null ? $subscription->current_period_end : null,
         ]);
 
         return redirect()->away($checkout['link']);
@@ -199,7 +203,9 @@ class BillingController extends Controller
         }
 
         if (! $refund->wasRefunded()) {
-            return redirect()->route('billing.index')->with('error', 'We could not process your refund: '.$refund->reason);
+            // The gateway's raw reply stays on the refund request for the
+            // admins; the customer gets a plain next step instead.
+            return redirect()->route('billing.index')->with('error', 'We could not process your refund automatically. Please open a support ticket and our team will sort it out.');
         }
 
         return redirect()->route('billing.index')->with('success', 'Your payment has been refunded and your subscription canceled.');
@@ -208,6 +214,7 @@ class BillingController extends Controller
     public function callback(Request $request, PaymentGatewayManager $gateways, PaymentProcessor $processor): RedirectResponse
     {
         $gatewayKey = (string) $request->query('gateway', 'flutterwave');
+        abort_unless($gateways->has($gatewayKey), 404);
         $gateway = $gateways->get($gatewayKey);
         $result = $gateway->resolveFromCallback($request);
 

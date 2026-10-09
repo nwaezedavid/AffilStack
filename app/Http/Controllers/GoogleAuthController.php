@@ -114,6 +114,13 @@ class GoogleAuthController extends Controller
         $user = User::where('google_id', $profile['sub'])->first()
             ?? User::where('email', $profile['email'])->first();
 
+        if ($user && $user->google_id && ! hash_equals((string) $user->google_id, (string) $profile['sub'])) {
+            // The email matches but the account is already linked to a
+            // different Google account — never let a second Google identity
+            // in through an email match (e.g. after the email was changed).
+            return redirect()->route('login')->with('error', 'This account is linked to a different Google account. Sign in with that Google account or with your password.');
+        }
+
         if ($user) {
             $message = 'Signed in with Google.';
 
@@ -135,7 +142,25 @@ class GoogleAuthController extends Controller
                     DB::table(config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
                 }
 
+                // Whoever registered with this email before Google proved
+                // ownership may also hold API tokens or passkeys — retire
+                // those too so a pre-registered account can't stay shared.
+                $user->apiTokens()->delete();
+
+                if (method_exists($user, 'passkeys')) {
+                    $user->passkeys()->delete();
+                }
+
                 $message = 'Signed in with Google. For your security your previous password was retired — keep using Google, or use "Forgot password" to set a new one.';
+            }
+
+            // Google proves who the person is, not the second factor: an
+            // account with two-factor sign-in still has to pass the challenge.
+            if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
+                $request->session()->regenerate();
+                $request->session()->put(['login.id' => $user->getKey(), 'login.remember' => false]);
+
+                return redirect()->route('two-factor.login')->with('success', $message);
             }
 
             Auth::login($user);
@@ -183,10 +208,8 @@ class GoogleAuthController extends Controller
 
         $gateway = collect($enabledGateways)->first(fn ($g) => $g->key() === ($intent['gateway'] ?? null)) ?? $enabledGateways[0];
 
-        // A previous abandoned checkout with this email shouldn't block a
-        // retry — same rule as the password signup flow.
-        PendingSignup::where('email', $profile['email'])->where('status', 'pending')->delete();
-
+        // Earlier unfinished checkouts for this email are kept — same rule as
+        // the password signup flow (a late payment must find its record).
         $pending = PendingSignup::create([
             'name' => $profile['name'],
             'email' => $profile['email'],

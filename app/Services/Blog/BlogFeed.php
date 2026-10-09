@@ -185,13 +185,21 @@ class BlogFeed
         $lastError = 'no response';
 
         foreach ($endpoints as $endpoint) {
-            if ($problem = OutboundUrlGuard::problem($endpoint)) {
-                throw new RuntimeException($problem);
+            try {
+                $target = OutboundUrlGuard::resolveSafeIp($endpoint);
+            } catch (\InvalidArgumentException $e) {
+                throw new RuntimeException($e->getMessage());
             }
 
             try {
+                // Redirects are not followed: the guard vetted this URL only,
+                // and a redirect could point at the server's own network.
                 $response = Http::timeout(5)
                     ->connectTimeout(3)
+                    ->withoutRedirecting()
+                    ->withOptions(['curl' => [CURLOPT_RESOLVE => [
+                        "{$target['host']}:{$target['port']}:".(str_contains($target['ip'], ':') ? "[{$target['ip']}]" : $target['ip']),
+                    ]]])
                     ->acceptJson()
                     ->withHeaders(['User-Agent' => 'AffilStack homepage blog feed'])
                     ->get($endpoint);

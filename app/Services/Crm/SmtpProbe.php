@@ -2,11 +2,8 @@
 
 namespace App\Services\Crm;
 
-use App\Support\OutboundUrlGuard;
-use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 use RuntimeException;
-use Symfony\Component\Mailer\Transport\Smtp\SmtpTransport;
 use Throwable;
 
 /**
@@ -24,26 +21,14 @@ class SmtpProbe
     public function probe(array $settings): void
     {
         try {
-            OutboundUrlGuard::resolveSafeHost((string) $settings['host']);
+            $transport = PinnedSmtpTransport::make($settings);
         } catch (InvalidArgumentException $e) {
             throw new RuntimeException($e->getMessage(), previous: $e);
         }
 
-        $transport = Mail::createSymfonyTransport([
-            'transport' => 'smtp',
-            'timeout' => 15,
-            'host' => $settings['host'],
-            'port' => (int) $settings['port'],
-            'username' => $settings['username'],
-            'password' => $settings['password'],
-            'scheme' => ($settings['encryption'] ?? null) === 'ssl' || (int) $settings['port'] === 465 ? 'smtps' : 'smtp',
-        ]);
-
         try {
-            if ($transport instanceof SmtpTransport) {
-                $transport->start();
-                $transport->stop();
-            }
+            $transport->start();
+            $transport->stop();
         } catch (Throwable $e) {
             throw new RuntimeException($e->getMessage(), previous: $e);
         }

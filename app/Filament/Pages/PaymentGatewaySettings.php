@@ -231,6 +231,9 @@ class PaymentGatewaySettings extends Page
                         ->label('USD → NGN exchange rate')
                         ->numeric()
                         ->step(0.01)
+                        // A typo like 1.6 instead of 1,600 would sell plans for almost nothing.
+                        ->minValue(100)
+                        ->maxValue(100000)
                         ->helperText('Every plan is priced in USD — this is what it gets multiplied by to charge Nigerian cards in Naira. There is no live rate feed, so keep this current yourself.')
                         ->columnSpanFull(),
                 ]),

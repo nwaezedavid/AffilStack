@@ -30,6 +30,7 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
                 'max:255',
                 Rule::unique('users')->ignore($user->id),
             ],
+            'current_password' => [Rule::requiredIf(fn () => strcasecmp((string) ($input['email'] ?? ''), (string) $user->email) !== 0 && ! $user->google_id), 'nullable', 'current_password:web'],
         ])->validateWithBag('updateProfileInformation');
 
         if ($input['email'] !== $user->email &&

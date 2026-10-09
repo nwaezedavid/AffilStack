@@ -47,6 +47,11 @@ class OffersController extends Controller
 
     public function store(Request $request, OfferResearchService $service): JsonResponse
     {
+        // A single-offer team seat can't add offers on the web
+        // (RestrictAgencySeats), so it can't through the API either.
+        $user = $request->user();
+        abort_if($user->isSeat() && ! $user->hasSharedTeamAccess(), 403, 'Team seats limited to one product cannot add products.');
+
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'product_url' => 'required|url|max:2048',

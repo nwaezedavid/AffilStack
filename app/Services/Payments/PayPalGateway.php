@@ -232,6 +232,14 @@ class PayPalGateway implements PaymentGateway
             return false;
         }
 
+        // A request without PayPal's signature headers can't be genuine —
+        // reject it here instead of spending a PayPal API call on it.
+        foreach (['paypal-transmission-id', 'paypal-transmission-time', 'paypal-cert-url', 'paypal-auth-algo', 'paypal-transmission-sig'] as $header) {
+            if (! filled($request->header($header))) {
+                return false;
+            }
+        }
+
         try {
             $response = $this->client()->post('/v1/notifications/verify-webhook-signature', [
                 'transmission_id' => $request->header('paypal-transmission-id'),

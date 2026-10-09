@@ -83,7 +83,14 @@ class ProfileController extends Controller
             'phone_number' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9][0-9 ()\-.]{3,22}$/'],
             'gender' => ['nullable', Rule::in(array_keys(LifecycleAudience::GENDERS))],
             'religion' => ['nullable', Rule::in(array_keys(LifecycleAudience::RELIGIONS))],
+            // Changing the sign-in email needs the current password, so a
+            // borrowed session can't move the account to someone else's
+            // address. Google-linked accounts are protected by their Google
+            // link instead (they may never have chosen a password).
+            'current_password' => [Rule::requiredIf(fn () => strcasecmp((string) $request->input('email'), (string) $user->email) !== 0 && ! $user->google_id), 'nullable', 'current_password'],
         ], [
+            'current_password.required' => 'Enter your current password to change your email address.',
+            'current_password.current_password' => 'That password is not correct.',
             'birth_day.required_with' => 'Choose the day of your birthday too.',
             'birth_month.required_with' => 'Choose the month of your birthday too.',
             'phone_number.regex' => 'Enter a phone number using digits only (spaces and dashes are fine).',

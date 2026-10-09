@@ -159,10 +159,10 @@ Route::middleware(['throttle:120,1', RejectCrossSiteBeacon::class])->group(funct
     Route::post('/internal/analytics/duration', [AnalyticsBeaconController::class, 'duration'])->name('analytics.beacon.duration');
 });
 
-Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->name('webhooks.flutterwave');
-Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
-Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])->name('webhooks.paystack');
-Route::post('/webhooks/paypal', [PayPalWebhookController::class, 'handle'])->name('webhooks.paypal');
+Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->middleware('throttle:120,1')->name('webhooks.flutterwave');
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->middleware('throttle:120,1')->name('webhooks.stripe');
+Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])->middleware('throttle:120,1')->name('webhooks.paystack');
+Route::post('/webhooks/paypal', [PayPalWebhookController::class, 'handle'])->middleware('throttle:120,1')->name('webhooks.paypal');
 
 // The only door into a CUSTOMER account: pick a plan, pay, get created. No
 // open registration exists anywhere in this app — see RegistrationController.
@@ -179,9 +179,9 @@ Route::post('/webhooks/paypal', [PayPalWebhookController::class, 'handle'])->nam
 // above; applied individually here since this route sits in its own
 // ordering-sensitive block (see the comment above).
 Route::middleware('cache-public-page')->get('/pricing', [RegistrationController::class, 'pricing'])->name('registration.pricing');
-Route::get('/get-started/callback', [RegistrationController::class, 'callback'])->name('registration.callback');
+Route::get('/get-started/callback', [RegistrationController::class, 'callback'])->middleware('throttle:30,1')->name('registration.callback');
 Route::get('/get-started/{plan}', [RegistrationController::class, 'showForm'])->name('registration.form');
-Route::post('/get-started/{plan}', [RegistrationController::class, 'store'])->name('registration.store');
+Route::post('/get-started/{plan}', [RegistrationController::class, 'store'])->middleware('throttle:10,1')->name('registration.store');
 Route::post('/get-started/{plan}/google', [GoogleAuthController::class, 'redirectForSignup'])->name('registration.google');
 
 // The affiliate program's own public landing page — "anyone can sign-up to
@@ -222,9 +222,9 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->
 // (checked inside the controller); deliberately outside the dashboard
 // group above since it has nothing to do with a user's own account. See
 // CreativeTaskPreviewController — nothing here writes to the database.
-Route::middleware('auth')->get('/admin-preview/creative-tasks/{agentTask}', [CreativeTaskPreviewController::class, 'show'])->name('creative-tasks.preview');
+Route::middleware(['auth', EnsurePanelLoginCompleted::class])->get('/admin-preview/creative-tasks/{agentTask}', [CreativeTaskPreviewController::class, 'show'])->name('creative-tasks.preview');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', EnsurePanelLoginCompleted::class])->group(function () {
     Route::get('/admin/google-site-analytics/connect', [GoogleSiteAnalyticsController::class, 'redirect'])->name('google-site-analytics.connect');
     Route::get('/admin/google-site-analytics/callback', [GoogleSiteAnalyticsController::class, 'callback'])->name('google-site-analytics.callback');
 });

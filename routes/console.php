@@ -19,11 +19,14 @@ Artisan::command('inspire', function () {
 // — an admin can see it actually ran, not just assume it did. New
 // scheduled work (subscription renewals, UGC video cleanup, agent tasks,
 // etc.) should follow the same pattern as each of those features is built.
-// ->withoutOverlapping() guards every entry so a slow run never causes a
-// second overlapping run to start.
+// ->withoutOverlapping(30) guards every entry so a slow run never causes a
+// second overlapping run to start. The 30-minute lock expiry matters on
+// Hostinger: if the host kills a run, its lock clears within half an hour
+// instead of the default 24 hours (which would skip e.g. expiring lapsed
+// subscriptions for a whole day).
 
 ScheduleMonitoring::track(
-    Schedule::command('signups:prune-expired')->daily()->withoutOverlapping(),
+    Schedule::command('signups:prune-expired')->daily()->withoutOverlapping(30),
     'signups:prune-expired',
 );
 
@@ -32,12 +35,12 @@ ScheduleMonitoring::track(
 // two exist for Flutterwave, which never auto-renews, and as the
 // safety-net that actually revokes access once a period lapses either way.
 ScheduleMonitoring::track(
-    Schedule::command('subscriptions:send-renewal-reminders')->daily()->withoutOverlapping(),
+    Schedule::command('subscriptions:send-renewal-reminders')->daily()->withoutOverlapping(30),
     'subscriptions:send-renewal-reminders',
 );
 
 ScheduleMonitoring::track(
-    Schedule::command('subscriptions:expire-lapsed')->hourly()->withoutOverlapping(),
+    Schedule::command('subscriptions:expire-lapsed')->hourly()->withoutOverlapping(30),
     'subscriptions:expire-lapsed',
 );
 
@@ -45,7 +48,7 @@ ScheduleMonitoring::track(
 // ApplyPendingDowngrades. Stripe's own recurring billing applies its
 // scheduled downgrade at the next renewal webhook instead.
 ScheduleMonitoring::track(
-    Schedule::command('subscriptions:apply-pending-downgrades')->daily()->withoutOverlapping(),
+    Schedule::command('subscriptions:apply-pending-downgrades')->daily()->withoutOverlapping(30),
     'subscriptions:apply-pending-downgrades',
 );
 
@@ -55,12 +58,12 @@ ScheduleMonitoring::track(
 // Every future agent's approved work also runs through the same
 // execute-due-tasks command, on the same 5-minute cadence.
 ScheduleMonitoring::track(
-    Schedule::command('agents:security-scan')->daily()->withoutOverlapping(),
+    Schedule::command('agents:security-scan')->daily()->withoutOverlapping(30),
     'agents:security-scan',
 );
 
 ScheduleMonitoring::track(
-    Schedule::command('agents:execute-due-tasks')->everyFiveMinutes()->withoutOverlapping(),
+    Schedule::command('agents:execute-due-tasks')->everyFiveMinutes()->withoutOverlapping(30),
     'agents:execute-due-tasks',
 );
 
@@ -71,7 +74,7 @@ ScheduleMonitoring::track(
 // actually been replying. Weekly is enough signal to accumulate a genuine
 // pattern without spamming the Canned Replies resource with suggestions.
 ScheduleMonitoring::track(
-    Schedule::command('agents:support-suggest-templates')->weekly()->withoutOverlapping(),
+    Schedule::command('agents:support-suggest-templates')->weekly()->withoutOverlapping(30),
     'agents:support-suggest-templates',
 );
 
@@ -80,14 +83,14 @@ ScheduleMonitoring::track(
 // runs on its own schedule, reviewing every live campaign daily through the
 // connected Meta Ads MCP server and adjusting it without asking again.
 ScheduleMonitoring::track(
-    Schedule::command('agents:marketing-optimize-campaigns')->daily()->withoutOverlapping(),
+    Schedule::command('agents:marketing-optimize-campaigns')->daily()->withoutOverlapping(30),
     'agents:marketing-optimize-campaigns',
 );
 
 // Audit gap #4: self-service account deletion's 30-day grace period — see
 // ProfileController::destroy() / PurgeDeletedAccounts.
 ScheduleMonitoring::track(
-    Schedule::command('users:purge-deleted')->daily()->withoutOverlapping(),
+    Schedule::command('users:purge-deleted')->daily()->withoutOverlapping(30),
     'users:purge-deleted',
 );
 
@@ -95,7 +98,7 @@ ScheduleMonitoring::track(
 // wallet, and evaluates whether either manual funding reminder (Anthropic,
 // Meta ad spend) has fallen due — see FundingHealthChecker.
 ScheduleMonitoring::track(
-    Schedule::command('integrations:check-funding-health')->daily()->withoutOverlapping(),
+    Schedule::command('integrations:check-funding-health')->daily()->withoutOverlapping(30),
     'integrations:check-funding-health',
 );
 
@@ -103,7 +106,7 @@ ScheduleMonitoring::track(
 // hour rather than daily since it's cheap (in-process requests, no real
 // network calls) and a dead link is worth catching quickly.
 ScheduleMonitoring::track(
-    Schedule::command('seo:check-links')->hourly()->withoutOverlapping(),
+    Schedule::command('seo:check-links')->hourly()->withoutOverlapping(30),
     'seo:check-links',
 );
 
@@ -113,7 +116,7 @@ ScheduleMonitoring::track(
 // catches anything that ever slipped through (a future upload field that
 // forgot to use WebpFileUpload, a path set directly via a seeder/import).
 ScheduleMonitoring::track(
-    Schedule::command('images:optimize-to-webp')->daily()->withoutOverlapping(),
+    Schedule::command('images:optimize-to-webp')->daily()->withoutOverlapping(30),
     'images:optimize-to-webp',
 );
 
@@ -123,7 +126,7 @@ ScheduleMonitoring::track(
 // commit/push mechanics and its .env-leak defense-in-depth guard. The same
 // service also powers the page's on-demand "Sync now" button.
 ScheduleMonitoring::track(
-    Schedule::command('github:sync')->daily()->withoutOverlapping(),
+    Schedule::command('github:sync')->daily()->withoutOverlapping(30),
     'github:sync',
 );
 
@@ -131,12 +134,12 @@ ScheduleMonitoring::track(
 Schedule::call(fn () => ScheduledTaskRun::where('created_at', '<', now()->subDays(30))->delete())
     ->daily()
     ->name('prune-scheduled-task-runs')
-    ->withoutOverlapping();
+    ->withoutOverlapping(30);
 
 // Worker died mid-job (deploy restart, reboot, hard timeout) — without this
 // the generation's spinner would run forever. See FailStuckGenerations.
 ScheduleMonitoring::track(
-    Schedule::command('generations:fail-stuck')->everyFifteenMinutes()->withoutOverlapping(),
+    Schedule::command('generations:fail-stuck')->everyFifteenMinutes()->withoutOverlapping(30),
     'generations:fail-stuck',
 );
 
@@ -150,14 +153,14 @@ Schedule::call(function () {
 })
     ->daily()
     ->name('prune-api-logs')
-    ->withoutOverlapping();
+    ->withoutOverlapping(30);
 
-Schedule::command('activitylog:clean')->weekly()->withoutOverlapping();
+Schedule::command('activitylog:clean')->weekly()->withoutOverlapping(30);
 
 // Yearly plans are paid once a year but sold as "credits / month" — this is
 // what actually delivers each month's allowance. See GrantMonthlyCredits.
 ScheduleMonitoring::track(
-    Schedule::command('subscriptions:grant-monthly-credits')->daily()->withoutOverlapping(),
+    Schedule::command('subscriptions:grant-monthly-credits')->daily()->withoutOverlapping(30),
     'subscriptions:grant-monthly-credits',
 );
 
@@ -169,17 +172,17 @@ ScheduleMonitoring::track(
 // never outlives shared hosting's limits.
 // ---------------------------------------------------------------------
 ScheduleMonitoring::track(
-    Schedule::command('crm:send-campaigns')->everyFiveMinutes()->withoutOverlapping(),
+    Schedule::command('crm:send-campaigns')->everyFiveMinutes()->withoutOverlapping(30),
     'crm:send-campaigns',
 );
 
 ScheduleMonitoring::track(
-    Schedule::command('crm:poll-replies')->everyFiveMinutes()->withoutOverlapping(),
+    Schedule::command('crm:poll-replies')->everyFiveMinutes()->withoutOverlapping(30),
     'crm:poll-replies',
 );
 
 ScheduleMonitoring::track(
-    Schedule::command('crm:verify-email-connections')->daily()->withoutOverlapping(),
+    Schedule::command('crm:verify-email-connections')->daily()->withoutOverlapping(30),
     'crm:verify-email-connections',
 );
 
@@ -190,17 +193,17 @@ ScheduleMonitoring::track(
 // (a unique send-log row is claimed before anything is queued), and the
 // actual sends go through the database queue the cron worker drains.
 ScheduleMonitoring::track(
-    Schedule::command('lifecycle:send-birthday')->hourly()->withoutOverlapping(),
+    Schedule::command('lifecycle:send-birthday')->hourly()->withoutOverlapping(30),
     'lifecycle:send-birthday',
 );
 
 ScheduleMonitoring::track(
-    Schedule::command('lifecycle:send-festive')->hourly()->withoutOverlapping(),
+    Schedule::command('lifecycle:send-festive')->hourly()->withoutOverlapping(30),
     'lifecycle:send-festive',
 );
 
 ScheduleMonitoring::track(
-    Schedule::command('lifecycle:send-reengagement')->hourly()->withoutOverlapping(),
+    Schedule::command('lifecycle:send-reengagement')->hourly()->withoutOverlapping(30),
     'lifecycle:send-reengagement',
 );
 
@@ -208,14 +211,14 @@ ScheduleMonitoring::track(
 Schedule::call(fn () => UserActivityDay::where('date', '<', now()->subDays((int) config('lifecycle.activity_history_days', 90))->toDateString())->delete())
     ->daily()
     ->name('prune-user-activity-days')
-    ->withoutOverlapping();
+    ->withoutOverlapping(30);
 
 // --- Relaunch (agent 07): daily live re-check of every connected social
 // account (YouTube/LinkedIn/TikTok/Instagram), refreshing tokens where the
 // platform allows and notifying the owner once when one breaks — see
 // VerifySocialConnections / SocialConnectionVerifier.
 ScheduleMonitoring::track(
-    Schedule::command('social-connections:verify')->dailyAt('05:17')->withoutOverlapping(),
+    Schedule::command('social-connections:verify')->dailyAt('05:17')->withoutOverlapping(30),
     'social-connections:verify',
 );
 // --- end agent 07 ---
@@ -226,17 +229,17 @@ ScheduleMonitoring::track(
 // time-based stages and the 30-day engagement score current). The purge
 // enforces the retention period set in Analytics → Cookie Consent.
 ScheduleMonitoring::track(
-    Schedule::command('analytics:build-profiles')->everyThirtyMinutes()->withoutOverlapping(),
+    Schedule::command('analytics:build-profiles')->everyThirtyMinutes()->withoutOverlapping(30),
     'analytics:build-profiles',
 );
 
 ScheduleMonitoring::track(
-    Schedule::command('analytics:build-profiles --full')->dailyAt('02:41')->withoutOverlapping(),
+    Schedule::command('analytics:build-profiles --full')->dailyAt('02:41')->withoutOverlapping(30),
     'analytics:build-profiles --full',
 );
 
 ScheduleMonitoring::track(
-    Schedule::command('analytics:purge')->dailyAt('03:13')->withoutOverlapping(),
+    Schedule::command('analytics:purge')->dailyAt('03:13')->withoutOverlapping(30),
     'analytics:purge',
 );
 // --- end agent 04 ---
