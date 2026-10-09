@@ -45,6 +45,12 @@ class Overview extends Page
     {
         return [
             [
+                'icon' => Heroicon::OutlinedRocketLaunch,
+                'title' => 'Integration Guides',
+                'description' => 'Setup checklist + step-by-step guides for every outside service (Google, payments, email, TikTok…).',
+                'url' => IntegrationGuides::getUrl(),
+            ],
+            [
                 'icon' => Heroicon::OutlinedCreditCard,
                 'title' => 'Billing & Payments',
                 'description' => 'Plans, payment gateways, credit top-ups, and the automatic refund policy.',

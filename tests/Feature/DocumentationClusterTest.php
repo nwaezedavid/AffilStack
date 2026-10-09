@@ -110,7 +110,7 @@ class DocumentationClusterTest extends TestCase
         $this->actingAs($admin);
 
         $topics = (new Overview)->topics();
-        $this->assertCount(5, $topics);
+        $this->assertCount(6, $topics);
 
         foreach ($topics as $topic) {
             $this->assertNotEmpty($topic['title']);
