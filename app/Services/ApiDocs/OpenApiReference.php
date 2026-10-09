@@ -5,7 +5,6 @@ namespace App\Services\ApiDocs;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Str;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Turns the hand-authored OpenAPI spec (resources/openapi/openapi.yaml —
@@ -53,7 +52,10 @@ class OpenApiReference
      */
     public function spec(): array
     {
-        return $this->spec ??= Yaml::parseFile(resource_path('openapi/openapi.yaml'));
+        // openapi.json is generated from openapi.yaml (the published source)
+        // so production needs no YAML parser — symfony/yaml is a dev-only
+        // package. OpenApiSpecTest keeps the two files in step.
+        return $this->spec ??= json_decode((string) file_get_contents(resource_path('openapi/openapi.json')), true, flags: JSON_THROW_ON_ERROR);
     }
 
     /**
