@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Widgets\SupportInboxWidget;
 use App\Models\SupportTicket;
 use App\Models\User;
+use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -23,7 +24,7 @@ class SupportInboxWidgetTest extends TestCase
 
     public function test_it_does_not_crash_when_the_oldest_open_ticket_has_no_reply_yet(): void
     {
-        $admin = User::factory()->create();
+        $admin = $this->supportAdmin();
         $customer = User::factory()->create();
 
         SupportTicket::create([
@@ -42,7 +43,7 @@ class SupportInboxWidgetTest extends TestCase
 
     public function test_a_never_replied_ticket_still_counts_as_the_oldest_unanswered_using_its_created_at(): void
     {
-        $admin = User::factory()->create();
+        $admin = $this->supportAdmin();
         $customer = User::factory()->create();
 
         $repliedRecently = SupportTicket::create([
@@ -67,10 +68,23 @@ class SupportInboxWidgetTest extends TestCase
 
     public function test_an_empty_inbox_shows_a_clean_state_instead_of_crashing(): void
     {
-        $admin = User::factory()->create();
+        $admin = $this->supportAdmin();
 
         Livewire::actingAs($admin)->test(SupportInboxWidget::class)
             ->assertSuccessful()
             ->assertSee('Inbox is clear');
+    }
+
+    /**
+     * Filament checks a widget's canView() when it mounts, so the viewer must
+     * be an admin who can open the support department.
+     */
+    private function supportAdmin(): User
+    {
+        $this->seed(RolesSeeder::class);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        return $admin;
     }
 }
