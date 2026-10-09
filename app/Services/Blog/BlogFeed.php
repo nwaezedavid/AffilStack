@@ -216,9 +216,11 @@ class BlogFeed
                 ))), 0, $count);
             }
 
-            $lastError = $response->successful()
-                ? 'the address answered, but not with WordPress posts — is it a WordPress site with the REST API enabled?'
-                : 'the blog answered with HTTP '.$response->status();
+            $lastError = match (true) {
+                $response->successful() => 'the address answered, but not with WordPress posts — is it a WordPress site with the REST API enabled?',
+                $response->redirect() && filled($response->header('Location')) => 'the blog redirects to '.Str::limit(preg_replace('#/(wp-json|\?rest_route=).*$#', '', $response->header('Location')), 120).' — enter that address instead',
+                default => 'the blog answered with HTTP '.$response->status(),
+            };
         }
 
         throw new RuntimeException($lastError);

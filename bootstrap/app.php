@@ -29,9 +29,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Only answer for the site's own host (and its www. form): links in
         // emails and the cached /embed/banner.js are built from the request
         // host, so a forged Host header must never be able to change them.
-        $middleware->trustHosts(at: fn (): array => array_values(array_filter([
-            parse_url((string) config('app.url'), PHP_URL_HOST),
-        ])), subdomains: true);
+        // (No custom list: the default trusts exactly the APP_URL host and
+        // its subdomains as an anchored pattern.)
+        $middleware->trustHosts();
 
         $middleware->validateCsrfTokens(except: [
             // Server-to-server gateway webhooks — each controller verifies

@@ -132,10 +132,16 @@ class GoogleAuthController extends Controller
                 // account's owner. Google has now proven ownership — retire
                 // the old password and sign out every other session, so a
                 // pre-registered account can't be shared with an intruder.
+                // Two-factor sign-in set up before ownership was proven is
+                // retired too, or a pre-registered account's 2FA would lock
+                // the real owner out at the next step.
                 $user->forceFill([
                     'google_id' => $profile['sub'],
                     'password' => Hash::make(Str::random(64)),
                     'remember_token' => Str::random(60),
+                    'two_factor_secret' => null,
+                    'two_factor_recovery_codes' => null,
+                    'two_factor_confirmed_at' => null,
                 ])->save();
 
                 if (config('session.driver') === 'database') {

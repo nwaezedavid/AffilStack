@@ -39,7 +39,7 @@ class RefundProcessor
         }
 
         $transaction = PaymentTransaction::where('gateway', $gateway)
-            ->where('status', 'successful')
+            ->whereIn('status', ['successful', 'needs_review'])
             ->where(function ($query) use ($txIds, $references) {
                 if (! empty($txIds)) {
                     $query->orWhereIn('gateway_tx_id', $txIds);
@@ -63,6 +63,14 @@ class RefundProcessor
         }
 
         $status = $event['kind'] === 'charged_back' ? 'charged_back' : 'refunded';
+
+        // A payment held for review granted nothing, so there is nothing to
+        // take back — just record that the money went back.
+        if ($transaction->status === 'needs_review') {
+            $transaction->update(['status' => $status, 'processed_at' => now()]);
+
+            return $transaction;
+        }
 
         $transaction->update([
             'status' => $status,

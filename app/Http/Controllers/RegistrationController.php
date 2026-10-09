@@ -173,6 +173,10 @@ class RegistrationController extends Controller
             return redirect()->route('login')->with('success', 'Payment received — your account is ready. Sign in to get started.');
         }
 
+        if ($transaction && $transaction->status === 'needs_review') {
+            return redirect()->route('registration.pricing')->with('success', 'Payment received — our team is reviewing it and will email you shortly. Please don\'t pay again.');
+        }
+
         return redirect()->route('registration.pricing')->with('error', 'We could not verify that payment. No account was created.');
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -29,11 +30,11 @@ class EmailAddressChanged extends Notification
     {
         // Only part of the new address is shown, and it is kept out of the
         // Markdown so it can't be turned into a link.
-        $masked = preg_replace('/(?<=.).(?=[^@]*@)/u', '*', $this->newEmail);
+        $masked = preg_replace('/(?<=.).(?=[^@]*@)/u', '•', $this->newEmail);
 
         return (new MailMessage)
             ->subject('Your '.config('app.name').' sign-in email was changed')
-            ->line('The sign-in email on your '.config('app.name').' account was just changed to '.addcslashes((string) $masked, '\\`*_[]()!<>#').'.')
+            ->line('The sign-in email on your '.config('app.name').' account was just changed to '.MailText::escape((string) $masked).'.')
             ->line('If you made this change, you can ignore this message.')
             ->line('If you did not, contact support straight away so we can secure your account.')
             ->action('Contact support', route('contact.show'));

@@ -13,6 +13,9 @@ class MailText
 {
     public static function escape(?string $value): string
     {
-        return addcslashes((string) $value, '\\`*_[]()!<>#|~');
+        // Only what's needed to stop links and images: Blade already turns
+        // < and > into entities, and escaping more would leave visible
+        // backslashes in the plain-text part of the email.
+        return addcslashes((string) $value, '\\[]!');
     }
 }

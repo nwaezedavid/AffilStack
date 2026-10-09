@@ -73,6 +73,19 @@ class SecurityHardeningTest extends TestCase
         $this->assertSame(0, $user->apiTokens()->count());
     }
 
+    public function test_first_google_sign_in_also_retires_two_factor_set_up_before_ownership_was_proven(): void
+    {
+        $this->enableGoogleLogin();
+        $user = $this->customer(['email' => 'ada@example.com', 'google_id' => null]);
+        $user->forceFill(['two_factor_secret' => encrypt('planted'), 'two_factor_confirmed_at' => now()])->save();
+
+        $this->fakeGoogleProfile('ada-sub', 'ada@example.com');
+
+        $this->googleCallback()->assertRedirect(route('dashboard'));
+        $this->assertAuthenticatedAs($user->fresh());
+        $this->assertNull($user->fresh()->two_factor_secret);
+    }
+
     public function test_changing_the_email_needs_the_current_password(): void
     {
         $user = $this->customer(['email' => 'old@example.com', 'password' => Hash::make('right-password')]);

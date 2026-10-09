@@ -7,7 +7,10 @@ use App\Models\Offer;
 use App\Models\User;
 use App\Services\AI\AIGenerationException;
 use App\Services\AI\OpenAIProvider;
+use App\Services\Blog\BlogFeed;
 use App\Services\Links\LinkCloakingService;
+use App\Support\MailText;
+use App\Support\OutboundUrlGuard;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -82,6 +85,27 @@ class LaunchReadinessTest extends TestCase
         } catch (AIGenerationException $e) {
             $this->assertSame(AIGenerationException::UNAVAILABLE, $e->getMessage());
             $this->assertStringNotContainsString('sk-secret', $e->getMessage());
+        }
+    }
+
+    public function test_mail_text_escaping_stops_links_but_keeps_ordinary_text_readable(): void
+    {
+        $this->assertSame('john_doe@example.com (CEO) 3*4', MailText::escape('john_doe@example.com (CEO) 3*4'));
+        $this->assertSame('\\[click\\](https://evil.example) \\!\\[\\](x)', MailText::escape('[click](https://evil.example) ![](x)'));
+    }
+
+    public function test_a_redirecting_blog_address_explains_where_it_redirects(): void
+    {
+        OutboundUrlGuard::resolveUsing(fn (string $host): array => ['93.184.216.34']);
+        Http::fake(['*' => Http::response('', 301, ['Location' => 'https://www.blog.example/wp-json/wp/v2/posts?per_page=3'])]);
+
+        try {
+            app(BlogFeed::class)->fetch('https://blog.example', 3);
+            $this->fail('Expected the blog fetch to fail.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('redirects to https://www.blog.example', $e->getMessage());
+        } finally {
+            OutboundUrlGuard::resolveUsing(null);
         }
     }
 

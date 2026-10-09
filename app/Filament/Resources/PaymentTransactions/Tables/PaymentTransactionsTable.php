@@ -25,7 +25,7 @@ class PaymentTransactionsTable
                     ->badge()
                     ->colors([
                         'success' => 'successful',
-                        'warning' => 'pending',
+                        'warning' => fn ($state) => in_array($state, ['pending', 'needs_review'], true),
                         'danger' => fn ($state) => in_array($state, ['failed', 'charged_back'], true),
                         'gray' => 'refunded',
                     ]),
@@ -35,6 +35,7 @@ class PaymentTransactionsTable
                 SelectFilter::make('status')->options([
                     'pending' => 'Pending',
                     'successful' => 'Successful',
+                    'needs_review' => 'Needs review (paid, not applied)',
                     'failed' => 'Failed',
                     'refunded' => 'Refunded',
                     'charged_back' => 'Charged back',

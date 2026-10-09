@@ -245,6 +245,10 @@ class BillingController extends Controller
             return redirect()->route('dashboard')->with('success', 'Your plan is now active. Welcome to AffilStack.');
         }
 
+        if ($transaction && $transaction->status === 'needs_review') {
+            return redirect()->route('billing.index')->with('success', 'Payment received — our team is reviewing it and will contact you shortly. Please don\'t pay again.');
+        }
+
         return redirect()->route('billing.index')->with('error', 'We could not verify that payment. No charge was applied to your plan.');
     }
 }
