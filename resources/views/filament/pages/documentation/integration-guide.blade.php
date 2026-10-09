@@ -37,26 +37,26 @@
 
         <div class="afs-g-meta">
             <div class="afs-g-meta-item">
-                <span><x-filament::icon icon="heroicon-o-signal" /> Live status</span>
+                <span class="afs-g-meta-label"><x-filament::icon icon="heroicon-o-signal" /> Live status</span>
                 <span class="afs-g-pill afs-g-pill--{{ $status['state'] }}">{{ $status['label'] }}</span>
                 @if ($status['detail'])
                     <div class="afs-g-small" style="margin-top:0.35rem">{{ $status['detail'] }}</div>
                 @endif
             </div>
             <div class="afs-g-meta-item">
-                <span><x-filament::icon icon="heroicon-o-flag" /> Priority</span>
+                <span class="afs-g-meta-label"><x-filament::icon icon="heroicon-o-flag" /> Priority</span>
                 <span class="afs-g-pill afs-g-pill--plain afs-g-pill--{{ $meta['priority'] }}">{{ ucfirst($meta['priority']) }}</span>
             </div>
             <div class="afs-g-meta-item">
-                <span><x-filament::icon icon="heroicon-o-currency-dollar" /> Cost</span>
+                <span class="afs-g-meta-label"><x-filament::icon icon="heroicon-o-currency-dollar" /> Cost</span>
                 {{ $meta['cost'] }} <a href="{{ $meta['cost_source'] }}" target="_blank" rel="noopener noreferrer">source</a>
             </div>
             <div class="afs-g-meta-item">
-                <span><x-filament::icon icon="heroicon-o-clock" /> Setup time</span>
+                <span class="afs-g-meta-label"><x-filament::icon icon="heroicon-o-clock" /> Setup time</span>
                 {{ $meta['time'] }}
             </div>
             <div class="afs-g-meta-item">
-                <span><x-filament::icon icon="heroicon-o-map-pin" /> Keys go in</span>
+                <span class="afs-g-meta-label"><x-filament::icon icon="heroicon-o-map-pin" /> Keys go in</span>
                 @if ($target['url'])
                     <a href="{{ $target['url'] }}">{{ $target['label'] }}</a>
                 @elseif ($target['label'])

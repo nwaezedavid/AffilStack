@@ -244,7 +244,7 @@
     .afs-g-cards {
         display: grid;
         gap: 0.85rem;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
     }
 
     .afs-g-card {
@@ -450,7 +450,7 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    @media (min-width: 1100px) {
+    @media (min-width: 1440px) {
         .afs-g-layout {
             grid-template-columns: minmax(0, 1fr) 15rem;
         }
@@ -465,7 +465,7 @@
         font-size: 0.84rem;
     }
 
-    @media (min-width: 1100px) {
+    @media (min-width: 1440px) {
         .afs-g-toc {
             order: 0;
             position: sticky;
@@ -509,7 +509,7 @@
         font-size: 0.82rem;
     }
 
-    .afs-g-meta-item > span {
+    .afs-g-meta-label {
         display: flex;
         align-items: center;
         gap: 0.35rem;
@@ -521,7 +521,7 @@
         margin-bottom: 0.25rem;
     }
 
-    .afs-g-meta-item > span svg {
+    .afs-g-meta-label svg {
         width: 0.9rem;
         height: 0.9rem;
     }
