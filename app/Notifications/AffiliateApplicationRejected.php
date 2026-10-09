@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\AffiliateApplication;
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -31,7 +32,7 @@ class AffiliateApplicationRejected extends Notification
     {
         return (new MailMessage)
             ->subject('Your affiliate application')
-            ->line("Thanks for applying to become an affiliate, {$this->application->name}.")
+            ->line('Thanks for applying to become an affiliate, '.MailText::escape($this->application->name).'.')
             ->line("We're not able to approve your application at this time: {$this->application->rejection_reason}")
             ->line('If you\'d like to become an affiliate another way, signing up as a customer makes you an affiliate automatically.');
     }

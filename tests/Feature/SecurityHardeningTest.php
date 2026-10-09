@@ -9,10 +9,12 @@ use App\Models\GoogleOauthSetting;
 use App\Models\Offer;
 use App\Models\PaymentGatewaySetting;
 use App\Models\User;
+use App\Notifications\EmailAddressChanged;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -82,9 +84,13 @@ class SecurityHardeningTest extends TestCase
         $this->actingAs($user)->put('/profile/personal', ['name' => 'Ada', 'email' => 'new@example.com', 'current_password' => 'wrong'])
             ->assertSessionHasErrors('current_password', null, 'personal');
 
+        Notification::fake();
+
         $this->actingAs($user)->put('/profile/personal', ['name' => 'Ada', 'email' => 'new@example.com', 'current_password' => 'right-password'])
             ->assertSessionHasNoErrors();
         $this->assertSame('new@example.com', $user->fresh()->email);
+
+        Notification::assertSentOnDemand(EmailAddressChanged::class, fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'old@example.com');
     }
 
     public function test_other_profile_fields_save_without_a_password(): void
@@ -149,6 +155,17 @@ class SecurityHardeningTest extends TestCase
         $this->actingAs($admin)->get('/admin/google-site-analytics/connect');
 
         $this->assertGuest();
+    }
+
+    public function test_each_rate_limited_route_has_its_own_budget(): void
+    {
+        // Six other throttled requests (the contact form allows five a
+        // minute) must not use up the contact form's own allowance.
+        foreach (range(1, 6) as $i) {
+            $this->post('/affiliate/set-password/999999', []);
+        }
+
+        $this->post('/contact', [])->assertStatus(302);
     }
 
     protected function customer(array $attributes = []): User

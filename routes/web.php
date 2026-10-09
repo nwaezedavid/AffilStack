@@ -130,16 +130,16 @@ Route::get('/afs-login', fn () => redirect()->to(Filament::getPanel('admin')->ge
 Route::post('/checkout-country', [CheckoutCountryController::class, 'update'])->name('checkout.country.update');
 
 Route::get('/contact', [ContactController::class, 'show'])->name('contact.show');
-Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1')->name('contact.store');
+Route::post('/contact', [ContactController::class, 'store'])->middleware('throttle:5,1,contact.store')->name('contact.store');
 
 // Public, unauthenticated — whoever clicks a cloaked link is the offer's own
 // audience, not an AffilStack user. See LinkCloakingService.
 // Throttled per visitor IP: every hit writes a click row and queues a geo lookup.
-Route::get('/go/{code}', [LinkController::class, 'redirect'])->middleware('throttle:60,1')->name('links.redirect');
+Route::get('/go/{code}', [LinkController::class, 'redirect'])->middleware('throttle:60,1,links.redirect')->name('links.redirect');
 
 // Public, unauthenticated — whoever clicks a referral link is a prospective
 // signup, not an AffilStack user yet. See ReferralController.
-Route::get('/r/{code}', [ReferralController::class, 'redirect'])->middleware('throttle:60,1')->name('referrals.redirect');
+Route::get('/r/{code}', [ReferralController::class, 'redirect'])->middleware('throttle:60,1,referrals.redirect')->name('referrals.redirect');
 
 // CRM/email dashboard: public, unauthenticated — the open pixel and click
 // redirect are hit by the CRM contact's own email client, never by an
@@ -154,15 +154,15 @@ Route::get('/crm/unsubscribe/{token}', [CrmController::class, 'unsubscribe'])->n
 // load. Excluded from CSRF in bootstrap/app.php alongside the webhooks,
 // for the same "can't always guarantee a fresh token" reason.
 // Agent 04: + RejectCrossSiteBeacon (refuses cross-site posts, since these skip CSRF).
-Route::middleware(['throttle:120,1', RejectCrossSiteBeacon::class])->group(function () {
+Route::middleware(['throttle:120,1,analytics-beacons', RejectCrossSiteBeacon::class])->group(function () {
     Route::post('/internal/analytics/view', [AnalyticsBeaconController::class, 'record'])->name('analytics.beacon.view');
     Route::post('/internal/analytics/duration', [AnalyticsBeaconController::class, 'duration'])->name('analytics.beacon.duration');
 });
 
-Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->middleware('throttle:120,1')->name('webhooks.flutterwave');
-Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->middleware('throttle:120,1')->name('webhooks.stripe');
-Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])->middleware('throttle:120,1')->name('webhooks.paystack');
-Route::post('/webhooks/paypal', [PayPalWebhookController::class, 'handle'])->middleware('throttle:120,1')->name('webhooks.paypal');
+Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'handle'])->middleware('throttle:120,1,webhooks.flutterwave')->name('webhooks.flutterwave');
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->middleware('throttle:120,1,webhooks.stripe')->name('webhooks.stripe');
+Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])->middleware('throttle:120,1,webhooks.paystack')->name('webhooks.paystack');
+Route::post('/webhooks/paypal', [PayPalWebhookController::class, 'handle'])->middleware('throttle:120,1,webhooks.paypal')->name('webhooks.paypal');
 
 // The only door into a CUSTOMER account: pick a plan, pay, get created. No
 // open registration exists anywhere in this app — see RegistrationController.
@@ -179,9 +179,9 @@ Route::post('/webhooks/paypal', [PayPalWebhookController::class, 'handle'])->mid
 // above; applied individually here since this route sits in its own
 // ordering-sensitive block (see the comment above).
 Route::middleware('cache-public-page')->get('/pricing', [RegistrationController::class, 'pricing'])->name('registration.pricing');
-Route::get('/get-started/callback', [RegistrationController::class, 'callback'])->middleware('throttle:30,1')->name('registration.callback');
+Route::get('/get-started/callback', [RegistrationController::class, 'callback'])->middleware('throttle:30,1,registration.callback')->name('registration.callback');
 Route::get('/get-started/{plan}', [RegistrationController::class, 'showForm'])->name('registration.form');
-Route::post('/get-started/{plan}', [RegistrationController::class, 'store'])->middleware('throttle:10,1')->name('registration.store');
+Route::post('/get-started/{plan}', [RegistrationController::class, 'store'])->middleware('throttle:10,1,registration.store')->name('registration.store');
 Route::post('/get-started/{plan}/google', [GoogleAuthController::class, 'redirectForSignup'])->name('registration.google');
 
 // The affiliate program's own public landing page — "anyone can sign-up to
@@ -194,12 +194,12 @@ Route::post('/get-started/{plan}/google', [GoogleAuthController::class, 'redirec
 if ($affiliateSubdomain = config('referrals.landing_subdomain')) {
     Route::domain($affiliateSubdomain)->group(function () {
         Route::get('/', [AffiliateController::class, 'show'])->name('affiliate.landing');
-        Route::post('/', [AffiliateController::class, 'apply'])->middleware('throttle:5,1')->name('affiliate.apply');
+        Route::post('/', [AffiliateController::class, 'apply'])->middleware('throttle:5,1,affiliate.apply')->name('affiliate.apply');
     });
 } else {
     Route::prefix('affiliate')->group(function () {
         Route::get('/', [AffiliateController::class, 'show'])->name('affiliate.landing');
-        Route::post('/', [AffiliateController::class, 'apply'])->middleware('throttle:5,1')->name('affiliate.apply');
+        Route::post('/', [AffiliateController::class, 'apply'])->middleware('throttle:5,1,affiliate.apply')->name('affiliate.apply');
     });
 }
 
@@ -209,7 +209,7 @@ if ($affiliateSubdomain = config('referrals.landing_subdomain')) {
 // See AffiliateSetPasswordController for why this isn't Laravel's
 // signed-URL helper.
 Route::get('/affiliate/set-password/{application}', [AffiliateSetPasswordController::class, 'show'])->name('affiliate.set-password.show');
-Route::post('/affiliate/set-password/{application}', [AffiliateSetPasswordController::class, 'store'])->middleware('throttle:10,1')->name('affiliate.set-password.store');
+Route::post('/affiliate/set-password/{application}', [AffiliateSetPasswordController::class, 'store'])->middleware('throttle:10,1,affiliate.set-password.store')->name('affiliate.set-password.store');
 
 // "Continue with Google" — one callback for both the login page and the
 // signup form; see GoogleAuthController for how it tells them apart.
@@ -310,7 +310,7 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::get('/email-connections', [EmailConnectionController::class, 'index'])->name('email-connections.index');
     Route::get('/email-connections/gmail/redirect', [EmailConnectionController::class, 'redirectToGoogle'])->name('email-connections.gmail.redirect');
     Route::get('/email-connections/gmail/callback', [EmailConnectionController::class, 'handleGoogleCallback'])->name('email-connections.gmail.callback');
-    Route::post('/email-connections/smtp', [EmailConnectionController::class, 'storeSmtp'])->middleware('throttle:10,1')->name('email-connections.smtp.store');
+    Route::post('/email-connections/smtp', [EmailConnectionController::class, 'storeSmtp'])->middleware('throttle:10,1,email-connections.smtp.store')->name('email-connections.smtp.store');
     Route::delete('/email-connections', [EmailConnectionController::class, 'disconnect'])->name('email-connections.destroy');
 
     // Task #3 (LinkedIn) + task #2 (YouTube/TikTok/Instagram): one
@@ -390,8 +390,8 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     // "Test connection" on Connected Accounts (seat-allowed, like the rest
     // of that page); a sample delivery to one webhook endpoint (owner-only,
     // like the other webhook routes); SDK downloads for the API hub.
-    Route::post('/social-connections/{provider}/verify', [SocialConnectionController::class, 'verify'])->middleware('throttle:20,1')->name('social-connections.verify');
-    Route::post('/api-access/webhooks/{webhook}/test', [ApiAccessController::class, 'testWebhook'])->middleware('throttle:10,1')->name('api-access.webhooks.test');
+    Route::post('/social-connections/{provider}/verify', [SocialConnectionController::class, 'verify'])->middleware('throttle:20,1,social-connections.verify')->name('social-connections.verify');
+    Route::post('/api-access/webhooks/{webhook}/test', [ApiAccessController::class, 'testWebhook'])->middleware('throttle:10,1,api-access.webhooks.test')->name('api-access.webhooks.test');
     Route::get('/api-access/sdk/{language}', [ApiAccessController::class, 'downloadSdk'])->whereIn('language', ['js', 'python'])->name('api-access.sdk');
     // --- end agent 07 ---
 
@@ -410,7 +410,7 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     // ticket ID and 404s on route-model binding.
     Route::get('/support/chat', [SupportChatController::class, 'show'])->name('support.chat');
     Route::post('/support/chat/message', [SupportChatController::class, 'message'])->middleware('throttle:support-chat')->name('support.chat.message');
-    Route::post('/support/chat/escalate', [SupportChatController::class, 'escalate'])->middleware('throttle:5,60')->name('support.chat.escalate');
+    Route::post('/support/chat/escalate', [SupportChatController::class, 'escalate'])->middleware('throttle:5,60,support.chat.escalate')->name('support.chat.escalate');
 
     // --- Agent 10: Get Started journey — research status polling, the
     // dedicated per-feature product pages, and the welcome tour. Seat
@@ -442,7 +442,7 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::patch('/crm/lists/{crmList}', [CrmListController::class, 'update'])->name('crm.lists.update');
     Route::delete('/crm/lists/{crmList}', [CrmListController::class, 'destroy'])->name('crm.lists.destroy');
 
-    Route::post('/crm/import', [CrmImportController::class, 'upload'])->middleware('throttle:20,1')->name('crm.import.upload');
+    Route::post('/crm/import', [CrmImportController::class, 'upload'])->middleware('throttle:20,1,crm.import.upload')->name('crm.import.upload');
     Route::get('/crm/import/{token}', [CrmImportController::class, 'preview'])->name('crm.import.preview');
     Route::post('/crm/import/{token}', [CrmImportController::class, 'store'])->name('crm.import.store');
 
@@ -458,13 +458,13 @@ Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats',
     Route::post('/crm/campaigns/{campaign}/resume', [CrmCampaignController::class, 'resume'])->name('crm.campaigns.resume');
 
     Route::get('/crm/inbox', [CrmInboxController::class, 'index'])->name('crm.inbox');
-    Route::post('/crm/inbox/check', [CrmInboxController::class, 'check'])->middleware('throttle:6,1')->name('crm.inbox.check');
+    Route::post('/crm/inbox/check', [CrmInboxController::class, 'check'])->middleware('throttle:6,1,crm.inbox.check')->name('crm.inbox.check');
     Route::get('/crm/inbox/{contact}', [CrmInboxController::class, 'show'])->name('crm.inbox.show');
     Route::post('/crm/inbox/replies/{reply}/draft', [CrmInboxController::class, 'draft'])->middleware('throttle:paid-lookups')->name('crm.inbox.draft');
-    Route::post('/crm/inbox/replies/{reply}/send', [CrmInboxController::class, 'send'])->middleware('throttle:30,1')->name('crm.inbox.send');
+    Route::post('/crm/inbox/replies/{reply}/send', [CrmInboxController::class, 'send'])->middleware('throttle:30,1,crm.inbox.send')->name('crm.inbox.send');
 
-    Route::post('/email-connections/test', [EmailConnectionController::class, 'test'])->middleware('throttle:10,1')->name('email-connections.test');
-    Route::post('/email-connections/imap', [EmailConnectionController::class, 'storeImap'])->middleware('throttle:10,1')->name('email-connections.imap.store');
+    Route::post('/email-connections/test', [EmailConnectionController::class, 'test'])->middleware('throttle:10,1,email-connections.test')->name('email-connections.test');
+    Route::post('/email-connections/imap', [EmailConnectionController::class, 'storeImap'])->middleware('throttle:10,1,email-connections.imap.store')->name('email-connections.imap.store');
     Route::delete('/email-connections/imap', [EmailConnectionController::class, 'destroyImap'])->name('email-connections.imap.destroy');
     Route::patch('/email-connections/settings', [EmailConnectionController::class, 'updateSettings'])->name('email-connections.settings');
 });
@@ -499,7 +499,7 @@ Route::middleware('cache-public-page')
 // Must stay the LAST route registered: Route::fallback() only ever fires
 // once every route above has already failed to match, and it deliberately
 // skips the admin panel/API/webhook paths inside the controller itself.
-Route::fallback([RedirectFallbackController::class, 'handle'])->middleware('throttle:120,1');
+Route::fallback([RedirectFallbackController::class, 'handle'])->middleware('throttle:120,1,fallback');
 
 // --- Agent 01: favicon set for browsers and search engines -----------------
 // Stable root URLs (/favicon.ico, /favicon-48x48.png, /apple-touch-icon.png,
@@ -523,7 +523,7 @@ Route::get('/{file}', [FaviconController::class, 'show'])
 // Signed per-user links from the footer of birthday/festive/re-engagement
 // emails — see LifecycleEmailPreferenceController. The POST route is the
 // RFC 8058 one-click target mail clients call directly, so it skips CSRF.
-Route::middleware(['signed', 'throttle:30,1'])->group(function () {
+Route::middleware(['signed', 'throttle:30,1,signed-links'])->group(function () {
     Route::get('/email/lifecycle/unsubscribe/{user}', [LifecycleEmailPreferenceController::class, 'unsubscribe'])->name('lifecycle.unsubscribe');
     Route::post('/email/lifecycle/unsubscribe/{user}', [LifecycleEmailPreferenceController::class, 'oneClickUnsubscribe'])
         ->withoutMiddleware([PreventRequestForgery::class])
@@ -537,7 +537,7 @@ Route::middleware(['signed', 'throttle:30,1'])->group(function () {
 // manage its own profile). See ProfileController.
 Route::middleware(['auth', 'verified', 'not-suspended'])->group(function () {
     Route::put('/profile/personal', [ProfileController::class, 'updatePersonal'])->name('profile.personal.update');
-    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->middleware('throttle:20,1')->name('profile.photo.update');
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->middleware('throttle:20,1,profile.photo.update')->name('profile.photo.update');
     Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
     Route::put('/profile/business', [ProfileController::class, 'updateBusiness'])->name('profile.business.update');
     Route::put('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
@@ -561,7 +561,7 @@ Route::withoutMiddleware('web')->group(function () {
         Route::get('/embed/banner.js', [BannerEmbedController::class, 'script'])->name('embed.banner-script');
         Route::get('/embed/banner/{size}', [BannerEmbedController::class, 'frame'])
             ->where('size', '\d{2,4}x\d{2,4}')
-            ->middleware('throttle:240,1')
+            ->middleware('throttle:240,1,embed.banner')
             ->name('embed.banner');
     });
 });
@@ -586,7 +586,7 @@ Route::middleware(RejectCrossSiteBeacon::class)
 // panel. Same session as the panel; EnsurePanelLoginCompleted signs out any
 // session that didn't pass the panel's two-factor login, and the controller
 // itself only serves full admins and audit-logs every export.
-Route::middleware(['auth', EnsurePanelLoginCompleted::class, 'throttle:30,1'])
+Route::middleware(['auth', EnsurePanelLoginCompleted::class, 'throttle:30,1,admin-exports'])
     ->get('/admin/analytics/export/{type}', [AnalyticsExportController::class, 'download'])
     ->where('type', '[a-z_]{3,30}')
     ->name('admin.analytics.export');

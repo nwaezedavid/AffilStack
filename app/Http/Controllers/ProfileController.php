@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Notifications\EmailAddressChanged;
 use App\Services\Media\AvatarProcessor;
 use App\Services\Payments\StripeGateway;
 use App\Support\Countries;
@@ -10,6 +11,7 @@ use App\Support\Lifecycle\LifecycleAudience;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -116,6 +118,8 @@ class ProfileController extends Controller
             $birthDate = sprintf('%04d-%02d-%02d', $year, $validated['birth_month'], $validated['birth_day']);
         }
 
+        $previousEmail = $user->email;
+
         $user->forceFill([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -124,6 +128,10 @@ class ProfileController extends Controller
             'gender' => $validated['gender'] ?? null,
             'religion' => $validated['religion'] ?? null,
         ])->save();
+
+        if (strcasecmp($previousEmail, $user->email) !== 0) {
+            Notification::route('mail', $previousEmail)->notify(new EmailAddressChanged($user->email));
+        }
 
         return redirect()->route('profile', ['tab' => 'personal'])->with('success', 'Your personal details are saved.');
     }

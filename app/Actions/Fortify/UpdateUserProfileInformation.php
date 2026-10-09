@@ -3,7 +3,9 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Notifications\EmailAddressChanged;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -32,6 +34,10 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             ],
             'current_password' => [Rule::requiredIf(fn () => strcasecmp((string) ($input['email'] ?? ''), (string) $user->email) !== 0 && ! $user->google_id), 'nullable', 'current_password:web'],
         ])->validateWithBag('updateProfileInformation');
+
+        if (strcasecmp((string) $input['email'], (string) $user->email) !== 0) {
+            Notification::route('mail', $user->email)->notify(new EmailAddressChanged((string) $input['email']));
+        }
 
         if ($input['email'] !== $user->email &&
             $user instanceof MustVerifyEmail) {

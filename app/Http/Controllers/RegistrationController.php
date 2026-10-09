@@ -114,7 +114,7 @@ class RegistrationController extends Controller
             report($e);
             $pending->delete();
 
-            return back()->withInput()->with('error', 'We could not start checkout right now. Please try again in a moment.');
+            return back()->withInput()->with('error', 'We could not start checkout right now. Please try again in a moment, or contact support if it keeps happening.');
         }
 
         $pending->update(['tx_ref' => $checkout['tx_ref']]);

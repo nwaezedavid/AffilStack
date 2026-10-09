@@ -72,6 +72,28 @@ class Offer extends Model
         return $this->hasMany(Generation::class);
     }
 
+    /**
+     * When the affiliate link (or the product page) changes, links still
+     * pointing at the old automatic destination follow it. Links the
+     * customer pointed somewhere else by hand are left alone.
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (Offer $offer): void {
+            if (! $offer->wasChanged(['affiliate_link', 'product_url'])) {
+                return;
+            }
+
+            $oldAffiliate = $offer->getOriginal('affiliate_link');
+            $oldProduct = $offer->getOriginal('product_url');
+            $oldDestination = filled($oldAffiliate) ? $oldAffiliate : $oldProduct;
+
+            $offer->trackedLinks()
+                ->whereIn('destination_url', array_values(array_unique(array_filter([$oldDestination, $oldProduct]))))
+                ->update(['destination_url' => LinkCloakingService::destinationFor($offer)]);
+        });
+    }
+
     public function trackedLinks(): HasMany
     {
         return $this->hasMany(TrackedLink::class);

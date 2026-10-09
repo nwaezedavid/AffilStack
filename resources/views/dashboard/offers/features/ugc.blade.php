@@ -67,7 +67,7 @@
                                     {{ $angle['name'] ?? '' }}
                                     <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700">{{ $angle['format'] ?? '' }}</span>
                                 </span>
-                                <span class="mt-1 block text-sm text-ink-900">&ldquo;{{ $angle['hook_idea'] ?? '' }}&rdquo;</span>
+                                <span class="mt-1 block text-sm text-ink-900">&ldquo;{{ trim((string) ($angle['hook_idea'] ?? ''), " \"'“”‘’") }}&rdquo;</span>
                                 <span class="mt-1 block text-xs text-ink-600">{{ $angle['why_it_works'] ?? '' }}</span>
                             </span>
                         </label>
@@ -148,12 +148,14 @@
             <p class="mt-4 flex items-center gap-2 rounded-2xl bg-rose-50 p-4 text-sm text-rose-800"><x-heroicon-m-sparkles class="h-5 w-5 animate-pulse" /> Writing your script… this page updates by itself.</p>
         @else
             <div class="mt-4 flex flex-wrap items-center gap-3">
-                <x-ui.button variant="primary" size="lg" icon="pencil-square" form="ugc-script-form" :disabled="! $latestAngles">
+                <x-ui.button variant="primary" size="lg" icon="pencil-square" form="ugc-script-form" :disabled="! $latestAngles || $anglesPending">
                     {{ $selectedScript ? 'Generate another script' : 'Generate script' }} ({{ config('credits.costs.ugc_content') }} credits)
                 </x-ui.button>
-                @unless ($latestAngles)
+                @if (! $latestAngles)
                     <span class="text-sm text-ink-400">Get your angles in step 1 first.</span>
-                @endunless
+                @elseif ($anglesPending)
+                    <span class="text-sm text-ink-400">New angles are on their way — pick one when they arrive.</span>
+                @endif
             </div>
         @endif
     </li>

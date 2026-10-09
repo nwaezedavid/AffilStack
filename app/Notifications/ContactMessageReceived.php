@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\ContactMessage;
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -37,8 +38,8 @@ class ContactMessageReceived extends Notification
             // admin's own inbox goes straight back to the visitor, no
             // copy-pasting their address out of the message body first.
             ->replyTo($this->contactMessage->email, $this->contactMessage->name)
-            ->line("From: {$this->contactMessage->name} ({$this->contactMessage->email})")
-            ->line($this->contactMessage->message)
+            ->line('From: '.MailText::escape($this->contactMessage->name).' ('.MailText::escape($this->contactMessage->email).')')
+            ->line(MailText::escape($this->contactMessage->message))
             ->action('View in admin', route('filament.admin.resources.contact-messages.edit', $this->contactMessage));
     }
 }

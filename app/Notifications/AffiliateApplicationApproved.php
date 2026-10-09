@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\AffiliateApplication;
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -35,7 +36,7 @@ class AffiliateApplicationApproved extends Notification
     {
         return (new MailMessage)
             ->subject("You're approved as an affiliate!")
-            ->line("Good news, {$this->application->name} — your affiliate application has been approved.")
+            ->line('Good news, '.MailText::escape($this->application->name).' — your affiliate application has been approved.')
             ->line('Set a password to access your affiliate dashboard, grab your referral link, and track your commissions.')
             ->action('Set your password', $this->setPasswordUrl)
             ->line('This link expires in 7 days.');

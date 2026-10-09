@@ -36,7 +36,29 @@ class SafeHtml
                 ->withMaxInputLength(500_000)
         );
 
-        return static::$sanitizer->sanitize($html);
+        return static::stripOverlayClasses(static::$sanitizer->sanitize($html));
+    }
+
+    /**
+     * Classes are allowed for the editor's styling, but Tailwind utilities
+     * that take an element out of the flow, stack it above the page or make
+     * it invisible would rebuild the full-page invisible link that removing
+     * `style` was meant to stop — those classes are dropped.
+     */
+    protected static function stripOverlayClasses(string $html): string
+    {
+        return (string) preg_replace_callback('/\sclass="([^"]*)"/i', function (array $match): string {
+            $kept = array_filter(preg_split('/\s+/', $match[1]) ?: [], function (string $class): bool {
+                $base = preg_replace('/^(?:[a-z0-9-]+:)*!?-?/i', '', $class);
+
+                return $base !== '' && ! preg_match(
+                    '/^(fixed|absolute|sticky|inset(-.*)?|top-.*|right-.*|bottom-.*|left-.*|start-.*|end-.*|z-.*|opacity-.*|invisible|h-screen|w-screen|min-h-screen|min-w-screen|h-dvh|w-dvw|pointer-events-.*|\[.*\]|[a-z-]+-\[.*\])$/i',
+                    $base
+                );
+            });
+
+            return $kept === [] ? '' : ' class="'.implode(' ', $kept).'"';
+        }, $html);
     }
 
     /**

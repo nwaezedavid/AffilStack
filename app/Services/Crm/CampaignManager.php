@@ -175,17 +175,38 @@ class CampaignManager
         $queued = 0;
 
         foreach (array_chunk($contactIds, 500) as $chunk) {
-            $rows = array_map(fn (int $id) => [
-                'crm_campaign_id' => $campaign->id,
-                'crm_contact_id' => $id,
-                'user_id' => $campaign->user_id,
-                'status' => 'queued',
-                'source' => $source,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ], $chunk);
+            // Contacts that can never be emailed are recorded as skipped (or
+            // unsubscribed) straight away, so the counts shown after
+            // approving match the people who will actually get the email.
+            $contacts = CrmContact::whereIn('id', $chunk)->get(['id', 'email', 'unsubscribed_at'])->keyBy('id');
 
-            $queued += CrmCampaignRecipient::insertOrIgnore($rows);
+            $rows = array_map(function (int $id) use ($campaign, $source, $contacts): array {
+                $contact = $contacts->get($id);
+                [$status, $error] = match (true) {
+                    $contact === null => ['skipped', 'Contact was deleted.'],
+                    $contact->unsubscribed_at !== null => ['unsubscribed', 'Unsubscribed — never emailed again.'],
+                    blank($contact->email) || ! filter_var($contact->email, FILTER_VALIDATE_EMAIL) => ['skipped', 'No valid email address.'],
+                    default => ['queued', null],
+                };
+
+                return [
+                    'crm_campaign_id' => $campaign->id,
+                    'crm_contact_id' => $id,
+                    'user_id' => $campaign->user_id,
+                    'status' => $status,
+                    'error_message' => $error,
+                    'source' => $source,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }, $chunk);
+
+            CrmCampaignRecipient::insertOrIgnore($rows);
+            $queued += CrmCampaignRecipient::where('crm_campaign_id', $campaign->id)
+                ->whereIn('crm_contact_id', $chunk)
+                ->where('status', 'queued')
+                ->where('source', $source)
+                ->count();
         }
 
         return $queued;

@@ -84,7 +84,7 @@ class CrmController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'nullable|string|max:255',
+            'name' => 'nullable|string|max:255|required_without_all:company,email,phone',
             'company' => 'nullable|string|max:255',
             'title' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
@@ -93,6 +93,8 @@ class CrmController extends Controller
             'location' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
             'list_id' => ['nullable', 'integer', Rule::exists('crm_lists', 'id')->where('user_id', auth()->id())],
+        ], [
+            'name.required_without_all' => 'Add at least a name, company, email or phone number.',
         ]);
 
         $listId = $validated['list_id'] ?? null;

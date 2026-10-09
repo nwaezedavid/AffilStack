@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\AffiliateApplication;
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -31,9 +32,9 @@ class AffiliateApplicationReceived extends Notification
     {
         return (new MailMessage)
             ->subject('New affiliate application: '.$this->application->name)
-            ->line("From: {$this->application->name} ({$this->application->email})")
-            ->line('How they plan to promote: '.$this->application->promotion_channels)
-            ->when($this->application->message, fn (MailMessage $mail) => $mail->line($this->application->message))
+            ->line('From: '.MailText::escape($this->application->name).' ('.MailText::escape($this->application->email).')')
+            ->line('How they plan to promote: '.MailText::escape($this->application->promotion_channels))
+            ->when($this->application->message, fn (MailMessage $mail) => $mail->line(MailText::escape($this->application->message)))
             ->action('Review application', route('filament.admin.resources.affiliate-applications.index'));
     }
 }

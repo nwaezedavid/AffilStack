@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\CrmReply;
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -32,8 +33,8 @@ class CrmReplyReceived extends Notification
 
         return (new MailMessage)
             ->subject("{$who} replied to your email")
-            ->line("{$who} replied:")
-            ->line('"'.Str::limit((string) ($this->reply->body_clean ?: $this->reply->body_text), 300).'"')
+            ->line(MailText::escape($who).' replied:')
+            ->line('"'.MailText::escape(Str::limit((string) ($this->reply->body_clean ?: $this->reply->body_text), 300)).'"')
             ->line('Open the Inbox to draft a follow-up with AI and close the sale.')
             ->action('Open the conversation', route('crm.inbox.show', $this->reply->crm_contact_id));
     }

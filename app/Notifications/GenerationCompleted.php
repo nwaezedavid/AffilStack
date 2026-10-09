@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -47,11 +48,11 @@ class GenerationCompleted extends Notification
             ->subject($this->success ? "Your {$moduleLabel} is ready" : "Your {$moduleLabel} failed");
 
         if ($this->success) {
-            $mail->line("\"{$this->title}\" finished generating and is ready to view.")
+            $mail->line('"'.MailText::escape($this->title).'" finished generating and is ready to view.')
                 ->action('View it now', $this->url);
         } else {
-            $mail->line("\"{$this->title}\" could not be generated.")
-                ->line($this->errorMessage ?? 'An unknown error occurred.')
+            $mail->line('"'.MailText::escape($this->title).'" could not be generated.')
+                ->line(MailText::escape($this->errorMessage ?? 'An unknown error occurred.'))
                 ->action('Try again', $this->url);
         }
 

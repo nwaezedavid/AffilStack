@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\SupportTicket;
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -31,8 +32,8 @@ class TicketReplied extends Notification
     {
         return (new MailMessage)
             ->subject("New reply on your ticket: {$this->ticket->subject}")
-            ->line("Our support team replied to \"{$this->ticket->subject}\":")
-            ->line('"'.$this->preview.'"')
+            ->line('Our support team replied to "'.MailText::escape($this->ticket->subject).'":')
+            ->line('"'.MailText::escape($this->preview).'"')
             ->action('View the conversation', route('support.show', $this->ticket));
     }
 

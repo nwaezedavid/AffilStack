@@ -2,6 +2,7 @@
 
 namespace App\Services\AI;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Throwable;
@@ -50,7 +51,7 @@ class AnthropicProvider implements AIProvider
         try {
             $decoded = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
         } catch (Throwable $e) {
-            throw new AIGenerationException('Claude returned invalid JSON: '.$e->getMessage());
+            throw AIGenerationException::fromProvider('Claude returned invalid JSON', ['error' => $e->getMessage()], AIGenerationException::BAD_ANSWER, $e);
         }
 
         return is_array($decoded) ? $decoded : [];
@@ -96,18 +97,22 @@ class AnthropicProvider implements AIProvider
             ? (string) $options['model']
             : $this->model;
 
-        $response = $this->client()->post('/v1/messages', array_filter([
-            'model' => $model,
-            'max_tokens' => (int) ($options['max_tokens'] ?? $this->maxTokens),
-            'temperature' => $options['temperature'] ?? null,
-            'system' => $systemPrompt,
-            'messages' => [
-                ['role' => 'user', 'content' => $userPrompt],
-            ],
-        ], fn ($value) => $value !== null));
+        try {
+            $response = $this->client()->post('/v1/messages', array_filter([
+                'model' => $model,
+                'max_tokens' => (int) ($options['max_tokens'] ?? $this->maxTokens),
+                'temperature' => $options['temperature'] ?? null,
+                'system' => $systemPrompt,
+                'messages' => [
+                    ['role' => 'user', 'content' => $userPrompt],
+                ],
+            ], fn ($value) => $value !== null));
+        } catch (ConnectionException $e) {
+            throw AIGenerationException::fromProvider('Claude could not be reached', ['error' => $e->getMessage()], previous: $e);
+        }
 
         if ($response->failed()) {
-            throw new AIGenerationException('Claude generation failed: '.$response->body());
+            throw AIGenerationException::fromProvider('Claude generation failed', ['status' => $response->status(), 'body' => mb_substr($response->body(), 0, 2000)]);
         }
 
         return collect((array) data_get($response->json(), 'content', []))

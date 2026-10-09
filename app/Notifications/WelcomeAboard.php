@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -29,7 +30,7 @@ class WelcomeAboard extends Notification
     {
         return (new MailMessage)
             ->subject('Welcome to AffilStack')
-            ->greeting("Welcome aboard, {$notifiable->name}!")
+            ->greeting('Welcome aboard, '.MailText::escape($notifiable->name).'!')
             ->line("Your account is active — I'm Sam, and I'm here for anything you need along the way.")
             ->line('A good place to start: offer research to find your first product, then the content modules to promote it.')
             ->action('Go to your dashboard', route('dashboard'))

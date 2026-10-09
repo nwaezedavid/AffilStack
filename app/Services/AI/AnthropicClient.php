@@ -54,7 +54,7 @@ class AnthropicClient
         ]);
 
         if ($response->failed()) {
-            throw new AIGenerationException('Anthropic JSON generation failed: '.$response->body());
+            throw AIGenerationException::fromProvider('Anthropic JSON generation failed', ['status' => $response->status(), 'body' => mb_substr($response->body(), 0, 2000)]);
         }
 
         $raw = $this->extractText($response->json());
@@ -63,7 +63,7 @@ class AnthropicClient
         try {
             $decoded = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
         } catch (Throwable $e) {
-            throw new AIGenerationException('Anthropic returned invalid JSON: '.$e->getMessage());
+            throw AIGenerationException::fromProvider('Anthropic returned invalid JSON', ['error' => $e->getMessage()], AIGenerationException::BAD_ANSWER, $e);
         }
 
         return is_array($decoded) ? $decoded : [];

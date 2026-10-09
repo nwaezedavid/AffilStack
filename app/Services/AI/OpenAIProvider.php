@@ -2,6 +2,8 @@
 
 namespace App\Services\AI;
 
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
@@ -23,7 +25,7 @@ class OpenAIProvider implements AIProvider
 
     public function generateText(string $systemPrompt, string $userPrompt, array $options = []): string
     {
-        $response = $this->client()->post('/chat/completions', [
+        $response = $this->post('/chat/completions', [
             'model' => $options['model'] ?? $this->textModel,
             'temperature' => $options['temperature'] ?? 0.7,
             'messages' => [
@@ -33,7 +35,7 @@ class OpenAIProvider implements AIProvider
         ]);
 
         if ($response->failed()) {
-            throw new AIGenerationException('AI text generation failed: '.$response->body());
+            throw AIGenerationException::fromProvider('OpenAI text generation failed', ['status' => $response->status(), 'body' => mb_substr($response->body(), 0, 2000)]);
         }
 
         return (string) data_get($response->json(), 'choices.0.message.content', '');
@@ -41,7 +43,7 @@ class OpenAIProvider implements AIProvider
 
     public function generateJson(string $systemPrompt, string $userPrompt, array $options = []): array
     {
-        $response = $this->client()->post('/chat/completions', [
+        $response = $this->post('/chat/completions', [
             'model' => $options['model'] ?? $this->textModel,
             'temperature' => $options['temperature'] ?? 0.6,
             'response_format' => ['type' => 'json_object'],
@@ -52,7 +54,7 @@ class OpenAIProvider implements AIProvider
         ]);
 
         if ($response->failed()) {
-            throw new AIGenerationException('AI JSON generation failed: '.$response->body());
+            throw AIGenerationException::fromProvider('OpenAI JSON generation failed', ['status' => $response->status(), 'body' => mb_substr($response->body(), 0, 2000)]);
         }
 
         $raw = (string) data_get($response->json(), 'choices.0.message.content', '{}');
@@ -60,7 +62,7 @@ class OpenAIProvider implements AIProvider
         try {
             $decoded = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
         } catch (Throwable $e) {
-            throw new AIGenerationException('AI returned invalid JSON: '.$e->getMessage());
+            throw AIGenerationException::fromProvider('OpenAI returned invalid JSON', ['error' => $e->getMessage()], AIGenerationException::BAD_ANSWER, $e);
         }
 
         return is_array($decoded) ? $decoded : [];
@@ -68,7 +70,7 @@ class OpenAIProvider implements AIProvider
 
     public function generateImage(string $prompt, array $options = []): string
     {
-        $response = $this->client()->post('/images/generations', [
+        $response = $this->post('/images/generations', [
             'model' => $options['model'] ?? $this->imageModel,
             'prompt' => $prompt,
             'size' => $options['size'] ?? '1024x1024',
@@ -76,7 +78,7 @@ class OpenAIProvider implements AIProvider
         ]);
 
         if ($response->failed()) {
-            throw new AIGenerationException('AI image generation failed: '.$response->body());
+            throw AIGenerationException::fromProvider('OpenAI image generation failed', ['status' => $response->status(), 'body' => mb_substr($response->body(), 0, 2000)]);
         }
 
         $image = data_get($response->json(), 'data.0', []);
@@ -96,6 +98,18 @@ class OpenAIProvider implements AIProvider
         }
 
         return '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    protected function post(string $path, array $payload): Response
+    {
+        try {
+            return $this->client()->post($path, $payload);
+        } catch (ConnectionException $e) {
+            throw AIGenerationException::fromProvider('OpenAI could not be reached', ['error' => $e->getMessage()], previous: $e);
+        }
     }
 
     protected function client()

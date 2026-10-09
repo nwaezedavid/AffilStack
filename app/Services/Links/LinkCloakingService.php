@@ -26,14 +26,35 @@ class LinkCloakingService
      */
     public function getOrCreateForOffer(Offer $offer, string $module = 'general'): TrackedLink
     {
-        return TrackedLink::firstOrCreate(
+        $destination = self::destinationFor($offer);
+
+        $link = TrackedLink::firstOrCreate(
             ['offer_id' => $offer->id, 'module' => $module],
             [
                 'user_id' => $offer->user_id,
-                'destination_url' => $offer->product_url,
+                'destination_url' => $destination,
                 'code' => $this->generateUniqueCode(),
             ],
         );
+
+        // Links made before the affiliate link was added (or by the old code
+        // that always used the bare product page) are pointed at the
+        // affiliate link, so clicks earn commission.
+        if ($link->destination_url === $offer->product_url && $destination !== $offer->product_url) {
+            $link->update(['destination_url' => $destination]);
+        }
+
+        return $link;
+    }
+
+    /**
+     * Where a product's tracked links send people: the customer's own
+     * affiliate link (that's what earns the commission), or the product
+     * page when no affiliate link has been added yet.
+     */
+    public static function destinationFor(Offer $offer): string
+    {
+        return filled($offer->affiliate_link) ? (string) $offer->affiliate_link : (string) $offer->product_url;
     }
 
     /**

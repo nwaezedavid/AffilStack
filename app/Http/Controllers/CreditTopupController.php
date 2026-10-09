@@ -57,7 +57,7 @@ class CreditTopupController extends Controller
         } catch (\RuntimeException $e) {
             report($e);
 
-            return back()->with('error', 'We could not start checkout right now. Please try again in a moment.');
+            return back()->with('error', 'We could not start checkout right now. Please try again in a moment, or contact support if it keeps happening.');
         }
 
         PaymentTransaction::create([

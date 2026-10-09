@@ -233,7 +233,7 @@ class GoogleAuthController extends Controller
             report($e);
             $pending->delete();
 
-            return redirect()->route('registration.form', $plan)->with('error', 'We could not start checkout right now. Please try again in a moment.');
+            return redirect()->route('registration.form', $plan)->with('error', 'We could not start checkout right now. Please try again in a moment, or contact support if it keeps happening.');
         }
 
         $pending->update(['tx_ref' => $checkout['tx_ref']]);

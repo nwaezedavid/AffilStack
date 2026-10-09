@@ -62,7 +62,7 @@ class ApiWalletController extends Controller
         } catch (RuntimeException $e) {
             report($e);
 
-            return back()->with('api_tab', 'usage')->with('error', 'We could not start checkout right now. Please try again in a moment.');
+            return back()->with('api_tab', 'usage')->with('error', 'We could not start checkout right now. Please try again in a moment, or contact support if it keeps happening.');
         }
 
         PaymentTransaction::create([

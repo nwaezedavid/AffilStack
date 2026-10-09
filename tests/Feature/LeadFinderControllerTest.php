@@ -130,7 +130,7 @@ class LeadFinderControllerTest extends TestCase
         $response = $this->actingAs($user)->get(route('leads.index', ['niche' => 'dentists', 'location' => 'Austin, TX']));
 
         $response->assertOk();
-        $response->assertSee("Google Maps isn't configured yet");
+        $response->assertSee('Lead search is temporarily unavailable');
         Http::assertNothingSent();
     }
 

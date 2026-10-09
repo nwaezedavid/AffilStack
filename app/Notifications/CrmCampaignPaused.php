@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\CrmCampaign;
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -31,7 +32,7 @@ class CrmCampaignPaused extends Notification
     {
         return (new MailMessage)
             ->subject("Campaign paused: {$this->campaign->name}")
-            ->line("We paused \"{$this->campaign->name}\" because your email connection stopped working, so no emails were sent from a broken sender.")
+            ->line('We paused "'.MailText::escape($this->campaign->name).'" because your email connection stopped working, so no emails were sent from a broken sender.')
             ->line('Fix or reconnect it on the Email Sending page, then resume the campaign — queued contacts will be emailed automatically.')
             ->action('Fix email sending', route('email-connections.index'));
     }

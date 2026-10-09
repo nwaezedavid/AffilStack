@@ -5,6 +5,7 @@ namespace App\Services\Leads;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Core feature 7 (Phase 2): finds candidate local businesses for a
@@ -94,7 +95,11 @@ class GoogleMapsLeadService
     protected function ensureConfigured(): void
     {
         if (! $this->apiKey) {
-            throw new GoogleMapsException('Google Maps isn\'t configured yet — add GOOGLE_PLACES_API_KEY to the environment.');
+            // The technical detail is for the owner (Connections Health and
+            // the Integration Guides show it); customers get a plain message.
+            Log::warning('Lead search attempted but GOOGLE_PLACES_API_KEY is not set.');
+
+            throw new GoogleMapsException('Lead search is temporarily unavailable. Please try again later or contact support.');
         }
     }
 

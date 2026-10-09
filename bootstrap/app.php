@@ -26,6 +26,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Only answer for the site's own host (and its www. form): links in
+        // emails and the cached /embed/banner.js are built from the request
+        // host, so a forged Host header must never be able to change them.
+        $middleware->trustHosts(at: fn (): array => array_values(array_filter([
+            parse_url((string) config('app.url'), PHP_URL_HOST),
+        ])), subdomains: true);
+
         $middleware->validateCsrfTokens(except: [
             // Server-to-server gateway webhooks — each controller verifies
             // the gateway's own signature before trusting anything. Paystack

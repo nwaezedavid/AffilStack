@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\SupportTicket;
+use App\Support\MailText;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -33,7 +34,7 @@ class TicketStatusChanged extends Notification
 
         return (new MailMessage)
             ->subject("Your ticket was {$verb}: {$this->ticket->subject}")
-            ->line("Your ticket \"{$this->ticket->subject}\" has been {$verb}.")
+            ->line('Your ticket "'.MailText::escape($this->ticket->subject).'" has been '.$verb.'.')
             ->line("If this didn't actually solve things, just reply on the ticket and it'll reopen automatically.")
             ->action('View the ticket', route('support.show', $this->ticket));
     }
