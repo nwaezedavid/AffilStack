@@ -155,7 +155,7 @@ Schedule::call(function () {
     ->name('prune-api-logs')
     ->withoutOverlapping(30);
 
-Schedule::command('activitylog:clean')->weekly()->withoutOverlapping(30);
+Schedule::command('activitylog:clean --force')->weekly()->withoutOverlapping(30);
 
 // Yearly plans are paid once a year but sold as "credits / month" — this is
 // what actually delivers each month's allowance. See GrantMonthlyCredits.
