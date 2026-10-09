@@ -186,7 +186,7 @@ class SocialConnectionVerificationTest extends TestCase
         $this->enableInstagram();
         $connection = $this->connect('instagram', ['page_access_token' => 'page-token', 'ig_user_id' => 'ig1']);
 
-        Http::fake(['graph.facebook.com/v19.0/ig1*' => Http::sequence()
+        Http::fake(['graph.facebook.com/v24.0/ig1*' => Http::sequence()
             ->push(['error' => ['message' => 'Error validating access token', 'type' => 'OAuthException', 'code' => 190]], 400)
             ->push(['username' => 'acme_official', 'profile_picture_url' => 'https://scontent.cdninstagram.com/acme.jpg']),
         ]);

@@ -83,11 +83,11 @@ class InstagramPublishingServiceTest extends TestCase
     {
         $this->enableInstagram();
         Http::fake([
-            'graph.facebook.com/v19.0/oauth/access_token*' => Http::response(['access_token' => 'user-token']),
-            'graph.facebook.com/v19.0/me/accounts*' => Http::response(['data' => [
+            'graph.facebook.com/v24.0/oauth/access_token*' => Http::response(['access_token' => 'user-token']),
+            'graph.facebook.com/v24.0/me/accounts*' => Http::response(['data' => [
                 ['name' => 'Acme Page', 'access_token' => 'page-token', 'instagram_business_account' => ['id' => 'ig1']],
             ]]),
-            'graph.facebook.com/v19.0/ig1*' => Http::response(['username' => 'acme_official']),
+            'graph.facebook.com/v24.0/ig1*' => Http::response(['username' => 'acme_official']),
         ]);
 
         $result = app(InstagramPublishingService::class)->exchangeCode('auth-code', 'https://app.example/callback');
@@ -102,8 +102,8 @@ class InstagramPublishingServiceTest extends TestCase
     {
         $this->enableInstagram();
         Http::fake([
-            'graph.facebook.com/v19.0/oauth/access_token*' => Http::response(['access_token' => 'user-token']),
-            'graph.facebook.com/v19.0/me/accounts*' => Http::response(['data' => [
+            'graph.facebook.com/v24.0/oauth/access_token*' => Http::response(['access_token' => 'user-token']),
+            'graph.facebook.com/v24.0/me/accounts*' => Http::response(['data' => [
                 ['name' => 'Acme Page', 'access_token' => 'page-token'],
             ]]),
         ]);
@@ -135,10 +135,10 @@ class InstagramPublishingServiceTest extends TestCase
         $video = $this->video();
 
         Http::fake([
-            'graph.facebook.com/v19.0/ig1/media' => Http::response(['id' => 'container1']),
-            'graph.facebook.com/v19.0/container1?*' => Http::response(['status_code' => 'FINISHED']),
-            'graph.facebook.com/v19.0/ig1/media_publish' => Http::response(['id' => 'media1']),
-            'graph.facebook.com/v19.0/media1*' => Http::response(['permalink' => 'https://instagram.com/reel/abc']),
+            'graph.facebook.com/v24.0/ig1/media' => Http::response(['id' => 'container1']),
+            'graph.facebook.com/v24.0/container1?*' => Http::response(['status_code' => 'FINISHED']),
+            'graph.facebook.com/v24.0/ig1/media_publish' => Http::response(['id' => 'media1']),
+            'graph.facebook.com/v24.0/media1*' => Http::response(['permalink' => 'https://instagram.com/reel/abc']),
         ]);
 
         $result = app(InstagramPublishingService::class)->publish($connection, $video, 'Title', 'Check it out');
@@ -154,8 +154,8 @@ class InstagramPublishingServiceTest extends TestCase
         $video = $this->video();
 
         Http::fake([
-            'graph.facebook.com/v19.0/ig1/media' => Http::response(['id' => 'container1']),
-            'graph.facebook.com/v19.0/container1?*' => Http::response(['status_code' => 'ERROR']),
+            'graph.facebook.com/v24.0/ig1/media' => Http::response(['id' => 'container1']),
+            'graph.facebook.com/v24.0/container1?*' => Http::response(['status_code' => 'ERROR']),
         ]);
 
         $this->expectException(RuntimeException::class);

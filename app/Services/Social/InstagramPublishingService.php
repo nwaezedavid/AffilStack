@@ -27,11 +27,11 @@ use RuntimeException;
  */
 class InstagramPublishingService implements SocialPublishProvider, VerifiesConnection
 {
-    protected const AUTHORIZATION_ENDPOINT = 'https://www.facebook.com/v19.0/dialog/oauth';
+    protected const AUTHORIZATION_ENDPOINT = 'https://www.facebook.com/v24.0/dialog/oauth';
 
-    protected const TOKEN_ENDPOINT = 'https://graph.facebook.com/v19.0/oauth/access_token';
+    protected const TOKEN_ENDPOINT = 'https://graph.facebook.com/v24.0/oauth/access_token';
 
-    protected const GRAPH_BASE = 'https://graph.facebook.com/v19.0';
+    protected const GRAPH_BASE = 'https://graph.facebook.com/v24.0';
 
     protected const SCOPE = 'pages_show_list,instagram_basic,instagram_content_publish,pages_read_engagement';
 

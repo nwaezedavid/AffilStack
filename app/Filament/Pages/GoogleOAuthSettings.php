@@ -18,6 +18,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 
 /**
@@ -89,6 +90,11 @@ class GoogleOAuthSettings extends Page
                             ->label('Authorized redirect URI')
                             ->helperText('Add this exact URL to the OAuth client in Google Cloud Console, under Authorized redirect URIs.')
                             ->content(URL::route('google.callback'))
+                            ->columnSpanFull(),
+                        Placeholder::make('site_analytics_redirect_uri')
+                            ->label('Additional authorized redirect URI (Site Analytics)')
+                            ->helperText('Add this one too if you connect Google Analytics, Search Console and Tag Manager from the Site Analytics page.')
+                            ->content(fn (): string => Route::has('google-site-analytics.callback') ? URL::route('google-site-analytics.callback') : '—')
                             ->columnSpanFull(),
                     ]),
                 Section::make('Gmail sending (CRM nurture emails)')
@@ -169,7 +175,7 @@ class GoogleOAuthSettings extends Page
             default => 'Live — the Connect Gmail button is showing on every user\'s Email Sending page.',
         };
 
-        return $status.' Lets a user connect their own Gmail account so their CRM nurture emails send from their address instead of AffilStack\'s — protects our shared sending domain\'s reputation. Uses the same client id/secret above, requesting the additional gmail.send scope. Google treats gmail.send as a restricted scope: it requires this OAuth consent screen to pass Google\'s security assessment before it works for anyone outside your own test users, even if "Continue with Google" above already works.';
+        return $status.' Lets a user connect their own Gmail account so their CRM nurture emails send from their address instead of AffilStack\'s — protects our shared sending domain\'s reputation. Uses the same client id/secret above, requesting the additional gmail.send scope. Google treats gmail.send as a sensitive scope: the OAuth consent screen must pass Google\'s app verification (no paid security assessment — that is only for restricted scopes such as gmail.readonly) before it works for anyone outside your own test users, even if "Continue with Google" above already works.';
     }
 
     /**

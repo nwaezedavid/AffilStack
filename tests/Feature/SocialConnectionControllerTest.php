@@ -238,11 +238,11 @@ class SocialConnectionControllerTest extends TestCase
     {
         $this->enableInstagram();
         Http::fake([
-            'graph.facebook.com/v19.0/oauth/access_token*' => Http::response(['access_token' => 'user-token']),
-            'graph.facebook.com/v19.0/me/accounts*' => Http::response(['data' => [
+            'graph.facebook.com/v24.0/oauth/access_token*' => Http::response(['access_token' => 'user-token']),
+            'graph.facebook.com/v24.0/me/accounts*' => Http::response(['data' => [
                 ['name' => 'Acme Page', 'access_token' => 'page-token', 'instagram_business_account' => ['id' => 'ig1']],
             ]]),
-            'graph.facebook.com/v19.0/ig1*' => Http::response(['username' => 'acme_official']),
+            'graph.facebook.com/v24.0/ig1*' => Http::response(['username' => 'acme_official']),
         ]);
 
         $this->actingAs($this->user)->get(route('social-connections.redirect', 'instagram'));

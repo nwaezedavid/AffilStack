@@ -77,14 +77,14 @@ return [
             'label' => 'Outlook / Microsoft 365',
             'smtp' => ['host' => 'smtp.office365.com', 'port' => 587, 'encryption' => 'tls'],
             'imap' => ['host' => 'outlook.office365.com', 'port' => 993, 'encryption' => 'ssl'],
-            'help' => 'Your Microsoft 365 admin may need to enable "Authenticated SMTP" for this mailbox. Use an app password if MFA is on.',
+            'help' => 'Sending only: your Microsoft 365 admin must enable "Authenticated SMTP" for this mailbox (Microsoft switches it off by default from the end of 2026). Microsoft no longer accepts passwords for IMAP, so reply detection will not work with Outlook — use the Gmail or Hostinger option for replies.',
             'help_url' => 'https://learn.microsoft.com/en-us/exchange/clients-and-mobile-in-exchange-online/authenticated-client-smtp-submission',
         ],
         'zoho' => [
             'label' => 'Zoho Mail',
             'smtp' => ['host' => 'smtp.zoho.com', 'port' => 465, 'encryption' => 'ssl'],
             'imap' => ['host' => 'imap.zoho.com', 'port' => 993, 'encryption' => 'ssl'],
-            'help' => 'Enable IMAP access in Zoho Mail settings. With 2FA on, generate an application-specific password.',
+            'help' => 'Enable IMAP access in Zoho Mail settings. With 2FA on, generate an application-specific password. On a paid plan with your own domain, change the hosts to smtppro.zoho.com and imappro.zoho.com.',
             'help_url' => 'https://www.zoho.com/mail/help/zoho-smtp.html',
         ],
         'yahoo' => [
