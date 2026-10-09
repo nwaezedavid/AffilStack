@@ -47,6 +47,8 @@ class BrandSettings extends Page
             'site_name' => SiteSetting::get('site_name', 'AffilStack'),
             'logo_rectangular' => SiteSetting::get('logo_rectangular_path'),
             'logo_square' => SiteSetting::get('logo_square_path'),
+            'logo_rectangular_white' => SiteSetting::get('logo_rectangular_white_path'),
+            'logo_square_white' => SiteSetting::get('logo_square_white_path'),
             'color_primary' => SiteSetting::get('color_primary', '#2452D9'),
             'color_navy' => SiteSetting::get('color_navy', '#0B1E3D'),
             'color_gold' => SiteSetting::get('color_gold', '#C9A24A'),
@@ -94,6 +96,25 @@ class BrandSettings extends Page
                             ->label('Logo (square / icon)')
                             ->directory('branding')
                             ->helperText('Square mark — becomes the favicon in Google results and browser tabs, and the home-screen icon on phones (every size is generated automatically). PNG, at least 512×512. Preview it under SEO > Site icon.'),
+                    ]),
+
+                Section::make('White logo & icon (for dark backgrounds)')
+                    ->description('Optional white versions used wherever the background is dark: the site footer, the customer dashboard sidebar, the admin panel in dark mode, and the Chrome extension\'s header. Without them, the normal logo is used. Use a transparent PNG (or WebP) — the previews below are shown on a dark background.')
+                    ->extraAttributes(['class' => 'affil-dark-preview'])
+                    ->columns(2)
+                    ->components([
+                        WebpFileUpload::make('logo_rectangular_white')
+                            ->label('White logo (rectangular)')
+                            ->image()
+                            ->disk('public')
+                            ->directory('branding')
+                            ->helperText('Wide logo in white, transparent background. Shown at 32px tall.'),
+                        WebpFileUpload::make('logo_square_white')
+                            ->label('White icon (square)')
+                            ->image()
+                            ->disk('public')
+                            ->directory('branding')
+                            ->helperText('Square mark in white, transparent background, at least 256×256. Used next to the site name where the wide logo doesn\'t fit, and in the Chrome extension header.'),
                     ]),
 
                 Section::make('Brand colors')
@@ -147,7 +168,7 @@ class BrandSettings extends Page
         $data = $this->form->getState();
 
         foreach ([
-            'site_name', 'logo_rectangular', 'logo_square', 'color_primary', 'color_navy',
+            'site_name', 'logo_rectangular', 'logo_square', 'logo_rectangular_white', 'logo_square_white', 'color_primary', 'color_navy',
             'color_gold', 'menu_items', 'header_announcement', 'support_email',
             'footer_text', 'hero_headline', 'hero_subheadline', 'hero_media_type',
             'hero_image', 'hero_youtube_url',
@@ -160,6 +181,8 @@ class BrandSettings extends Page
             $settingKey = match ($key) {
                 'logo_rectangular' => 'logo_rectangular_path',
                 'logo_square' => 'logo_square_path',
+                'logo_rectangular_white' => 'logo_rectangular_white_path',
+                'logo_square_white' => 'logo_square_white_path',
                 'hero_image' => 'hero_image_path',
                 default => $key,
             };

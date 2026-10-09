@@ -88,7 +88,7 @@
                         <a href="{{ $page->url() }}" class="group flex flex-col overflow-hidden rounded-3xl bg-white ring-1 ring-line transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(11,30,61,.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" data-reveal data-feature-card="{{ $page->slug }}">
                             @if ($image = $page->heroImageUrl())
                                 <div class="relative aspect-[16/10] overflow-hidden border-b border-line bg-surface-muted">
-                                    <img src="{{ $image }}" alt="" loading="lazy" decoding="async" class="h-full w-full object-cover object-top transition duration-700 group-hover:scale-[1.03] motion-reduce:transition-none">
+                                    <x-marketing.feature-media :src="$image" class="h-full w-full object-cover object-top transition duration-700 group-hover:scale-[1.03] motion-reduce:transition-none" />
                                 </div>
                             @endif
                             <div class="flex flex-1 flex-col p-6">

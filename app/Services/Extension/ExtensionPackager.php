@@ -18,11 +18,19 @@ use ZipArchive;
  *     default https://affilstack.com/api left as is).
  * Both replace the toolbar icons with the site's uploaded square logo
  * (Admin → SEO → Site icon) when one exists, so the extension carries
- * the AffilStack brand rather than the built-in monogram.
+ * the AffilStack brand rather than the built-in monogram. The popup and
+ * settings header (a dark bar) shows icons/header-logo.png: the white icon
+ * from Brand Settings when there is one, else the normal square logo on a
+ * white chip.
  */
 class ExtensionPackager
 {
     public const ICON_SIZES = [16, 32, 48, 128];
+
+    public const HEADER_LOGO = 'icons/header-logo.png';
+
+    /** The extension pages whose header shows the logo. */
+    public const HEADER_PAGES = ['popup.html', 'options.html'];
 
     public function __construct(
         protected FaviconGenerator $favicons,
@@ -33,6 +41,13 @@ class ExtensionPackager
         $sourceDir = resource_path('browser-extension');
         $prefix = $forStore ? '' : 'affilstack-extension/';
         $icons = $this->brandedIcons();
+        $whiteHeaderLogo = $this->favicons->uploadedIconPng(64, 'logo_square_white_path');
+
+        if ($whiteHeaderLogo !== null) {
+            $icons[self::HEADER_LOGO] = $whiteHeaderLogo;
+        } elseif (($colourHeaderLogo = $this->favicons->uploadedIconPng(64)) !== null) {
+            $icons[self::HEADER_LOGO] = $colourHeaderLogo;
+        }
 
         $zip = new ZipArchive;
 
@@ -52,6 +67,18 @@ class ExtensionPackager
 
             if (isset($icons[$relative])) {
                 $zip->addFromString($prefix.$relative, $icons[$relative]);
+
+                continue;
+            }
+
+            if ($whiteHeaderLogo !== null && in_array($relative, self::HEADER_PAGES, true)) {
+                // Drop the white chip behind the logo: a white icon sits
+                // straight on the dark header.
+                $zip->addFromString($prefix.$relative, str_replace(
+                    'class="logo" src="'.self::HEADER_LOGO.'"',
+                    'class="logo logo-on-dark" src="'.self::HEADER_LOGO.'"',
+                    (string) file_get_contents($file->getPathname()),
+                ));
 
                 continue;
             }

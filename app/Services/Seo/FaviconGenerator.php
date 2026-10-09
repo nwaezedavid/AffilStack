@@ -205,10 +205,10 @@ class FaviconGenerator
      * given size — used to brand the Chrome extension's toolbar icons.
      * Returns null when no icon has been uploaded.
      */
-    public function uploadedIconPng(int $size): ?string
+    public function uploadedIconPng(int $size, string $setting = 'logo_square_path'): ?string
     {
         $warnings = [];
-        $source = $this->loadSource(SiteSetting::get('logo_square_path'), $warnings);
+        $source = $this->loadSource(SiteSetting::get($setting), $warnings);
 
         return $source ? $this->png($this->resize($this->squareCanvas($source), $size)) : null;
     }

@@ -19,6 +19,6 @@
             <span class="h-2.5 w-2.5 rounded-full bg-emerald-400/80"></span>
             <span class="ml-3 hidden truncate rounded-md bg-white px-3 py-0.5 font-mono text-[10px] text-ink-400 ring-1 ring-line sm:block">{{ $url ?: $host }}</span>
         </div>
-        <img src="{{ $src }}" alt="{{ $alt }}" class="block h-auto w-full" @if ($eager) fetchpriority="high" @else loading="lazy" @endif decoding="async">
+        <x-marketing.feature-media :src="$src" :alt="$alt" :eager="$eager" class="block h-auto w-full" />
     </div>
 </figure>

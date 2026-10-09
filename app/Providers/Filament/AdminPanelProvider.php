@@ -8,6 +8,7 @@ use App\Filament\Widgets\SupportInboxWidget;
 use App\Http\Middleware\EnsurePanelLoginCompleted;
 use App\Models\SiteSetting;
 use App\Services\Seo\FaviconGenerator;
+use App\Support\Brand;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -17,6 +18,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -38,6 +40,8 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(fn () => ($logo = SiteSetting::get('logo_rectangular_path'))
                 ? Storage::disk('public')->url($logo)
                 : null)
+            // The white logo (Brand Settings) for the panel's dark mode.
+            ->darkModeBrandLogo(fn () => Brand::whiteLogoUrl())
             // The generated favicon set (see FaviconGenerator) — a real PNG
             // from a stable URL, rebuilt whenever the square logo changes.
             ->favicon(fn () => app(FaviconGenerator::class)->url('favicon-96x96.png'))
@@ -46,6 +50,8 @@ class AdminPanelProvider extends PanelProvider
                 AppAuthentication::make()->recoverable(),
             ], isRequired: true)
             ->databaseNotifications()
+            // Brand Settings: preview the white logo uploads on a dark panel.
+            ->renderHook(PanelsRenderHook::STYLES_AFTER, fn (): string => '<style>.affil-dark-preview .filepond--panel-root,.affil-dark-preview .filepond--image-preview{background:#0B1E3D!important}.affil-dark-preview .filepond--drop-label{color:#fff}</style>')
             ->colors([
                 'primary' => Color::hex('#2452D9'), // brand blue
                 'gray' => Color::hex('#0B1E3D'),     // navy-tinted neutrals

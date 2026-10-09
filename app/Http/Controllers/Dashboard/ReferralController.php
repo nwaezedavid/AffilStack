@@ -62,6 +62,8 @@ class ReferralController extends Controller
             'site_name' => SiteSetting::get('site_name', 'AffilStack'),
             'logo_rectangular' => SiteSetting::get('logo_rectangular_path'),
             'logo_square' => SiteSetting::get('logo_square_path'),
+            'logo_rectangular_white' => SiteSetting::get('logo_rectangular_white_path'),
+            'logo_square_white' => SiteSetting::get('logo_square_white_path'),
             'colors' => [
                 ['name' => 'Navy', 'hex' => strtoupper((string) SiteSetting::get('color_navy', '#0B1E3D'))],
                 ['name' => 'Blue', 'hex' => strtoupper((string) SiteSetting::get('color_primary', '#2452D9'))],

@@ -22,7 +22,7 @@
                             <x-youtube-facade :url="$feature->youtube_url" :title="$feature->title" play-size="sm" class="z-10" />
                         @elseif ($featureImage = $feature->imageUrl())
                             <div class="aspect-[16/10] overflow-hidden border-b border-line bg-surface-muted">
-                                <img src="{{ $featureImage }}" alt="{{ $feature->title }}" class="h-full w-full object-cover object-top transition duration-700 group-hover:scale-[1.03] motion-reduce:transition-none" loading="lazy" decoding="async">
+                                <x-marketing.feature-media :src="$featureImage" :alt="$feature->title" class="h-full w-full object-cover object-top transition duration-700 group-hover:scale-[1.03] motion-reduce:transition-none" />
                             </div>
                         @endif
                         <div class="flex flex-1 flex-col p-6">

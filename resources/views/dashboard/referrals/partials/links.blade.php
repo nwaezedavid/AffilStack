@@ -60,13 +60,19 @@
                 </div>
             @endforeach
         </div>
-        @if ($brand['logo_rectangular'] || $brand['logo_square'])
+        @php($logoFiles = array_filter([
+            'Wide logo' => $brand['logo_rectangular'],
+            'Square logo' => $brand['logo_square'],
+            'White wide logo' => $brand['logo_rectangular_white'] ?? null,
+            'White square logo' => $brand['logo_square_white'] ?? null,
+        ]))
+        @if ($logoFiles)
             <div class="mt-4 border-t border-line pt-4">
                 <p class="text-xs font-medium text-ink-900 mb-2">Official {{ $brand['site_name'] }} logo files</p>
                 <div class="flex flex-wrap gap-3">
-                    @foreach (array_filter(['Wide logo' => $brand['logo_rectangular'], 'Square logo' => $brand['logo_square']]) as $label => $path)
+                    @foreach ($logoFiles as $label => $path)
                         <a href="{{ $storage->url($path) }}" download class="flex items-center gap-3 rounded-xl border border-line p-2 pr-4 hover:bg-surface-muted">
-                            <img src="{{ $storage->url($path) }}" alt="{{ $label }}" class="h-10 w-auto max-w-24 rounded bg-surface-muted object-contain">
+                            <img src="{{ $storage->url($path) }}" alt="{{ $label }}" @class(['h-10 w-auto max-w-24 rounded object-contain', 'bg-navy-900 p-1' => str_starts_with($label, 'White'), 'bg-surface-muted' => ! str_starts_with($label, 'White')])>
                             <span class="text-xs font-medium text-navy-900">{{ $label }} <x-heroicon-m-arrow-down-tray class="inline h-3.5 w-3.5" /></span>
                         </a>
                     @endforeach
