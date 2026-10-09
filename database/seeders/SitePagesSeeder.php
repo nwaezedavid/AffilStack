@@ -132,7 +132,7 @@ class SitePagesSeeder extends Seeder
                         <li><strong>Usage data:</strong> the content you generate, links you create, contacts you save, and how you interact with the Platform, so we can operate and improve the service.</li>
                         <li><strong>Communications:</strong> messages you send us through the Contact form, support tickets, or email.</li>
                         <li><strong>Technical data:</strong> IP address, browser type, and device information, collected automatically for security and analytics purposes.</li>
-                        <li><strong>Browser extension (optional):</strong> if you install AffilStack Research Capture, it sends us the address, title, and any text you have highlighted on a page — only when you open the extension and click Save on that page. It stores your extension token in your browser, never your password, and does not read or track any other browsing.</li>
+                        <li><strong>Browser extension (optional):</strong> if you install the AffilStack Chrome extension, it reads only the tab you are on, and only when you click its icon. When you click Add to CRM, Generate message, Suggest reply or Save, it sends to your own AffilStack account the details shown on that page: a Google Maps business's name, category, address, phone, website and rating; a LinkedIn profile's or company's public details, or the conversation you ask it to reply to; or a page's address, title and highlighted text. It stores your extension token in your browser, never your password, never sends messages for you, and does not read or track any other browsing.</li>
                     </ul>
 
                     <h2>2. How we use your information</h2>
