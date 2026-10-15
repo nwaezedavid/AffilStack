@@ -33,7 +33,7 @@ class FeatureDemoTest extends TestCase
     {
         Storage::disk('public')->put('feature-animations/offer-research.mp4', 'video');
 
-        $this->assertNull(FeatureMedia::videoFor(asset('images/features/offer-research.webp')));
+        $this->assertSame([], FeatureMedia::videoFor(asset('images/features/offer-research.webp')));
         $this->assertSame(1, FeatureMedia::installedCount());
     }
 
@@ -42,19 +42,31 @@ class FeatureDemoTest extends TestCase
         Storage::disk('public')->put('feature-animations/offer-research.mp4', 'video');
         FeatureMedia::save(['offer-research' => FeatureMedia::ANIMATION], []);
 
-        $video = FeatureMedia::videoFor(asset('images/features/offer-research.webp'));
+        [$video] = FeatureMedia::videoFor(asset('images/features/offer-research.webp'));
 
         $this->assertStringEndsWith('feature-animations/offer-research.mp4', $video['url']);
         $this->assertSame('video/mp4', $video['type']);
         // Only the screenshot it belongs to.
-        $this->assertNull(FeatureMedia::videoFor(asset('images/features/crm-list.webp')));
+        $this->assertSame([], FeatureMedia::videoFor(asset('images/features/crm-list.webp')));
+    }
+
+    public function test_the_mp4_is_offered_first_with_a_webm_fallback(): void
+    {
+        Storage::disk('public')->put('feature-animations/offer-research.mp4', 'video');
+        Storage::disk('public')->put('feature-animations/offer-research.webm', 'video');
+        FeatureMedia::save(['offer-research' => FeatureMedia::ANIMATION], []);
+
+        $sources = FeatureMedia::videoFor(asset('images/features/offer-research.webp'));
+
+        $this->assertSame(['video/mp4', 'video/webm'], array_column($sources, 'type'));
+        $this->assertSame('feature-animations/offer-research.mp4', FeatureMedia::bundledVideoPath('offer-research'));
     }
 
     public function test_an_animation_without_a_video_keeps_the_screenshot(): void
     {
         FeatureMedia::save(['offer-research' => FeatureMedia::ANIMATION], []);
 
-        $this->assertNull(FeatureMedia::videoFor(asset('images/features/offer-research.webp')));
+        $this->assertSame([], FeatureMedia::videoFor(asset('images/features/offer-research.webp')));
     }
 
     public function test_an_uploaded_video_wins_over_the_bundled_one(): void
@@ -63,7 +75,9 @@ class FeatureDemoTest extends TestCase
         Storage::disk('public')->put('feature-animations/uploads/mine.webm', 'video');
         FeatureMedia::save(['offer-research' => FeatureMedia::ANIMATION], ['offer-research' => 'feature-animations/uploads/mine.webm']);
 
-        $video = FeatureMedia::videoFor(asset('images/features/offer-research.webp'));
+        $sources = FeatureMedia::videoFor(asset('images/features/offer-research.webp'));
+        $this->assertCount(1, $sources);
+        $video = $sources[0];
 
         $this->assertStringEndsWith('feature-animations/uploads/mine.webm', $video['url']);
         $this->assertSame('video/webm', $video['type']);
@@ -75,7 +89,7 @@ class FeatureDemoTest extends TestCase
         FeatureMedia::save(['offer-research' => FeatureMedia::ANIMATION], ['offer-research' => '../../.env']);
 
         $this->assertSame([], FeatureMedia::uploadedVideos());
-        $this->assertStringEndsWith('feature-animations/offer-research.mp4', FeatureMedia::videoFor(asset('images/features/offer-research.webp'))['url']);
+        $this->assertStringEndsWith('feature-animations/offer-research.mp4', FeatureMedia::videoFor(asset('images/features/offer-research.webp'))[0]['url']);
     }
 
     public function test_images_the_admin_uploaded_are_never_swapped(): void
@@ -83,8 +97,8 @@ class FeatureDemoTest extends TestCase
         Storage::disk('public')->put('feature-animations/offer-research.mp4', 'video');
         FeatureMedia::save(['offer-research' => FeatureMedia::ANIMATION], []);
 
-        $this->assertNull(FeatureMedia::videoFor(Storage::disk('public')->url('features/offer-research.webp')));
-        $this->assertNull(FeatureMedia::videoFor('https://evil.example/images/features/../offer-research.webp'));
+        $this->assertSame([], FeatureMedia::videoFor(Storage::disk('public')->url('features/offer-research.webp')));
+        $this->assertSame([], FeatureMedia::videoFor('https://evil.example/images/features/../offer-research.webp'));
     }
 
     public function test_the_feature_page_and_cards_play_the_animation(): void
@@ -152,7 +166,7 @@ class FeatureDemoTest extends TestCase
 
         $path = FeatureMedia::uploadedVideos()['crm-list'];
         Storage::disk('public')->assertExists($path);
-        $this->assertStringEndsWith($path, FeatureMedia::videoFor(asset('images/features/crm-list.webp'))['url']);
+        $this->assertStringEndsWith($path, FeatureMedia::videoFor(asset('images/features/crm-list.webp'))[0]['url']);
     }
 
     public function test_a_non_video_upload_is_refused(): void

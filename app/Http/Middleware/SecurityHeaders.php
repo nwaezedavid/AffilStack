@@ -81,6 +81,9 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: blob: https:",
             "media-src 'self' blob: https:",
+            // The admin's image uploads (FilePond) process previews in a
+            // blob: worker; without this Chrome logs a CSP refusal.
+            "worker-src 'self' blob:",
             "font-src 'self' data:",
             "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://analytics.tiktok.com",
             "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.googletagmanager.com",

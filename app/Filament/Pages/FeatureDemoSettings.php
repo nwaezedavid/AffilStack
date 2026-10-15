@@ -131,7 +131,7 @@ class FeatureDemoSettings extends Page
         FeatureMedia::save($choices, $videos);
 
         $missing = collect($choices)
-            ->filter(fn (string $choice, string $name): bool => $choice === FeatureMedia::ANIMATION && FeatureMedia::videoPath($name) === null)
+            ->filter(fn (string $choice, string $name): bool => $choice === FeatureMedia::ANIMATION && FeatureMedia::videoPaths($name) === [])
             ->keys();
 
         Notification::make()

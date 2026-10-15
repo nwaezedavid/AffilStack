@@ -11,8 +11,8 @@ use Illuminate\Support\Str;
  *
  * Every built-in screenshot (public/images/features/NAME.webp) can have a
  * matching animated demo: either the bundled recording at
- * storage/app/public/feature-animations/NAME.mp4 (installed from the
- * "feature animations" zip) or a video the admin uploaded for it. Admin →
+ * storage/app/public/feature-animations/NAME.mp4 + NAME.webm (installed
+ * from the "feature animations" zip) or a video the admin uploaded for it. Admin →
  * Website → Feature demos picks, per screenshot, which one visitors see.
  * The screenshot stays the default, the poster frame while a video loads,
  * and what visitors who prefer reduced motion see.
@@ -105,58 +105,73 @@ class FeatureMedia
     }
 
     /**
-     * Path on the public disk of the bundled recording, when installed.
+     * Paths on the public disk of the bundled recording, when installed:
+     * the MP4 every mainstream browser plays, then a WebM fallback for
+     * browsers built without H.264.
+     *
+     * @return array<int, string>
      */
-    public static function bundledVideoPath(string $name): ?string
+    public static function bundledVideoPaths(string $name): array
     {
-        $path = self::DIRECTORY.'/'.$name.'.mp4';
-
-        return static::fileExists($path) ? $path : null;
+        return collect(['mp4', 'webm'])
+            ->map(fn (string $extension): string => self::DIRECTORY.'/'.$name.'.'.$extension)
+            ->filter(fn (string $path): bool => static::fileExists($path))
+            ->values()
+            ->all();
     }
 
     /**
-     * Path on the public disk of the video shown for this screenshot when
-     * the animation is chosen: the admin's upload, else the bundled one.
+     * One path of the bundled recording (MP4 preferred), for previews.
      */
-    public static function videoPath(string $name): ?string
+    public static function bundledVideoPath(string $name): ?string
+    {
+        $paths = static::bundledVideoPaths($name);
+
+        return $paths[0] ?? null;
+    }
+
+    /**
+     * Paths on the public disk of the video shown for this screenshot when
+     * the animation is chosen: the admin's upload, else the bundled one.
+     *
+     * @return array<int, string>
+     */
+    public static function videoPaths(string $name): array
     {
         $uploaded = static::uploadedVideos()[$name] ?? null;
 
         if (static::isUploadPath($uploaded) && static::fileExists($uploaded)) {
-            return $uploaded;
+            return [$uploaded];
         }
 
-        return static::bundledVideoPath($name);
+        return static::bundledVideoPaths($name);
     }
 
     /**
-     * The video to show instead of an image, or null to show the image.
+     * The video sources to show instead of an image, or an empty list to
+     * show the image.
      *
-     * @return array{url: string, type: string}|null
+     * @return array<int, array{url: string, type: string}>
      */
-    public static function videoFor(?string $src): ?array
+    public static function videoFor(?string $src): array
     {
         $name = static::nameFor($src);
 
         if ($name === null || static::choiceFor($name) !== self::ANIMATION) {
-            return null;
+            return [];
         }
 
-        $path = static::videoPath($name);
-
-        if ($path === null) {
-            return null;
-        }
-
-        return [
-            'url' => Storage::disk('public')->url($path),
-            'type' => str_ends_with(strtolower($path), '.webm') ? 'video/webm' : 'video/mp4',
-        ];
+        return collect(static::videoPaths($name))
+            ->map(fn (string $path): array => [
+                'url' => Storage::disk('public')->url($path),
+                'type' => str_ends_with(strtolower($path), '.webm') ? 'video/webm' : 'video/mp4',
+            ])
+            ->all();
     }
 
     public static function installedCount(): int
     {
-        return collect(static::names())->filter(fn (string $name): bool => static::bundledVideoPath($name) !== null)->count();
+        return collect(static::names())->filter(fn (string $name): bool => static::bundledVideoPaths($name) !== [])->count();
     }
 
     /**

@@ -5,10 +5,12 @@
      The video is silent, loops, plays only while on screen, and keeps the
      screenshot as its poster; visitors who prefer reduced motion keep
      seeing the screenshot. --}}
-@php($video = \App\Support\Features\FeatureMedia::videoFor($src))
-@if ($video)
+@php($sources = \App\Support\Features\FeatureMedia::videoFor($src))
+@if ($sources)
     <video {{ $attributes }} poster="{{ $src }}" muted loop playsinline disablepictureinpicture preload="none" @if ($alt !== '') aria-label="{{ $alt }}" @else aria-hidden="true" @endif data-feature-animation>
-        <source src="{{ $video['url'] }}" type="{{ $video['type'] }}">
+        @foreach ($sources as $source)
+            <source src="{{ $source['url'] }}" type="{{ $source['type'] }}">
+        @endforeach
     </video>
     @once
         <script>
