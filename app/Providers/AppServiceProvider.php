@@ -6,8 +6,13 @@ use App\Models\ApiToken;
 use App\Services\AI\AIProvider;
 use App\Services\AI\OpenAIProvider;
 use App\Services\AI\RoutingAIProvider;
+use App\Support\SignedInHint;
+use App\Support\SiteDomains;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -36,6 +41,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The customer app on its own subdomain (APP_DOMAIN): tell the public
+        // website a visitor is signed in, and let passkeys created on the
+        // app host verify there. See SiteDomains.
+        Event::listen(Login::class, fn () => SignedInHint::set());
+        Event::listen(Logout::class, fn () => SignedInHint::clear());
+
+        if ($appUrl = SiteDomains::appUrl()) {
+            // Signing out of the app lands on the public homepage.
+            config(['fortify.redirects.logout' => rtrim((string) config('app.url'), '/').'/']);
+
+            config(['passkeys.allowed_origins' => array_values(array_unique([
+                ...(array) config('passkeys.allowed_origins', []),
+                $appUrl,
+            ]))]);
+        }
+
         // API roadmap item #3 — every /v1/* token used to share one flat
         // 60/min limit (routes/api.php's old 'throttle:60,1') regardless of
         // the caller's plan. Keyed by token id when one resolved (so two

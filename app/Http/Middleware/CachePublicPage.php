@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\SiteDomains;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -41,7 +42,7 @@ class CachePublicPage
         // after logging in (login regenerates the session cookie).
         $response->headers->set('Vary', trim($response->headers->get('Vary', '').', Cookie', ', '));
 
-        if ($request->user()) {
+        if ($request->user() || SiteDomains::visitorIsSignedIn()) {
             $response->headers->set('Cache-Control', 'private, no-cache');
 
             return $response;

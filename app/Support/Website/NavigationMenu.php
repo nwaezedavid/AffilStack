@@ -7,6 +7,7 @@ use App\Models\SiteSetting;
 use App\Services\Blog\BlogFeed;
 use App\Support\MobileApps;
 use App\Support\SafeHtml;
+use App\Support\SiteDomains;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -115,7 +116,7 @@ class NavigationMenu
             'contact' => $route('contact.show'),
             'about' => $route('about'),
             'mobile-apps' => MobileApps::isVisible() ? $homeAnchor('get-the-app') : null,
-            'login' => auth()->check() ? null : $route('login'),
+            'login' => SiteDomains::visitorIsSignedIn() ? null : $route('login'),
             'terms' => $route('terms'),
             'privacy' => $route('privacy'),
             'refunds' => $route('refund-policy'),
@@ -252,7 +253,7 @@ class NavigationMenu
      */
     public static function expertUrl(): string
     {
-        return auth()->check() && Route::has('support.index') ? route('support.index') : route('contact.show');
+        return SiteDomains::visitorIsSignedIn() && Route::has('support.index') ? route('support.index') : route('contact.show');
     }
 
     /**
@@ -263,7 +264,7 @@ class NavigationMenu
      */
     public static function primaryCta(): array
     {
-        if (auth()->check()) {
+        if (SiteDomains::visitorIsSignedIn()) {
             return ['label' => static::label('nav_dashboard_label'), 'url' => route('dashboard')];
         }
 

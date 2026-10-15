@@ -56,6 +56,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Customer App Domain
+    |--------------------------------------------------------------------------
+    |
+    | When set (e.g. app.affilstack.com), sign-up, login, the customer
+    | dashboard and the admin panel are served from this host while the
+    | public website stays on the APP_URL host. Leave empty to serve
+    | everything from one host. See App\Support\SiteDomains.
+    |
+    */
+
+    'app_domain' => env('APP_DOMAIN'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

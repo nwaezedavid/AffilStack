@@ -5,6 +5,7 @@ namespace App\Services\Analytics;
 use App\Models\GoogleOauthSetting;
 use App\Models\GoogleSiteAnalyticsSetting;
 use App\Models\SiteSetting;
+use App\Support\SiteDomains;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -206,7 +207,7 @@ class GoogleSiteAnalyticsService
     {
         $settings = GoogleSiteAnalyticsSetting::current();
         $token = $this->freshAccessToken($settings);
-        $siteUrl = rtrim(url('/'), '/').'/';
+        $siteUrl = rtrim(SiteDomains::publicUrl(), '/').'/';
         $displayName = (string) SiteSetting::get('site_name', 'AffilStack');
 
         $property = Http::withToken($token)->post(self::GA_ADMIN_ENDPOINT.'/properties', [
@@ -261,7 +262,7 @@ class GoogleSiteAnalyticsService
     {
         $settings = GoogleSiteAnalyticsSetting::current();
         $token = $this->freshAccessToken($settings);
-        $siteUrl = rtrim(url('/'), '/').'/';
+        $siteUrl = rtrim(SiteDomains::publicUrl(), '/').'/';
 
         $tokenResponse = Http::withToken($token)->post(self::SITE_VERIFICATION_ENDPOINT.'/token', [
             'verificationMethod' => 'META',
@@ -298,7 +299,7 @@ class GoogleSiteAnalyticsService
             return ['success' => false, 'message' => 'Verified, but adding the property to Search Console failed: '.$addSite->body()];
         }
 
-        $sitemapUrl = rtrim(url('/'), '/').'/sitemap.xml';
+        $sitemapUrl = rtrim(SiteDomains::publicUrl(), '/').'/sitemap.xml';
         Http::withToken($token)->put(
             self::SEARCH_CONSOLE_ENDPOINT.'/sites/'.rawurlencode($siteUrl).'/sitemaps/'.rawurlencode($sitemapUrl)
         );

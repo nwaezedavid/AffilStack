@@ -15,6 +15,7 @@ use App\Services\ApiDocs\OpenApiReference;
 use App\Services\ApiDocs\WebhookEventCatalog;
 use App\Services\Payments\CheckoutCountryResolver;
 use App\Services\Payments\PaymentGatewayManager;
+use App\Support\SiteDomains;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -108,7 +109,7 @@ class ApiAccessController extends Controller
         // API roadmap item #4 — linked from the Endpoints reference section.
         $openApiUrl = route('api.v1.openapi');
 
-        $baseUrl = url('/api/v1');
+        $baseUrl = SiteDomains::publicUrl('api/v1');
         $endpoints = $reference->endpoints();
         $endpointGroups = $reference->grouped();
         $generator = new CodeSampleGenerator($baseUrl);

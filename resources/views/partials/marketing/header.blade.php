@@ -21,7 +21,7 @@
 
     $toolGroups = \App\Models\FeaturePage::menuGroups();
     $resources = NavigationMenu::resources();
-    $isGuest = ! auth()->check();
+    $isGuest = ! \App\Support\SiteDomains::visitorIsSignedIn();
     $cta = NavigationMenu::primaryCta();
     $expertUrl = NavigationMenu::expertUrl();
     $pricingActive = request()->routeIs('registration.pricing');

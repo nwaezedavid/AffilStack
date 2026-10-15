@@ -9,6 +9,7 @@ use App\Http\Middleware\EnsurePanelLoginCompleted;
 use App\Models\SiteSetting;
 use App\Services\Seo\FaviconGenerator;
 use App\Support\Brand;
+use App\Support\SiteDomains;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -36,6 +37,9 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('afs-admin')
+            // On app.affilstack.com with the customer app when APP_DOMAIN
+            // is set; otherwise wherever the site runs. See SiteDomains.
+            ->domain(SiteDomains::appHost())
             ->brandName(fn () => SiteSetting::get('site_name', 'AffilStack').' Admin')
             ->brandLogo(fn () => ($logo = SiteSetting::get('logo_rectangular_path'))
                 ? Storage::disk('public')->url($logo)

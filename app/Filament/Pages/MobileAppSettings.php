@@ -6,6 +6,7 @@ use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Support\WebpFileUpload;
 use App\Models\SiteSetting;
 use App\Support\MobileApps;
+use App\Support\SiteDomains;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -70,7 +71,7 @@ class MobileAppSettings extends Page
             ->components([
                 Callout::make('How this works')
                     ->info()
-                    ->description('Nothing about the apps is shown to visitors until you paste a store link below (or switch on "Coming soon"). The moment you save a link, download badges appear on the homepage, in the site footer and in every customer\'s dashboard — and '.url('/app').' becomes a smart link that opens the right store on Android and iPhone.'),
+                    ->description('Nothing about the apps is shown to visitors until you paste a store link below (or switch on "Coming soon"). The moment you save a link, download badges appear on the homepage, in the site footer and in every customer\'s dashboard — and '.SiteDomains::publicUrl('app').' becomes a smart link that opens the right store on Android and iPhone.'),
 
                 Section::make('Store links')
                     ->description('Copy each link from your store listing once the app is live.')

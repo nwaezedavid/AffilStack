@@ -9,6 +9,7 @@ use App\Models\SiteSetting;
 use App\Services\Blog\BlogFeed;
 use App\Services\Settings\SettingsHealthChecker;
 use App\Support\MobileApps;
+use App\Support\SiteDomains;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Throwable;
@@ -127,7 +128,7 @@ class IntegrationGuideRegistry
      */
     public function urls(): array
     {
-        $site = rtrim(url('/'), '/');
+        $site = rtrim(SiteDomains::publicUrl(), '/');
         $blog = BlogFeed::baseUrl() ?: 'https://blog.'.$this->rootDomain();
 
         return [
@@ -168,7 +169,7 @@ class IntegrationGuideRegistry
      */
     public function siteUrlLooksLive(): bool
     {
-        $site = url('/');
+        $site = SiteDomains::publicUrl();
         $host = (string) parse_url($site, PHP_URL_HOST);
 
         return str_starts_with($site, 'https://')
@@ -178,7 +179,7 @@ class IntegrationGuideRegistry
 
     protected function rootDomain(): string
     {
-        $host = (string) parse_url(url('/'), PHP_URL_HOST);
+        $host = (string) parse_url(SiteDomains::publicUrl(), PHP_URL_HOST);
 
         return preg_replace('/^www\./', '', $host) ?: 'affilstack.com';
     }

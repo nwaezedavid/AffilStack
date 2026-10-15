@@ -6,6 +6,7 @@ use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\BingWebmasterSetting;
 use App\Services\Analytics\BingWebmasterClient;
+use App\Support\SiteDomains;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
@@ -122,7 +123,7 @@ class BingWebmasterSettings extends Page
         $this->persist($this->form->getState());
         $settings = BingWebmasterSetting::current();
 
-        $result = (new BingWebmasterClient((string) $settings->credential('api_key')))->verifySite(rtrim(url('/'), '/'));
+        $result = (new BingWebmasterClient((string) $settings->credential('api_key')))->verifySite(rtrim(SiteDomains::publicUrl(), '/'));
 
         $settings->update([
             'verified_at' => now(),
@@ -132,7 +133,7 @@ class BingWebmasterSettings extends Page
 
         if ($result['success']) {
             $sitemap = (new BingWebmasterClient((string) $settings->credential('api_key')))
-                ->submitSitemap(rtrim(url('/'), '/'), rtrim(url('/'), '/').'/sitemap.xml');
+                ->submitSitemap(rtrim(SiteDomains::publicUrl(), '/'), rtrim(SiteDomains::publicUrl(), '/').'/sitemap.xml');
 
             $result['message'] .= ' '.$sitemap['message'];
         }

@@ -13,6 +13,7 @@ use App\Support\Seo\PublicPages;
 use App\Support\Seo\RenderedPageSnapshot;
 use App\Support\Seo\SeoImage;
 use App\Support\Seo\SeoInput;
+use App\Support\SiteDomains;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CodeEditor;
@@ -328,7 +329,7 @@ class SeoFormFields
             $routeName = $record instanceof PageSeo ? $record->route_name : 'home';
             $snapshot = RenderedPageSnapshot::get($routeName);
             $pageName = PublicPages::label($routeName);
-            $url = PublicPages::url($routeName) ?? url('/');
+            $url = PublicPages::url($routeName) ?? SiteDomains::publicUrl();
             $defaultTitle = $snapshot['title'] ?? $builder->renderTitle($builder->titleTemplate(), $pageName, $siteName);
             $defaultDescription = ($snapshot['description'] ?? '') ?: (string) SiteSetting::get('seo_meta_description', '');
             $content = $snapshot['text'] ?? null;

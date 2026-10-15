@@ -11,7 +11,9 @@ use App\Models\SiteSetting;
 use App\Models\Tutorial;
 use App\Support\Seo\PublicPages;
 use App\Support\Seo\RobotsTxt;
+use App\Support\SiteDomains;
 use Carbon\CarbonInterface;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 
@@ -25,9 +27,15 @@ use Illuminate\Support\Carbon;
  */
 class SeoController extends Controller
 {
-    public function robots(): Response
+    public function robots(Request $request): Response
     {
-        return response(RobotsTxt::content(), 200)
+        // The customer app (app.affilstack.com) is all logins and private
+        // dashboards: nothing there should be crawled.
+        $content = SiteDomains::isAppRequest($request)
+            ? "User-agent: *\nDisallow: /\n"
+            : RobotsTxt::content();
+
+        return response($content, 200)
             ->header('Content-Type', 'text/plain; charset=UTF-8');
     }
 

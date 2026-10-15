@@ -22,6 +22,7 @@ use App\Services\GitHub\GitHubSyncService;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Referrals\PartnerStackClient;
 use App\Services\Video\HeyGenClient;
+use App\Support\SiteDomains;
 
 /**
  * The "active AI Agent... verifying every connection" requirement (audit
@@ -156,7 +157,7 @@ class SettingsHealthChecker
         }
 
         $bing = BingWebmasterSetting::current();
-        $bingResult = (new BingWebmasterClient((string) $bing->credential('api_key')))->verifySite(rtrim(url('/'), '/'));
+        $bingResult = (new BingWebmasterClient((string) $bing->credential('api_key')))->verifySite(rtrim(SiteDomains::publicUrl(), '/'));
         $bing->update([
             'verified_at' => now(),
             'verification_status' => $bingResult['success'] ? 'success' : 'failed',

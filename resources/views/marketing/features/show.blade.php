@@ -80,7 +80,7 @@
                 @endif
                 <div class="mt-9 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
                     <a href="{{ $cta['url'] }}" class="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gold-400 px-7 py-3.5 text-sm font-semibold text-navy-950 shadow-[0_12px_32px_-12px_rgba(211,168,84,.9)] transition hover:bg-gold-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:w-auto">
-                        {{ auth()->check() ? $cta['label'] : SiteCopy::text('feature_primary_label') }}
+                        {{ \App\Support\SiteDomains::visitorIsSignedIn() ? $cta['label'] : SiteCopy::text('feature_primary_label') }}
                         <x-heroicon-m-arrow-right class="h-4 w-4 transition group-hover:translate-x-0.5" aria-hidden="true" />
                     </a>
                     <a href="{{ route('features.index') }}" class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white/10 px-7 py-3.5 text-sm font-semibold text-white ring-1 ring-white/25 backdrop-blur transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:w-auto">
@@ -216,7 +216,7 @@
     @include('marketing.features.partials.cta', [
         'heading' => $page->cta_heading ?: SiteCopy::text('features_cta_heading'),
         'text' => $page->cta_text,
-        'label' => auth()->check() ? $cta['label'] : ($page->cta_label ?: SiteCopy::text('features_cta_label')),
-        'url' => auth()->check() ? $cta['url'] : $page->ctaUrl(),
+        'label' => \App\Support\SiteDomains::visitorIsSignedIn() ? $cta['label'] : ($page->cta_label ?: SiteCopy::text('features_cta_label')),
+        'url' => \App\Support\SiteDomains::visitorIsSignedIn() ? $cta['url'] : $page->ctaUrl(),
     ])
 @endsection

@@ -78,7 +78,7 @@
         @unless ($registry->siteUrlLooksLive())
             <div class="afs-g-callout afs-g-callout--warning" role="note">
                 <x-filament::icon icon="heroicon-o-exclamation-triangle" />
-                <div><span class="afs-g-callout-title">You're viewing a non-live copy ({{ url('/') }})</span>The addresses below are built from this copy's address. Open this guide on the live site to copy the real ones.</div>
+                <div><span class="afs-g-callout-title">You're viewing a non-live copy ({{ \App\Support\SiteDomains::publicUrl() }})</span>The addresses below are built from this copy's address. Open this guide on the live site to copy the real ones.</div>
             </div>
         @endunless
 

@@ -75,7 +75,7 @@
             <div class="afs-g-callout afs-g-callout--warning" role="note">
                 <x-filament::icon icon="heroicon-o-exclamation-triangle" />
                 <div>
-                    <span class="afs-g-callout-title">This copy of AffilStack runs at {{ url('/') }}</span>
+                    <span class="afs-g-callout-title">This copy of AffilStack runs at {{ \App\Support\SiteDomains::publicUrl() }}</span>
                     Every address in these guides (redirect URIs, webhook URLs) is built from this site's address. Google, Meta, TikTok and the payment gateways only accept the live <code>https://</code> address — copy them from the guides on the live site.
                 </div>
             </div>

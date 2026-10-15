@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\SiteDomains;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -129,7 +130,7 @@ class Redirect extends Model
         }
 
         if (Str::startsWith($path, ['http://', 'https://'])) {
-            $ownHost = parse_url(url('/'), PHP_URL_HOST);
+            $ownHost = parse_url(SiteDomains::publicUrl(), PHP_URL_HOST);
             $targetHost = parse_url($path, PHP_URL_HOST);
 
             if (! $targetHost || ! $ownHost || strcasecmp($targetHost, $ownHost) !== 0) {
