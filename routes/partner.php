@@ -33,7 +33,7 @@ SiteDomains::affiliate(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('partner.login');
     Route::post('/login', [AuthController::class, 'store'])->middleware('throttle:10,1,partner.login')->name('partner.login.store');
     Route::get('/two-factor', [AuthController::class, 'challenge'])->name('partner.two-factor');
-    Route::post('/two-factor', [AuthController::class, 'verify'])->middleware('throttle:10,1,partner.two-factor')->name('partner.two-factor.store');
+    Route::post('/two-factor', [AuthController::class, 'verify'])->middleware('throttle:5,1,partner.two-factor')->name('partner.two-factor.store');
     Route::post('/logout', [AuthController::class, 'destroy'])->name('partner.logout');
 
     Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('partner.password.request');

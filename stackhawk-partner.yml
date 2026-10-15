@@ -26,14 +26,27 @@ app:
       type: HEADER
       success: ".*200.*"
 
-  # Signing out would end the scanner's own session mid-scan.
+  # Only the affiliate program: the portal, the public referral redirect
+  # and the banner embed. The rest of the site has its own config
+  # (stackhawk.yml).
+  includePaths:
+    - "/affiliate.*"
+    - "/r/.*"
+    - "/embed/.*"
+
+  # Signing out would end the scanner's own session mid-scan; static
+  # assets carry no input.
   excludePaths:
     - "/affiliate/logout"
+    - "/build/.*"
+    - "/storage/.*"
+    - "/fonts/.*"
 
 hawk:
   outboundProxy:
     rootCACertPath: ${HAWK_OUTBOUND_PROXY_CA:}
   spider:
+    maxDurationMinutes: 3
     seedPaths:
       - /affiliate
       - /affiliate/login
@@ -50,7 +63,7 @@ hawk:
       - /embed/banner/300x250?ref=TEST
       - /r/TESTCODE?c=test&to=/features
   scan:
-    maxRuleDurationMinutes: 5
+    maxRuleDurationMinutes: 2
     concurrentRequests: ${HAWK_SCAN_THREADS:20}
 
 tags:

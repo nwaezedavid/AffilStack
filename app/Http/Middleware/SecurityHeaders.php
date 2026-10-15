@@ -89,6 +89,11 @@ class SecurityHeaders
             "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://www.googletagmanager.com",
             $frameable ? 'frame-ancestors *' : "frame-ancestors 'self'",
             "base-uri 'self'",
+            // form-action doesn't fall back to default-src. Forms may only
+            // submit to this site or HTTPS pages: sign-up and top-ups
+            // redirect on to Paystack/Flutterwave/PayPal checkouts and OAuth
+            // screens, which browsers check against form-action too.
+            "form-action 'self' https:",
             "object-src 'none'",
         ]));
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');

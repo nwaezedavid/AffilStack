@@ -225,4 +225,11 @@ class SecurityHardeningTest extends TestCase
 
         return $this->get(route('google.callback', ['state' => session('google_oauth_state'), 'code' => 'c']));
     }
+
+    public function test_forms_may_only_submit_to_this_site_or_https_pages(): void
+    {
+        $csp = (string) $this->get('/affiliate/login')->headers->get('Content-Security-Policy');
+
+        $this->assertStringContainsString("form-action 'self' https:", $csp);
+    }
 }
