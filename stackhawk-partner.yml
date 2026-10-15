@@ -1,0 +1,64 @@
+# The Partner Portal (affiliate.affilstack.com in production; /affiliate on a
+# single local host), scanned as a non-privileged partner account.
+app:
+  applicationId: ${APP_ID:2c70ae35-9ef8-4368-8c9b-508e733b429c}
+  env: ${APP_ENV:Development}
+  host: ${APP_HOST:http://127.0.0.1:8000}
+
+  antiCsrfParam: _token
+
+  authentication:
+    usernamePassword:
+      type: FORM
+      loginPagePath: /affiliate/login
+      loginPath: /affiliate/login
+      usernameField: email
+      passwordField: password
+      scanUsername: ${PARTNER_SCAN_USER:scanpartner@affilstack.demo}
+      scanPassword: ${PARTNER_SCAN_PASSWORD:Scan-Partner-Pass-1}
+    cookieAuthorization:
+      cookieNames:
+        - affilstack-session
+    loggedInIndicator: ".*Sign out.*"
+    loggedOutIndicator: ".*Location:.*/affiliate/login.*"
+    testPath:
+      path: /affiliate/portal
+      type: HEADER
+      success: ".*200.*"
+
+  # Signing out would end the scanner's own session mid-scan.
+  excludePaths:
+    - "/affiliate/logout"
+
+hawk:
+  outboundProxy:
+    rootCACertPath: ${HAWK_OUTBOUND_PROXY_CA:}
+  spider:
+    seedPaths:
+      - /affiliate
+      - /affiliate/login
+      - /affiliate/forgot-password
+      - /affiliate/portal
+      - /affiliate/portal/links
+      - /affiliate/portal/banners
+      - /affiliate/portal/promote
+      - /affiliate/portal/guidelines
+      - /affiliate/portal/payouts
+      - /affiliate/portal/news
+      - /affiliate/portal/leaderboard
+      - /affiliate/portal/account
+      - /embed/banner/300x250?ref=TEST
+      - /r/TESTCODE?c=test&to=/features
+  scan:
+    maxRuleDurationMinutes: 5
+    concurrentRequests: ${HAWK_SCAN_THREADS:20}
+
+tags:
+  - name: git_origin
+    value: github.com/nwaezedavid/AffilStack
+  - name: _STACKHAWK_AGENT
+    value: ${HAWK_AGENT:none}
+  - name: _STACKHAWK_GIT_COMMIT_SHA
+    value: ${COMMIT_SHA:none}
+  - name: _STACKHAWK_GIT_BRANCH
+    value: ${BRANCH_NAME:none}
