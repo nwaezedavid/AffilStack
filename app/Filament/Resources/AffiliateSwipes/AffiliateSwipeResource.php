@@ -30,7 +30,7 @@ class AffiliateSwipeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelopeOpen;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Billing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Partners';
 
     protected static ?string $navigationLabel = 'Affiliate Swipes';
 

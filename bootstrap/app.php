@@ -69,6 +69,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // write per user every few minutes) for the admin active/inactive
         // view and the re-engagement emails — see TrackUserActivity.
         $middleware->appendToGroup('web', TrackUserActivity::class);
+
+        // The Partner Portal has its own sign-in page on the affiliate host.
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->routeIs('partner.*') ? route('partner.login') : route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

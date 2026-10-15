@@ -7,6 +7,7 @@ use App\Models\ReferralPayout;
 use App\Models\User;
 use App\Notifications\ReferralPayoutProcessed;
 use App\Notifications\ReferralPayoutRejected;
+use App\Support\ReferralProgram;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -63,9 +64,11 @@ class ReferralPayoutService
             $events = $byCurrency->get($currency, collect());
             $total = $events->sum('amount_cents');
 
-            if ($total < (int) config('referrals.minimum_payout_cents')) {
-                $minimum = number_format(config('referrals.minimum_payout_cents') / 100, 2);
-                throw new InvalidArgumentException("You need at least {$minimum} {$currency} in approved commissions to request a payout.");
+            $minimumCents = ReferralProgram::minimumPayoutCents($currency);
+
+            if ($total < $minimumCents) {
+                $minimum = ReferralProgram::money($minimumCents, $currency);
+                throw new InvalidArgumentException("You need at least {$minimum} in approved commissions to request a payout.");
             }
 
             $payout = ReferralPayout::create([
@@ -96,7 +99,7 @@ class ReferralPayoutService
      * Cascades every attached event to "paid" — that cascade is the ONLY
      * way an event ever reaches "paid".
      */
-    public function processPayout(ReferralPayout $payout, User $admin, string $reference, ?string $note = null): void
+    public function processPayout(ReferralPayout $payout, ?User $admin, string $reference, ?string $note = null): void
     {
         DB::transaction(function () use ($payout, $admin, $reference, $note) {
             // Conditional transition — two admins (or a replayed request)
@@ -109,7 +112,7 @@ class ReferralPayoutService
                     'reference' => $reference,
                     'note' => $note,
                     'processed_at' => now(),
-                    'processed_by_id' => $admin->id,
+                    'processed_by_id' => $admin?->id ?? $payout->processed_by_id,
                 ]);
 
             if ($updated !== 1) {

@@ -87,6 +87,68 @@ class SiteDomains
             : Route::group([], $routes);
     }
 
+    /**
+     * The affiliate program's own host (affiliate.affilstack.com), or null
+     * when AFFILIATE_SUBDOMAIN is unset and the program lives under
+     * /affiliate on the website instead.
+     */
+    public static function affiliateHost(): ?string
+    {
+        $host = strtolower(trim((string) config('referrals.landing_subdomain')));
+        $host = (string) preg_replace('#^https?://#', '', $host);
+        $host = rtrim(explode('/', $host)[0], '.');
+
+        return $host !== '' && $host !== strtolower(static::marketingHost()) ? $host : null;
+    }
+
+    /**
+     * Register affiliate program routes: the partner landing page, partner
+     * login and the Partner Portal. On their own host when one is set,
+     * otherwise under /affiliate on the website.
+     */
+    public static function affiliate(Closure $routes): void
+    {
+        if ($host = static::affiliateHost()) {
+            Route::domain($host)->group($routes);
+
+            return;
+        }
+
+        static::marketing(fn () => Route::prefix('affiliate')->group($routes));
+    }
+
+    /**
+     * ".affilstack.com" when any part of the site runs on a subdomain, so a
+     * cookie set on one host (a referral click on the website) is read on
+     * another (sign-up on the app). Null keeps a host-only cookie.
+     */
+    public static function sharedCookieDomain(): ?string
+    {
+        if (! static::isSplit() && static::affiliateHost() === null) {
+            return null;
+        }
+
+        $host = static::marketingHost();
+
+        if (filter_var($host, FILTER_VALIDATE_IP) || ! str_contains($host, '.')) {
+            return null;
+        }
+
+        return '.'.preg_replace('/^www\./', '', $host);
+    }
+
+    /**
+     * A shared (any-host) route's address on the public website — referral
+     * links and banner embeds handed to partners should always point at
+     * affilstack.com, whichever host generated them.
+     *
+     * @param  array<string, mixed>  $parameters
+     */
+    public static function publicRoute(string $name, array $parameters = []): string
+    {
+        return static::publicUrl(route($name, $parameters, false));
+    }
+
     public static function isAppRequest(?Request $request = null): bool
     {
         $request ??= request();

@@ -176,7 +176,7 @@ class TestimonialTest extends TestCase
         $affiliate = User::factory()->create(['is_affiliate_only' => true]);
         $affiliate->assignRole('user');
 
-        $this->actingAs($affiliate)->get(route('testimonial.edit'))->assertForbidden();
+        $this->actingAs($affiliate)->get(route('testimonial.edit'))->assertRedirect(route('partner.dashboard'));
     }
 
     public function test_an_admin_can_approve_a_pending_testimonial_from_the_table(): void

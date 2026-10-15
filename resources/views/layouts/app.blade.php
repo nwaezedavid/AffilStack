@@ -104,7 +104,7 @@
                 <div class="mx-3 mb-4 rounded-md bg-emerald-900/50 border border-emerald-800 px-3 py-2.5 text-xs">
                     <div class="flex items-center justify-between {{ $sidebarMuted }}">
                         <span>Commission rate</span>
-                        <span class="font-mono text-gold-400 font-semibold">{{ number_format(config('referrals.commission_rate') * 100) }}%</span>
+                        <span class="font-mono text-gold-400 font-semibold">{{ \App\Support\ReferralProgram::formatPercent(\App\Support\ReferralProgram::partnerPercent()) }}</span>
                     </div>
                 </div>
             @endif

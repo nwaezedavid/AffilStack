@@ -143,11 +143,13 @@ class AffiliateMarketingKitTest extends TestCase
     {
         $partner = User::factory()->create(['is_affiliate_only' => true]);
 
-        $response = $this->actingAs($partner)->get(route('referrals.index'));
+        $this->actingAs($partner)->get(route('partner.banners'))->assertOk()->assertSee('Auto-updating ad slot')->assertSee('data-banner-open="commissions-300x250"', false);
+
+        $response = $this->actingAs($partner)->get(route('partner.promote'));
 
         $response->assertOk();
         $response->assertSee('Partner Portal');
-        $response->assertSee('Marketing kit');
+        $response->assertSee('Email swipes');
         $response->assertSee('I stopped tab-switching my way through affiliate marketing');
         $response->assertDontSee('Credits', false);
     }

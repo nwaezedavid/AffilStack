@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * clears. Commission events live in ReferralEvent, raw clicks in
  * ReferralClick — this row is just the relationship + lifecycle status.
  */
-#[Fillable(['referrer_id', 'referred_user_id', 'status', 'converted_at'])]
+#[Fillable(['referrer_id', 'referred_user_id', 'status', 'converted_at', 'referral_campaign_id'])]
 class Referral extends Model
 {
     /** @use HasFactory<ReferralFactory> */
@@ -60,5 +60,10 @@ class Referral extends Model
     public function events(): HasMany
     {
         return $this->hasMany(ReferralEvent::class);
+    }
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(ReferralCampaign::class, 'referral_campaign_id');
     }
 }

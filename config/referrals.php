@@ -23,13 +23,34 @@ return [
     // to process individually. See ReferralPayoutService::requestPayout().
     'minimum_payout_cents' => (int) env('REFERRAL_MINIMUM_PAYOUT_CENTS', 5000),
 
-    // Payout methods an affiliate can put on file (dashboard.referrals).
-    // Each key's dynamic form fields live in
-    // resources/views/dashboard/referrals/index.blade.php.
+    // Payout methods an affiliate can put on file (Partner Portal and the
+    // customer Refer & Earn page). Each key's form fields live in
+    // resources/views/partials/referrals/payout-form.blade.php.
     'payout_methods' => [
+        'paystack_bank' => 'Nigerian bank account',
         'paypal' => 'PayPal',
+        'usdt' => 'USDT (crypto wallet)',
+    ],
+
+    // Display names for every method a stored payout may carry, including
+    // ones no longer offered for new payout details.
+    'payout_method_labels' => [
+        'paystack_bank' => 'Nigerian bank account',
+        'paypal' => 'PayPal',
+        'usdt' => 'USDT (crypto wallet)',
         'bank_transfer' => 'Bank transfer',
     ],
+
+    // USDT networks a partner can be paid on, with the address format each
+    // expects and the block explorer used to check a transaction hash.
+    'usdt_networks' => [
+        'trc20' => ['label' => 'TRON (TRC-20)', 'address' => '/^T[1-9A-HJ-NP-Za-km-z]{33}$/', 'hash' => '/^[A-Fa-f0-9]{64}$/', 'explorer' => 'https://tronscan.org/#/transaction/'],
+        'bep20' => ['label' => 'BNB Smart Chain (BEP-20)', 'address' => '/^0x[A-Fa-f0-9]{40}$/', 'hash' => '/^0x[A-Fa-f0-9]{64}$/', 'explorer' => 'https://bscscan.com/tx/'],
+    ],
+
+    // Remembers which of a partner's campaign links a visitor clicked, so
+    // sign-ups and earnings can be reported per campaign.
+    'campaign_cookie_name' => 'affilstack_ref_campaign',
 
     // The affiliate program's own landing page — "anyone can sign-up to
     // become an affiliate without first becoming a user of the platform".
@@ -41,21 +62,11 @@ return [
     // active. See routes/web.php and AffiliateController.
     'landing_subdomain' => env('AFFILIATE_SUBDOMAIN'),
 
-    // Route names an affiliate-only account (User::isAffiliateOnly()) may
-    // reach — everything else is off-limits, the exact same pattern as
-    // config('agency.seat_allowed_routes')/RestrictAgencySeats. "dashboard"
-    // stays in this list only so DashboardController can redirect it to
-    // referrals.index, exactly like it already does for a team seat. See
+    // App routes an affiliate-only account (User::isAffiliateOnly()) may
+    // still reach on the customer app. Every other app route sends them to
+    // their Partner Portal (partner.dashboard) instead — see
     // App\Http\Middleware\RestrictAffiliateOnlyAccounts.
     'affiliate_only_allowed_routes' => [
-        'dashboard',
-        'referrals.index',
-        'referrals.payout-method',
-        'referrals.payout',
-        'profile',
-        'profile.destroy',
-        'notifications.poll',
-        'notifications.read-all',
         'logout',
     ],
 ];

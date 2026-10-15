@@ -28,7 +28,7 @@ class AffiliateApplicationResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserPlus;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Billing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Partners';
 
     protected static ?string $navigationLabel = 'Affiliate Applications';
 

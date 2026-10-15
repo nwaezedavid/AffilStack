@@ -3,12 +3,14 @@
 namespace App\Services\Referrals\MarketingKit;
 
 use App\Models\AffiliateBanner;
+use App\Models\BannerAd;
 use Illuminate\Support\Collection;
 
 /**
- * Every banner an affiliate can use: admin uploads first (they take
- * priority), then the built-in designs. Each banner has a stable key —
- * "{design}-{size}" for built-ins, "upload{id}-{size}" for uploads — that is
+ * Every banner an affiliate can use: live auto-updating banner ads first,
+ * then admin uploads, then the built-in designs. Each banner has a stable
+ * key — "{design}-{size}" for built-ins, "upload{id}-{size}" for uploads,
+ * "ad{id}-{size}" for banner ads — that is
  * passed as "b" on the tracked /r/{code} link and used to group impression
  * and click stats.
  */
@@ -20,6 +22,11 @@ class BannerCatalog
      * @var Collection<int, AffiliateBanner>|null
      */
     private ?Collection $uploads = null;
+
+    /**
+     * @var Collection<int, BannerAd>|null
+     */
+    private ?Collection $ads = null;
 
     /**
      * @return array<string, array{width: int, height: int, label: string, group: string}>
@@ -63,7 +70,13 @@ class BannerCatalog
             ->flatMap(fn (string $sizeKey) => collect(array_keys($this->designs()))->map(fn (string $design): array => $this->describeBuiltIn($design, $sizeKey)))
             ->values();
 
-        return $uploads->concat($builtIn)->values();
+        $ads = $this->liveAds()
+            ->flatMap(fn (BannerAd $ad) => collect($ad->availableSizes())
+                ->filter(fn (string $sizeKey): bool => $this->isSize($sizeKey) && ($size === null || $size === $sizeKey))
+                ->map(fn (string $sizeKey): array => $this->describeAd($ad, $sizeKey)))
+            ->values();
+
+        return $ads->concat($uploads)->concat($builtIn)->values();
     }
 
     /**
@@ -79,6 +92,12 @@ class BannerCatalog
 
         if (! $this->isSize($size)) {
             return null;
+        }
+
+        if (preg_match('/^ad(\d+)$/', $design, $match)) {
+            $ad = $this->liveAds()->firstWhere('id', (int) $match[1]) ?? BannerAd::find((int) $match[1]);
+
+            return $ad && $ad->supportsSize($size) ? $this->describeAd($ad, $size) : null;
         }
 
         if (preg_match('/^upload(\d+)$/', $design, $match)) {
@@ -102,10 +121,18 @@ class BannerCatalog
      *
      * @return array<string, mixed>
      */
-    public function pick(string $size, ?string $design): array
+    public function pick(string $size, ?string $design, bool $allowInactiveAd = false): array
     {
-        if ($design && $design !== 'rotate' && ($chosen = $this->find($design.'-'.$size))) {
-            return $chosen;
+        if ($design && ! in_array($design, ['rotate', 'ads'], true) && ($chosen = $this->find($design.'-'.$size))) {
+            if ($chosen['kind'] !== 'ad' || $chosen['is_live'] || $allowInactiveAd) {
+                return $chosen;
+            }
+        }
+
+        $ads = $this->liveAds()->filter(fn (BannerAd $ad): bool => $ad->supportsSize($size))->values();
+
+        if ($ads->isNotEmpty()) {
+            return $this->describeAd($this->weightedPick($ads), $size);
         }
 
         $uploads = $this->uploads()->where('size', $size);
@@ -125,6 +152,63 @@ class BannerCatalog
         $position = strrpos($key, '-');
 
         return [substr($key, 0, $position), substr($key, $position + 1)];
+    }
+
+    /**
+     * @param  Collection<int, BannerAd>  $ads
+     */
+    private function weightedPick(Collection $ads): BannerAd
+    {
+        $total = $ads->sum(fn (BannerAd $ad): int => max(1, $ad->weight));
+        $roll = random_int(1, max(1, $total));
+
+        foreach ($ads as $ad) {
+            $roll -= max(1, $ad->weight);
+
+            if ($roll <= 0) {
+                return $ad;
+            }
+        }
+
+        return $ads->first();
+    }
+
+    /**
+     * @return Collection<int, BannerAd>
+     */
+    private function liveAds(): Collection
+    {
+        return $this->ads ??= BannerAd::query()->live()->orderBy('sort_order')->orderByDesc('id')->get();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function describeAd(BannerAd $ad, string $size): array
+    {
+        $dimensions = $this->sizes()[$size];
+        $preview = route('embed.banner', ['size' => $size, 'design' => 'ad'.$ad->id, 'preview' => 1]);
+
+        return [
+            'key' => $ad->bannerKey($size),
+            'kind' => 'ad',
+            'design' => 'ad'.$ad->id,
+            'design_name' => $ad->headline,
+            'size' => $size,
+            'size_label' => $dimensions['label'],
+            'group' => $dimensions['group'],
+            'width' => $dimensions['width'],
+            'height' => $dimensions['height'],
+            'title' => $ad->headline.' · '.str_replace('x', '×', $size),
+            'alt' => $ad->headline,
+            'preview_url' => $preview,
+            'svg_url' => null,
+            'png_url' => null,
+            'image_url' => null,
+            'landing_path' => $ad->landing_path ?: '/pricing',
+            'is_live' => $ad->isLive(),
+            'ad' => $ad,
+        ];
     }
 
     /**

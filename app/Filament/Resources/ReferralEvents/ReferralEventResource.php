@@ -30,7 +30,7 @@ class ReferralEventResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGift;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Billing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Partners';
 
     protected static ?string $navigationLabel = 'Referral Commissions';
 

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'ip_address', 'user_agent', 'banner_key', 'source', 'clicked_at'])]
+#[Fillable(['user_id', 'ip_address', 'user_agent', 'banner_key', 'source', 'referral_campaign_id', 'clicked_at'])]
 class ReferralClick extends Model
 {
     protected function casts(): array
@@ -19,5 +19,10 @@ class ReferralClick extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(ReferralCampaign::class, 'referral_campaign_id');
     }
 }

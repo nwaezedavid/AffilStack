@@ -37,9 +37,9 @@ class AffiliateApplicationApproved extends Notification
         return (new MailMessage)
             ->subject("You're approved as an affiliate!")
             ->line('Good news, '.MailText::escape($this->application->name).' — your affiliate application has been approved.')
-            ->line('Set a password to access your affiliate dashboard, grab your referral link, and track your commissions.')
+            ->line('Set a password to open your Partner Portal, grab your referral link and banners, and track your commissions.')
             ->action('Set your password', $this->setPasswordUrl)
-            ->line('This link expires in 7 days.');
+            ->line('This link expires in 7 days. Afterwards, sign in any time at '.route('partner.login').'.');
     }
 
     /**

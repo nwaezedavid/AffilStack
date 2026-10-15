@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\ApiToken;
+use App\Models\User;
 use App\Services\AI\AIProvider;
 use App\Services\AI\OpenAIProvider;
 use App\Services\AI\RoutingAIProvider;
@@ -44,8 +45,19 @@ class AppServiceProvider extends ServiceProvider
         // The customer app on its own subdomain (APP_DOMAIN): tell the public
         // website a visitor is signed in, and let passkeys created on the
         // app host verify there. See SiteDomains.
-        Event::listen(Login::class, fn () => SignedInHint::set());
-        Event::listen(Logout::class, fn () => SignedInHint::clear());
+        // Partners sign in on the affiliate host and never use the
+        // customer app, so their sign-in doesn't flip the website's
+        // "Dashboard" button (and their sign-out doesn't clear it).
+        Event::listen(Login::class, function (Login $event) {
+            if (! ($event->user instanceof User && $event->user->isAffiliateOnly())) {
+                SignedInHint::set();
+            }
+        });
+        Event::listen(Logout::class, function (Logout $event) {
+            if (! ($event->user instanceof User && $event->user->isAffiliateOnly())) {
+                SignedInHint::clear();
+            }
+        });
 
         if ($appUrl = SiteDomains::appUrl()) {
             // Signing out of the app lands on the public homepage.

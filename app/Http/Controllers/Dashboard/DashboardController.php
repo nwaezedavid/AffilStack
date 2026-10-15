@@ -29,7 +29,7 @@ class DashboardController extends Controller
         // no offers, subscription, or account-wide stats to show — its
         // referral link and earnings are its whole account.
         if ($user->isAffiliateOnly()) {
-            return redirect()->route('referrals.index');
+            return redirect()->route('partner.dashboard');
         }
 
         // Get Started: the research form first, then the results for the

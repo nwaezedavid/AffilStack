@@ -4,7 +4,9 @@ namespace App\Services\Referrals\MarketingKit;
 
 use App\Models\AffiliateBannerImpression;
 use App\Models\AffiliateSwipe;
+use App\Models\ReferralCampaign;
 use App\Models\User;
+use App\Support\SiteDomains;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -34,12 +36,27 @@ class MarketingKit
     {
         $query = array_filter(['utm_source' => $medium === 'banner' ? 'affiliate' : null, 'utm_medium' => $medium, 'utm_content' => $content] + $extra);
 
-        return url('/r/'.$user->referralCode()).'?'.http_build_query($query);
+        return SiteDomains::publicUrl('/r/'.$user->referralCode()).'?'.http_build_query($query);
     }
 
+    /**
+     * A campaign link: /r/{code}?c={slug}. The campaign's landing page and
+     * name travel with the slug, so the link stays short.
+     */
+    public function campaignLink(User $user, ReferralCampaign $campaign): string
+    {
+        return SiteDomains::publicUrl('/r/'.$user->referralCode()).'?'.http_build_query(['c' => $campaign->slug]);
+    }
+
+    /**
+     * Banner ads carry their landing page ("to") so a click lands where
+     * the ad's offer is.
+     */
     public function bannerLink(User $user, string $bannerKey): string
     {
-        return $this->trackedLink($user, 'banner', $bannerKey, ['b' => $bannerKey]);
+        $landing = $this->catalog->find($bannerKey)['landing_path'] ?? null;
+
+        return $this->trackedLink($user, 'banner', $bannerKey, array_filter(['b' => $bannerKey, 'to' => $landing && $landing !== '/pricing' ? $landing : null]));
     }
 
     /**
@@ -47,7 +64,7 @@ class MarketingKit
      * code already in place.
      *
      * @param  array<string, mixed>  $banner
-     * @return array{html: string, iframe: string, script: string, script_rotating: string}
+     * @return array{html: string|null, iframe: string, script: string, script_rotating: string}
      */
     public function snippets(User $user, array $banner): array
     {
@@ -56,11 +73,11 @@ class MarketingKit
         $link = e($this->bannerLink($user, $banner['key']));
         $width = $banner['width'];
         $height = $banner['height'];
-        $iframeSrc = e(route('embed.banner', ['size' => $banner['size'], 'ref' => $code, 'design' => $banner['design']]));
-        $script = e(route('embed.banner-script'));
+        $iframeSrc = e(SiteDomains::publicRoute('embed.banner', ['size' => $banner['size'], 'ref' => $code, 'design' => $banner['design']]));
+        $script = e(SiteDomains::publicRoute('embed.banner-script'));
 
         return [
-            'html' => "<a href=\"{$link}\" target=\"_blank\" rel=\"sponsored noopener\"><img src=\"".e($banner['image_url'])."\" width=\"{$width}\" height=\"{$height}\" alt=\"{$alt}\" style=\"max-width:100%;height:auto;border:0\"></a>",
+            'html' => ($banner['kind'] ?? null) === 'ad' ? null : "<a href=\"{$link}\" target=\"_blank\" rel=\"sponsored noopener\"><img src=\"".e($banner['image_url'])."\" width=\"{$width}\" height=\"{$height}\" alt=\"{$alt}\" style=\"max-width:100%;height:auto;border:0\"></a>",
             'iframe' => "<iframe src=\"{$iframeSrc}\" width=\"{$width}\" height=\"{$height}\" title=\"AffilStack\" loading=\"lazy\" scrolling=\"no\" sandbox=\"allow-popups allow-popups-to-escape-sandbox\" style=\"border:0;max-width:100%;height:auto;aspect-ratio:{$width}/{$height}\"></iframe>",
             'script' => "<script async src=\"{$script}\" data-ref=\"{$code}\" data-size=\"{$banner['size']}\" data-design=\"{$banner['design']}\"></script>",
             'script_rotating' => "<script async src=\"{$script}\" data-ref=\"{$code}\" data-size=\"{$banner['size']}\"></script>",

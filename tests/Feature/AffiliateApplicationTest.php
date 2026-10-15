@@ -206,7 +206,7 @@ class AffiliateApplicationTest extends TestCase
             'password_confirmation' => 'a-very-strong-password-123',
         ]);
 
-        $response->assertRedirect(route('referrals.index'));
+        $response->assertRedirect(route('partner.dashboard'));
         $this->assertAuthenticatedAs($application->approvedUser->fresh());
 
         $application->refresh();
@@ -252,22 +252,24 @@ class AffiliateApplicationTest extends TestCase
             ->assertRedirect(route('affiliate.landing'));
     }
 
-    public function test_an_affiliate_only_account_can_reach_referrals_but_nothing_else(): void
+    public function test_an_affiliate_only_account_is_sent_to_the_partner_portal_from_every_app_page(): void
     {
         $user = User::factory()->create(['is_affiliate_only' => true]);
         $user->assignRole('user');
 
-        $this->actingAs($user)->get(route('referrals.index'))->assertSuccessful();
-        $this->actingAs($user)->get(route('offers.index'))->assertForbidden();
-        $this->actingAs($user)->get(route('billing.index'))->assertForbidden();
+        $this->actingAs($user)->get(route('partner.dashboard'))->assertSuccessful();
+        $this->actingAs($user)->get(route('referrals.index'))->assertRedirect(route('partner.dashboard'));
+        $this->actingAs($user)->get(route('offers.index'))->assertRedirect(route('partner.dashboard'));
+        $this->actingAs($user)->get(route('billing.index'))->assertRedirect(route('partner.dashboard'));
+        $this->actingAs($user)->getJson(route('offers.index'))->assertForbidden();
     }
 
-    public function test_an_affiliate_only_account_is_redirected_from_the_dashboard_to_referrals(): void
+    public function test_an_affiliate_only_account_is_redirected_from_the_dashboard_to_the_partner_portal(): void
     {
         $user = User::factory()->create(['is_affiliate_only' => true]);
         $user->assignRole('user');
 
-        $this->actingAs($user)->get(route('dashboard'))->assertRedirect(route('referrals.index'));
+        $this->actingAs($user)->get(route('dashboard'))->assertRedirect(route('partner.dashboard'));
     }
 
     public function test_a_normal_user_is_unaffected_by_the_affiliate_only_restriction(): void
@@ -290,7 +292,7 @@ class AffiliateApplicationTest extends TestCase
         $affiliate = User::factory()->create(['is_affiliate_only' => true]);
         $affiliate->assignRole('user');
 
-        $response = $this->actingAs($affiliate)->get(route('referrals.index'));
+        $response = $this->actingAs($affiliate)->get(route('partner.dashboard'));
 
         $response->assertSuccessful();
         $response->assertSee('Partner Portal');
@@ -410,7 +412,7 @@ class AffiliateApplicationTest extends TestCase
         $affiliate = User::factory()->create(['is_affiliate_only' => true]);
         $affiliate->assignRole('user');
 
-        $this->actingAs($affiliate)->get(route('referrals.index'))->assertSuccessful();
+        $this->actingAs($affiliate)->get(route('partner.dashboard'))->assertSuccessful();
     }
 
     public function test_an_admin_can_toggle_the_affiliate_program_from_the_settings_page(): void

@@ -49,7 +49,8 @@ class AffiliateSetPasswordController extends Controller
         }
 
         Auth::login($application->approvedUser->fresh());
+        $request->session()->regenerate();
 
-        return redirect()->route('referrals.index')->with('success', 'Password set — welcome to the affiliate program!');
+        return redirect()->route('partner.dashboard')->with('success', 'Password set — welcome to the AffilStack partner program!');
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Services\Referrals\MarketingKit\BannerCatalog;
 use App\Services\Referrals\MarketingKit\MarketingKit;
+use App\Support\SiteDomains;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -25,7 +26,9 @@ class BannerEmbedController extends Controller
 
         $affiliate = $this->affiliate((string) $request->query('ref', ''));
         $design = (string) $request->query('design', 'rotate');
-        $banner = $catalog->pick($size, preg_match('/^[a-z0-9-]{1,40}$/', $design) ? $design : 'rotate');
+        // A signed link (the admin's preview) may show an ad that is
+        // switched off or scheduled for later.
+        $banner = $catalog->pick($size, preg_match('/^[a-z0-9-]{1,40}$/', $design) ? $design : 'rotate', $request->hasValidSignature());
 
         if ($affiliate) {
             $link = $kit->bannerLink($affiliate, $banner['key']);
@@ -34,11 +37,12 @@ class BannerEmbedController extends Controller
                 $kit->recordImpression($affiliate, $banner['key'], $request);
             }
         } else {
-            $link = rtrim(route('home'), '/').'/?'.http_build_query(['utm_source' => 'affiliate', 'utm_medium' => 'banner', 'utm_content' => $banner['key']]);
+            $landing = ($banner['landing_path'] ?? null) ?: '/';
+            $link = SiteDomains::publicUrl($landing).'?'.http_build_query(['utm_source' => 'affiliate', 'utm_medium' => 'banner', 'utm_content' => $banner['key']]);
         }
 
         return response()
-            ->view('embed.banner', ['banner' => $banner, 'link' => $link])
+            ->view($banner['kind'] === 'ad' ? 'embed.banner-ad' : 'embed.banner', ['banner' => $banner, 'link' => $link])
             ->header('Cache-Control', 'no-store, max-age=0')
             ->header('X-Robots-Tag', 'noindex, nofollow');
     }
@@ -46,7 +50,7 @@ class BannerEmbedController extends Controller
     public function script(): Response
     {
         return response()
-            ->view('embed.banner-script', ['endpoint' => url('/embed/banner')])
+            ->view('embed.banner-script', ['endpoint' => SiteDomains::publicUrl('/embed/banner')])
             ->header('Content-Type', 'application/javascript; charset=UTF-8')
             ->header('Cache-Control', 'public, max-age=3600')
             ->header('Access-Control-Allow-Origin', '*');

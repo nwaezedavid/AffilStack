@@ -7,13 +7,13 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Applied to the same authenticated route group as RestrictAgencySeats (see
- * routes/web.php), which it deliberately mirrors: a normal user passes
- * straight through; an affiliate-only account (User::isAffiliateOnly() —
- * created by AffiliateApplicationService::approve(), never a platform
- * customer) may only hit routes named in
- * config('referrals.affiliate_only_allowed_routes') — referrals, profile,
- * and logout, nothing content- or billing-related.
+ * Applied to the customer app's authenticated routes (see routes/web.php),
+ * mirroring RestrictAgencySeats: a normal user passes straight through; an
+ * affiliate-only partner account (User::isAffiliateOnly() — created by
+ * AffiliateApplicationService::approve(), never a platform customer) is
+ * sent to the Partner Portal, which is where everything they can do
+ * lives. Only routes in config('referrals.affiliate_only_allowed_routes')
+ * (signing out) still answer for them here.
  */
 class RestrictAffiliateOnlyAccounts
 {
@@ -27,12 +27,14 @@ class RestrictAffiliateOnlyAccounts
 
         $routeName = $request->route()?->getName();
 
-        abort_unless(
-            $routeName && in_array($routeName, config('referrals.affiliate_only_allowed_routes'), true),
-            403,
-            'This account is an affiliate-only account and only has access to the Referrals page.',
-        );
+        if ($routeName && in_array($routeName, config('referrals.affiliate_only_allowed_routes'), true)) {
+            return $next($request);
+        }
 
-        return $next($request);
+        if ($request->expectsJson()) {
+            abort(403, 'Partner accounts use the Partner Portal.');
+        }
+
+        return redirect()->route('partner.dashboard');
     }
 }

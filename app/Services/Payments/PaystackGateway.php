@@ -57,6 +57,30 @@ class PaystackGateway implements PaymentGateway
         return (string) ($this->settings->credential('secret_key') ?: config('services.paystack.secret_key'));
     }
 
+    /**
+     * Naira per US dollar, as set in Payment Gateways — also used to convert
+     * USD affiliate commissions for Paystack bank payouts.
+     */
+    public function ngnPerUsd(): float
+    {
+        return $this->exchangeRate();
+    }
+
+    public function hasSecretKey(): bool
+    {
+        return $this->secretKey() !== '';
+    }
+
+    public function apiBaseUrl(): string
+    {
+        return rtrim($this->baseUrl(), '/');
+    }
+
+    public function apiSecretKey(): string
+    {
+        return $this->secretKey();
+    }
+
     protected function exchangeRate(): float
     {
         $rate = (float) ($this->settings->credential('usd_to_ngn_rate') ?: config('services.paystack.usd_to_ngn_rate', 1600));

@@ -61,7 +61,7 @@
     </div>
 @endif
 
-<x-ui.next-step class="mt-6" :href="route('referrals.index', ['tab' => 'social'])" action="Social posts" data-tab-link="social">
+<x-ui.next-step class="mt-6" :href="$kitTabUrl('social')" action="Social posts" data-tab-link="social">
     Sent an email? Post about AffilStack on your socials the same week. People often need to see a recommendation twice before they click.
 </x-ui.next-step>
 

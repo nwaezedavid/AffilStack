@@ -5,7 +5,7 @@
     $uploadCount = $banners->where('kind', 'upload')->count();
     $bannerData = $banners->keyBy('key')->map(fn ($b) => [
         'title' => $b['title'], 'size' => $b['size'], 'width' => $b['width'], 'height' => $b['height'],
-        'preview' => $b['preview_url'], 'snippets' => $b['snippets'], 'link' => $b['link'],
+        'preview' => $b['preview_url'], 'snippets' => $b['snippets'], 'link' => $b['link'], 'kind' => $b['kind'],
     ]);
     $performing = $banners->filter(fn ($b) => $b['stats']['impressions'] > 0 || $b['stats']['clicks'] > 0)
         ->sortByDesc(fn ($b) => $b['stats']['clicks'] * 100000 + $b['stats']['impressions']);
@@ -67,9 +67,19 @@
             <div class="relative flex h-60 items-center justify-center bg-[radial-gradient(circle_at_1px_1px,#dfe3ee_1px,transparent_0)] [background-size:14px_14px] bg-surface-muted p-4">
                 @if ($banner['kind'] === 'upload')
                     <span class="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-gold-400 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-navy-950"><x-heroicon-s-star class="h-3 w-3" /> Featured</span>
+                @elseif ($banner['kind'] === 'ad')
+                    <span class="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white"><x-heroicon-s-arrow-path class="h-3 w-3" /> Auto-updating</span>
                 @endif
-                <img src="{{ $banner['preview_url'] }}" alt="{{ $banner['alt'] }}" width="{{ $banner['width'] }}" height="{{ $banner['height'] }}" loading="lazy"
-                     class="max-h-full max-w-full w-auto h-auto rounded-md shadow-md object-contain">
+                @if ($banner['kind'] === 'ad')
+                    @php($scale = min(1, 300 / $banner['width'], 200 / $banner['height']))
+                    <div class="overflow-hidden rounded-md shadow-md" style="width: {{ round($banner['width'] * $scale) }}px; height: {{ round($banner['height'] * $scale) }}px">
+                        <iframe src="{{ $banner['preview_url'] }}" width="{{ $banner['width'] }}" height="{{ $banner['height'] }}" title="{{ $banner['alt'] }}" loading="lazy" scrolling="no" tabindex="-1"
+                                sandbox="allow-popups allow-popups-to-escape-sandbox" class="pointer-events-none origin-top-left border-0" style="transform: scale({{ $scale }})"></iframe>
+                    </div>
+                @else
+                    <img src="{{ $banner['preview_url'] }}" alt="{{ $banner['alt'] }}" width="{{ $banner['width'] }}" height="{{ $banner['height'] }}" loading="lazy"
+                         class="max-h-full max-w-full w-auto h-auto rounded-md shadow-md object-contain">
+                @endif
             </div>
             <div class="flex flex-1 flex-col p-4">
                 <div class="flex items-start justify-between gap-3">
@@ -84,7 +94,9 @@
                 </div>
                 <div class="mt-4 flex flex-wrap gap-2">
                     <x-ui.button type="button" size="sm" variant="primary" icon="code-bracket" data-banner-open="{{ $banner['key'] }}">Get code</x-ui.button>
-                    @if ($banner['kind'] === 'upload')
+                    @if ($banner['kind'] === 'ad')
+                        <span class="self-center text-xs text-ink-400">Copy and design update by themselves</span>
+                    @elseif ($banner['kind'] === 'upload')
                         <x-ui.button size="sm" variant="secondary" icon="arrow-down-tray" :href="$banner['download_url']" download>Download</x-ui.button>
                     @else
                         <x-ui.button size="sm" variant="secondary" icon="arrow-down-tray" :href="$banner['svg_url'].'?download=1'">SVG</x-ui.button>
@@ -128,7 +140,7 @@
     @endif
 </x-ui.card>
 
-<x-ui.next-step class="mt-6" :href="route('referrals.index', ['tab' => 'emails'])" action="Get email swipes" data-tab-link="emails">
+<x-ui.next-step class="mt-6" :href="$kitTabUrl('emails')" action="Get email swipes" data-tab-link="emails">
     Banner placed? Send one of the ready-made emails to your list as well. Email readers convert well because they already trust you.
 </x-ui.next-step>
 
@@ -146,6 +158,9 @@
     <div class="overflow-y-auto px-5 py-4" style="max-height: calc(100vh - 10rem)">
         <div class="flex justify-center rounded-xl bg-surface-muted p-4">
             <img id="banner-dialog-preview" src="" alt="" class="max-h-56 w-auto max-w-full rounded-md shadow-md">
+            <div id="banner-dialog-frame-wrap" class="hidden overflow-hidden rounded-md shadow-md">
+                <iframe id="banner-dialog-frame" src="about:blank" title="Banner preview" scrolling="no" tabindex="-1" sandbox="allow-popups allow-popups-to-escape-sandbox" class="pointer-events-none origin-top-left border-0"></iframe>
+            </div>
         </div>
 
         <div class="mt-4 flex gap-1 rounded-xl bg-surface-muted p-1" role="tablist" aria-label="Embed type">
@@ -158,7 +173,7 @@
         <p id="banner-embed-help" class="mt-3 text-xs text-ink-600"></p>
         <label class="mt-2 hidden items-center gap-2 text-xs text-ink-900" id="banner-rotate-wrap">
             <input type="checkbox" id="banner-rotate" class="rounded border-line text-brand-600 focus:ring-brand-500">
-            Rotate between all {{ count(config('affiliate_kit.designs')) }} designs at this size
+            Rotate between all live ads and designs at this size
         </label>
         <label for="banner-embed-code" class="sr-only">Embed code</label>
         <textarea id="banner-embed-code" readonly rows="5" class="mt-2 w-full rounded-xl border border-line bg-navy-950 p-3 font-mono text-xs leading-relaxed text-emerald-200 focus:outline-none focus:ring-2 focus:ring-brand-500" onclick="this.select()"></textarea>
@@ -220,8 +235,12 @@
             function render() {
                 if (!current) { return; }
                 var snippets = current.snippets;
+                if (current.kind === 'ad' && kind === 'html') { kind = 'script'; }
+                dialog.querySelector('[data-embed-kind="html"]').classList.toggle('hidden', current.kind === 'ad');
                 code.value = kind === 'script' ? (rotate.checked ? snippets.script_rotating : snippets.script) : snippets[kind];
-                help.textContent = helpText[kind];
+                help.textContent = current.kind === 'ad'
+                    ? (kind === 'script' ? 'One line of JavaScript: shows this ad, and its wording, discount and images change on your site whenever AffilStack updates them. Tick the box to show every live AffilStack ad in turn.' : 'iframe: shows this ad and keeps it up to date automatically. Views and clicks are tracked.')
+                    : helpText[kind];
                 rotateWrap.classList.toggle('hidden', kind !== 'script');
                 rotateWrap.classList.toggle('flex', kind === 'script');
                 dialog.querySelectorAll('[data-embed-kind]').forEach(function (tab) { tab.setAttribute('aria-selected', tab.dataset.embedKind === kind ? 'true' : 'false'); });
@@ -234,8 +253,24 @@
                     if (!current) { return; }
                     document.getElementById('banner-dialog-title').textContent = current.title;
                     var preview = document.getElementById('banner-dialog-preview');
-                    preview.src = current.preview;
-                    preview.alt = current.title;
+                    var frameWrap = document.getElementById('banner-dialog-frame-wrap');
+                    var frame = document.getElementById('banner-dialog-frame');
+                    if (current.kind === 'ad') {
+                        var scale = Math.min(1, 560 / current.width, 220 / current.height);
+                        frame.width = current.width;
+                        frame.height = current.height;
+                        frame.style.transform = 'scale(' + scale + ')';
+                        frameWrap.style.width = Math.round(current.width * scale) + 'px';
+                        frameWrap.style.height = Math.round(current.height * scale) + 'px';
+                        frame.src = current.preview;
+                        frameWrap.classList.remove('hidden');
+                        preview.classList.add('hidden');
+                    } else {
+                        frameWrap.classList.add('hidden');
+                        preview.classList.remove('hidden');
+                        preview.src = current.preview;
+                        preview.alt = current.title;
+                    }
                     document.getElementById('banner-direct-link').value = current.link;
                     kind = 'html';
                     rotate.checked = false;

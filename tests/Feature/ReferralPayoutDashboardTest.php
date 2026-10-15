@@ -6,6 +6,7 @@ use App\Models\Referral;
 use App\Models\ReferralEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
@@ -34,23 +35,44 @@ class ReferralPayoutDashboardTest extends TestCase
         $this->assertSame('me@example.com', $user->payout_details['paypal_email']);
     }
 
-    public function test_a_user_can_save_a_bank_transfer_payout_method(): void
+    public function test_a_user_can_save_a_nigerian_bank_account_checked_with_paystack(): void
     {
+        config(['services.paystack.secret_key' => 'sk_test_example']);
+        Http::fake([
+            '*/bank?*' => Http::response(['status' => true, 'data' => [['name' => 'Access Bank', 'code' => '044', 'active' => true]], 'meta' => ['next' => null]]),
+            '*/bank/resolve*' => Http::response(['status' => true, 'data' => ['account_name' => 'JANE ADA DOE', 'account_number' => '0123456789']]),
+        ]);
         $user = User::factory()->create();
 
         $this->actingAs($user)
             ->post(route('referrals.payout-method'), [
-                'payout_method' => 'bank_transfer',
-                'bank_account_name' => 'Jane Doe',
-                'bank_account_number' => '000123456',
-                'bank_name' => 'First National',
-                'bank_swift_or_routing' => 'ABCUS33',
+                'payout_method' => 'paystack_bank',
+                'bank_code' => '044',
+                'account_number' => '0123456789',
             ])
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
 
         $user->refresh();
-        $this->assertSame('bank_transfer', $user->payout_method);
-        $this->assertSame('First National', $user->payout_details['bank_name']);
+        $this->assertSame('paystack_bank', $user->payout_method);
+        $this->assertSame('JANE ADA DOE', $user->payout_details['account_name']);
+        $this->assertSame('Access Bank', $user->payout_details['bank_name']);
+        $this->assertTrue($user->payout_details['verified']);
+    }
+
+    public function test_a_usdt_wallet_must_match_its_network(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('referrals.payout-method'), ['payout_method' => 'usdt', 'usdt_network' => 'trc20', 'usdt_address' => '0x1234567890abcdef1234567890abcdef12345678'])
+            ->assertSessionHasErrors('usdt_address');
+
+        $this->actingAs($user)
+            ->post(route('referrals.payout-method'), ['payout_method' => 'usdt', 'usdt_network' => 'bep20', 'usdt_address' => '0x1234567890abcdef1234567890abcdef12345678'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(['network' => 'bep20', 'address' => '0x1234567890abcdef1234567890abcdef12345678'], $user->fresh()->payout_details);
     }
 
     public function test_saving_a_payout_method_requires_its_method_specific_fields(): void

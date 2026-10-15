@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * they requested it, not a live reference, so a later profile edit never
  * changes where an in-flight payout is headed.
  */
-#[Fillable(['user_id', 'amount_cents', 'currency', 'status', 'payout_method', 'payout_details', 'reference', 'note', 'requested_at', 'processed_at', 'processed_by_id'])]
+#[Fillable(['user_id', 'amount_cents', 'currency', 'status', 'payout_method', 'payout_details', 'reference', 'note', 'requested_at', 'processed_at', 'processed_by_id', 'sent_amount_cents', 'sent_currency'])]
 class ReferralPayout extends Model
 {
     /** @use HasFactory<ReferralPayoutFactory> */

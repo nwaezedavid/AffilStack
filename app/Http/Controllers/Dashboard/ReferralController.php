@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\SiteSetting;
 use App\Services\Referrals\MarketingKit\BannerCatalog;
 use App\Services\Referrals\MarketingKit\MarketingKit;
+use App\Services\Referrals\PayoutMethodService;
+use App\Services\Referrals\PaystackTransferService;
 use App\Services\Referrals\ReferralPayoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,7 +28,7 @@ class ReferralController extends Controller
      * guidelines). Every tab is rendered up front and switched client-side;
      * ?tab= deep-links to one and works without JavaScript.
      */
-    public function index(Request $request, MarketingKit $kit, BannerCatalog $catalog): View
+    public function index(Request $request, MarketingKit $kit, BannerCatalog $catalog, PaystackTransferService $paystack): View
     {
         $user = auth()->user();
 
@@ -77,47 +79,21 @@ class ReferralController extends Controller
             'bio' => $kit->trackedLink($user, 'social', 'bio'),
         ];
 
-        return view('dashboard.referrals.index', compact('user', 'referrals', 'clickCount', 'totals', 'payouts', 'tab', 'stats', 'banners', 'swipes', 'brand', 'links'));
+        $banks = $paystack->banks();
+        $kitTabUrl = fn (string $key): string => route('referrals.index', ['tab' => $key]);
+
+        return view('dashboard.referrals.index', compact('user', 'referrals', 'clickCount', 'totals', 'payouts', 'tab', 'stats', 'banners', 'swipes', 'brand', 'links', 'banks', 'kitTabUrl'));
     }
 
     /**
-     * Saves (or replaces) the affiliate's payout profile. The fields
-     * required depend on the chosen method — validated here rather than a
-     * Form Request since the shape of "details" is entirely method-driven.
+     * Saves (or replaces) the referrer's payout details — see
+     * PayoutMethodService for what each method needs.
      */
-    public function savePayoutMethod(Request $request): RedirectResponse
+    public function savePayoutMethod(Request $request, PayoutMethodService $methods): RedirectResponse
     {
-        $data = $request->validate([
-            'payout_method' => ['required', 'string', 'in:'.implode(',', array_keys(config('referrals.payout_methods')))],
-            'paypal_email' => ['required_if:payout_method,paypal', 'nullable', 'email'],
-            'bank_account_name' => ['required_if:payout_method,bank_transfer', 'nullable', 'string', 'max:255'],
-            'bank_account_number' => ['required_if:payout_method,bank_transfer', 'nullable', 'string', 'max:255'],
-            'bank_name' => ['required_if:payout_method,bank_transfer', 'nullable', 'string', 'max:255'],
-            'bank_swift_or_routing' => ['required_if:payout_method,bank_transfer', 'nullable', 'string', 'max:255'],
-            // Optional — only needed for the payout wallet's automatic
-            // disbursement (audit item #5). Without it a bank_transfer
-            // payout still works exactly as before: an admin marks it paid
-            // by hand after sending it manually. See
-            // PayoutDisbursementService::canAutoDisburse().
-            'bank_code' => ['nullable', 'string', 'max:20'],
-        ]);
+        $methods->save($request->user(), $request->all());
 
-        $details = $data['payout_method'] === 'paypal'
-            ? ['paypal_email' => $data['paypal_email']]
-            : [
-                'account_name' => $data['bank_account_name'],
-                'account_number' => $data['bank_account_number'],
-                'bank_name' => $data['bank_name'],
-                'swift_or_routing' => $data['bank_swift_or_routing'],
-                'bank_code' => $data['bank_code'] ?? null,
-            ];
-
-        $request->user()->update([
-            'payout_method' => $data['payout_method'],
-            'payout_details' => $details,
-        ]);
-
-        return back()->with('success', 'Payout details saved.');
+        return redirect()->route('referrals.index', ['tab' => 'payouts'])->with('success', 'Payout details saved.');
     }
 
     public function requestPayout(Request $request, ReferralPayoutService $service): RedirectResponse

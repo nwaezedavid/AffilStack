@@ -25,7 +25,7 @@
                     </div>
                     <div class="mt-3 grid gap-2 md:grid-cols-3">
                         @foreach ($formats as $format => $snippet)
-                            <div class="flex items-center gap-2 rounded-lg bg-surface-muted px-2.5 py-2">
+                            <div class="flex min-w-0 items-center gap-2 rounded-lg bg-surface-muted px-2.5 py-2">
                                 <span class="w-16 shrink-0 text-[10px] font-mono uppercase tracking-wide text-ink-400">{{ $format }}</span>
                                 <code id="text-link-{{ $textLink['id'] }}-{{ $format }}" class="min-w-0 flex-1 truncate font-mono text-[11px] text-navy-900">{{ $snippet }}</code>
                                 <x-ui.copy-button :text="$snippet" label="Copy" size="xs" class="shrink-0" />
@@ -119,6 +119,6 @@
     </div>
 </x-ui.card>
 
-<x-ui.next-step class="mt-6" :href="route('referrals.index', ['tab' => 'overview'])" action="See your results" data-tab-link="overview">
+<x-ui.next-step class="mt-6" :href="$kitTabUrl('overview')" action="See your results" data-tab-link="overview">
     Links in place? Your clicks, sign-ups and commissions update on the Overview tab as soon as people start clicking.
 </x-ui.next-step>

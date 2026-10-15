@@ -218,10 +218,13 @@ class ProfilePageTest extends TestCase
         $seat = User::factory()->create(['agency_owner_id' => $owner->id, 'seat_offer_id' => $offer->id]);
         $affiliate = User::factory()->create(['is_affiliate_only' => true]);
 
-        foreach ([$seat, $affiliate] as $account) {
-            $this->actingAs($account)->get(route('profile'))->assertOk();
-            $this->actingAs($account)->put(route('profile.personal.update'), $this->personal($account, ['name' => 'Renamed']))->assertSessionHasNoErrors();
-            $this->assertSame('Renamed', $account->fresh()->name);
-        }
+        $this->actingAs($seat)->get(route('profile'))->assertOk();
+        $this->actingAs($seat)->put(route('profile.personal.update'), $this->personal($seat, ['name' => 'Renamed']))->assertSessionHasNoErrors();
+        $this->assertSame('Renamed', $seat->fresh()->name);
+
+        // Partners manage their profile on the Partner Portal instead.
+        $this->actingAs($affiliate)->get(route('profile'))->assertRedirect(route('partner.dashboard'));
+        $this->actingAs($affiliate)->put(route('partner.account.profile'), ['name' => 'Renamed', 'show_on_partner_leaderboard' => '1'])->assertSessionHasNoErrors();
+        $this->assertSame('Renamed', $affiliate->fresh()->name);
     }
 }

@@ -2,11 +2,11 @@
 
 <?php
     $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
-    $commissionRate = (int) round(config('referrals.commission_rate') * 100);
-    $commissionRateDecimal = config('referrals.commission_rate');
-    $cookieDays = config('referrals.cookie_days');
-    $minimumPayout = number_format(config('referrals.minimum_payout_cents') / 100, 0);
-    $payoutMethods = implode(' or ', config('referrals.payout_methods'));
+    $commissionRate = rtrim(\App\Support\ReferralProgram::formatPercent(\App\Support\ReferralProgram::partnerPercent()), '%');
+    $commissionRateDecimal = \App\Support\ReferralProgram::partnerPercent() / 100;
+    $cookieDays = \App\Support\ReferralProgram::cookieDays();
+    $minimumPayout = number_format(\App\Support\ReferralProgram::minimumPayoutUsdCents() / 100, 0);
+    $payoutMethods = 'a Nigerian bank account, PayPal or USDT';
 ?>
 
 @section('title', 'Affiliate Program — Earn '.$commissionRate.'% recurring commission | '.$siteName)
@@ -32,7 +32,7 @@
                 [
                     '@type' => 'Question',
                     'name' => 'When do affiliates get paid?',
-                    'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Once your approved commission balance reaches $'.$minimumPayout.', you can request a payout via '.$payoutMethods.' from your affiliate dashboard.'],
+                    'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Once your approved commission balance reaches $'.$minimumPayout.', you can request a payout via '.$payoutMethods.' from your Partner Portal.'],
                 ],
             ],
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}
@@ -59,8 +59,9 @@
             </a>
         </div>
         <p class="text-sm text-ink-400 mt-5">
-            Already a {{ $siteName }} customer? You're an affiliate automatically —
-            <a href="{{ route('login') }}" class="text-brand-600 underline">log in</a> to find your referral link.
+            Already a partner? <a href="{{ route('partner.login') }}" class="text-brand-600 underline font-medium">Sign in to the Partner Portal</a>.
+            {{ $siteName }} customer? You're an affiliate automatically —
+            <a href="{{ route('referrals.index') }}" class="text-brand-600 underline">find your link in your dashboard</a>.
         </p>
     </section>
 

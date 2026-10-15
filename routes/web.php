@@ -2,8 +2,6 @@
 
 use App\Http\Controllers\Admin\AnalyticsExportController;
 use App\Http\Controllers\AffiliateBannerController;
-use App\Http\Controllers\AffiliateController;
-use App\Http\Controllers\AffiliateSetPasswordController;
 use App\Http\Controllers\AnalyticsBeaconController;
 use App\Http\Controllers\BannerEmbedController;
 use App\Http\Controllers\BillingController;
@@ -62,6 +60,7 @@ use App\Http\Controllers\LinkController;
 use App\Http\Controllers\MobileAppRedirectController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\Partner\PayoutsController as PartnerPayoutsController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\PayPalWebhookController;
 use App\Http\Controllers\PaystackWebhookController;
@@ -209,36 +208,11 @@ SiteDomains::app(function () {
     Route::post('/get-started/{plan}/google', [GoogleAuthController::class, 'redirectForSignup'])->name('registration.google');
 });
 
-// The affiliate program's own public landing page — "anyone can sign-up to
-// become an affiliate without first becoming a user of the platform".
-// Served from a real subdomain when AFFILIATE_SUBDOMAIN is set (e.g.
-// affiliate.affilstack.com), otherwise from a plain /affiliate prefix on
-// the main domain so the feature works without real DNS in local
-// dev/testing — same route names either way. See AffiliateController /
-// config('referrals.landing_subdomain').
-if ($affiliateSubdomain = config('referrals.landing_subdomain')) {
-    Route::domain($affiliateSubdomain)->group(function () {
-        Route::get('/', [AffiliateController::class, 'show'])->name('affiliate.landing');
-        Route::post('/', [AffiliateController::class, 'apply'])->middleware('throttle:5,1,affiliate.apply')->name('affiliate.apply');
-    });
-} else {
-    SiteDomains::marketing(function () {
-        Route::prefix('affiliate')->group(function () {
-            Route::get('/', [AffiliateController::class, 'show'])->name('affiliate.landing');
-            Route::post('/', [AffiliateController::class, 'apply'])->middleware('throttle:5,1,affiliate.apply')->name('affiliate.apply');
-        });
-    });
-}
-
-// A single-use link an approved applicant gets by email — deliberately
-// kept on the main domain (never the affiliate subdomain above), since
-// that's also where they'll actually log in and use /referrals afterward.
-// See AffiliateSetPasswordController for why this isn't Laravel's
-// signed-URL helper.
-SiteDomains::app(function () {
-    Route::get('/affiliate/set-password/{application}', [AffiliateSetPasswordController::class, 'show'])->name('affiliate.set-password.show');
-    Route::post('/affiliate/set-password/{application}', [AffiliateSetPasswordController::class, 'store'])->middleware('throttle:10,1,affiliate.set-password.store')->name('affiliate.set-password.store');
-});
+// The affiliate program — public landing page, partner sign-in and the
+// Partner Portal — on affiliate.affilstack.com (AFFILIATE_SUBDOMAIN), or
+// under /affiliate on the website when no subdomain is set. Same route
+// names either way. See routes/partner.php.
+require __DIR__.'/partner.php';
 
 // "Continue with Google" — one callback for both the login page and the
 // signup form; see GoogleAuthController for how it tells them apart.
@@ -372,6 +346,7 @@ SiteDomains::app(function () {
 
         Route::get('/referrals', [DashboardReferralController::class, 'index'])->name('referrals.index');
         Route::post('/referrals/payout-method', [DashboardReferralController::class, 'savePayoutMethod'])->name('referrals.payout-method');
+        Route::post('/referrals/payout-method/resolve', [PartnerPayoutsController::class, 'resolveAccount'])->middleware('throttle:15,1,referrals.payout-resolve')->name('referrals.payout-resolve');
         Route::post('/referrals/payout', [DashboardReferralController::class, 'requestPayout'])->name('referrals.payout');
 
         Route::get('/calendar', [ContentCalendarController::class, 'index'])->name('calendar.index');

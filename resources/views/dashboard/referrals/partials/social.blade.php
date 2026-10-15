@@ -25,7 +25,7 @@
             <input id="kit-bio-link" type="text" readonly value="{{ $links['bio'] }}" class="w-full min-w-0 rounded-xl border border-line bg-surface-muted px-3 py-2 font-mono text-xs text-navy-900" onclick="this.select()">
             <x-ui.copy-button target="kit-bio-link" label="Copy" class="shrink-0" />
         </div>
-        <a href="{{ route('referrals.index', ['tab' => 'banners']) }}" data-tab-link="banners" data-size-filter="social" class="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700">Get square, link-post and story images <x-heroicon-m-arrow-right class="h-3.5 w-3.5" /></a>
+        <a href="{{ $kitTabUrl('banners') }}" data-tab-link="banners" data-size-filter="social" class="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700">Get square, link-post and story images <x-heroicon-m-arrow-right class="h-3.5 w-3.5" /></a>
     </div>
 </div>
 
@@ -66,6 +66,6 @@
     </div>
 @endif
 
-<x-ui.next-step class="mt-6" :href="route('referrals.index', ['tab' => 'guidelines'])" action="Read the guidelines" data-tab-link="guidelines">
+<x-ui.next-step class="mt-6" :href="$kitTabUrl('guidelines')" action="Read the guidelines" data-tab-link="guidelines">
     Before you post, make sure you've included a clear disclosure like "#ad" or "affiliate link". It's the law in most countries and keeps your commissions safe.
 </x-ui.next-step>

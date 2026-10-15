@@ -4,8 +4,11 @@ namespace App\Filament\Pages;
 
 use App\Filament\Concerns\ScopedToDepartment;
 use App\Models\SiteSetting;
+use App\Support\ReferralProgram;
+use App\Support\SiteDomains;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -43,7 +46,7 @@ class AffiliateProgramSettings extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMegaphone;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Billing';
+    protected static string|\UnitEnum|null $navigationGroup = 'Partners';
 
     protected static ?string $navigationLabel = 'Affiliate Program';
 
@@ -60,6 +63,10 @@ class AffiliateProgramSettings extends Page
     {
         $this->form->fill([
             'affiliate_program_enabled' => SiteSetting::flag('affiliate_program_enabled'),
+            'partner_percent' => ReferralProgram::partnerPercent(),
+            'customer_percent' => ReferralProgram::customerPercent(),
+            'minimum_payout_usd' => ReferralProgram::minimumPayoutUsdCents() / 100,
+            'leaderboard_enabled' => ReferralProgram::leaderboardEnabled(),
         ]);
     }
 
@@ -68,6 +75,29 @@ class AffiliateProgramSettings extends Page
         return $schema
             ->statePath('data')
             ->components([
+                Section::make('Commission')
+                    ->description('Each program has its own rate. Changes apply to payments made from now on; commissions already recorded keep the rate they were earned at.')
+                    ->columns(2)
+                    ->components([
+                        TextInput::make('partner_percent')
+                            ->label('Partner program (affiliate portal)')
+                            ->numeric()->minValue(0)->maxValue(100)->step(0.5)->suffix('%')->required()
+                            ->helperText('Approved partners on '.(SiteDomains::affiliateHost() ?? 'the affiliate portal').'. Earned on the first payment and every renewal.'),
+                        TextInput::make('customer_percent')
+                            ->label('Customer referrals (Refer & Earn)')
+                            ->numeric()->minValue(0)->maxValue(100)->step(0.5)->suffix('%')->required()
+                            ->helperText('Paying customers who share their link from their dashboard.'),
+                        TextInput::make('minimum_payout_usd')
+                            ->label('Minimum payout')
+                            ->numeric()->minValue(0)->maxValue(100000)->prefix('$')->required()
+                            ->helperText('Both programs. Naira balances use the equivalent at the Paystack rate in Payment Gateways.'),
+                    ]),
+                Section::make('Partner Portal')
+                    ->components([
+                        Toggle::make('leaderboard_enabled')
+                            ->label('Show the partner leaderboard')
+                            ->helperText('A monthly top-10 of partners by new paying customers. Shows first names and initials only, never amounts, and partners can hide themselves.'),
+                    ]),
                 Section::make('Public recruiting')
                     ->description('Controls the "Affiliate Program" link in the site menu and the public application page — nothing else.')
                     ->components([
@@ -94,6 +124,10 @@ class AffiliateProgramSettings extends Page
         $data = $this->form->getState();
 
         SiteSetting::setFlag('affiliate_program_enabled', (bool) ($data['affiliate_program_enabled'] ?? false));
+        SiteSetting::set(ReferralProgram::PARTNER_RATE_SETTING, (string) round((float) $data['partner_percent'], 2));
+        SiteSetting::set(ReferralProgram::CUSTOMER_RATE_SETTING, (string) round((float) $data['customer_percent'], 2));
+        SiteSetting::set(ReferralProgram::MINIMUM_PAYOUT_SETTING, (string) round((float) $data['minimum_payout_usd'], 2));
+        SiteSetting::setFlag(ReferralProgram::LEADERBOARD_SETTING, (bool) ($data['leaderboard_enabled'] ?? false));
 
         Notification::make()->title('Affiliate program settings saved')->success()->send();
     }

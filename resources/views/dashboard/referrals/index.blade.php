@@ -3,8 +3,8 @@
 @section('title', $user->isAffiliateOnly() ? 'Partner Dashboard' : 'Refer & Earn')
 
 @php
-    $commissionPercent = number_format(config('referrals.commission_rate') * 100);
-    $cookieDays = (int) config('referrals.cookie_days');
+    $commissionPercent = rtrim(\App\Support\ReferralProgram::formatPercent(\App\Support\ReferralProgram::percentFor($user)), '%');
+    $cookieDays = \App\Support\ReferralProgram::cookieDays();
     $earnedCents = $totals['pending_cents'] + $totals['approved_cents'] + $totals['paid_cents'];
     $tabs = [
         'overview' => ['label' => 'Overview', 'icon' => 'squares-2x2'],

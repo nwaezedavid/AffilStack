@@ -92,7 +92,7 @@ class OnboardingTourTest extends TestCase
     {
         $user = User::factory()->create(['is_affiliate_only' => true]);
 
-        $this->actingAs($user)->get(route('referrals.index'))
+        $this->actingAs($user)->get(route('partner.dashboard'))
             ->assertOk()
             ->assertDontSee('window.AffilStackTour', false);
     }

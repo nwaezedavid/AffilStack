@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Notifications\PartnerResetPassword;
 use App\Support\Lifecycle\UserActivity;
+use App\Support\SiteDomains;
 use Database\Factories\UserFactory;
 use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthentication;
 use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthenticationRecovery;
@@ -10,6 +12,7 @@ use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -29,7 +32,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'avatar_path', 'birth_date', 'phone', 'gender', 'religion', 'business_website', 'business_industry', 'city', 'state_region', 'timezone', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role', 'refund_policy_accepted_at', 'is_affiliate_only', 'api_wallet_balance_cents', 'api_wallet_auto_recharge_enabled', 'api_wallet_auto_recharge_threshold_cents', 'api_wallet_auto_recharge_amount_cents', 'api_wallet_payment_method_id'])]
+#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'avatar_path', 'birth_date', 'phone', 'gender', 'religion', 'business_website', 'business_industry', 'city', 'state_region', 'timezone', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role', 'refund_policy_accepted_at', 'is_affiliate_only', 'api_wallet_balance_cents', 'api_wallet_auto_recharge_enabled', 'api_wallet_auto_recharge_threshold_cents', 'api_wallet_auto_recharge_amount_cents', 'api_wallet_payment_method_id', 'show_on_partner_leaderboard', 'partner_news_seen_at'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'app_authentication_secret', 'app_authentication_recovery_codes', 'payout_details'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
@@ -44,6 +47,8 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'password' => 'hashed',
             'is_suspended' => 'boolean',
             'is_affiliate_only' => 'boolean',
+            'show_on_partner_leaderboard' => 'boolean',
+            'partner_news_seen_at' => 'datetime',
             'api_wallet_auto_recharge_enabled' => 'boolean',
             'notify_email_on_completion' => 'boolean',
             'last_active_at' => 'datetime',
@@ -448,7 +453,22 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
 
     protected function referralLink(): Attribute
     {
-        return Attribute::get(fn () => url('/r/'.$this->referralCode()));
+        return Attribute::get(fn () => SiteDomains::publicUrl('/r/'.$this->referralCode()));
+    }
+
+    /**
+     * Partners reset their password on the Partner Portal.
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify($this->isAffiliateOnly() ? new PartnerResetPassword($token) : new ResetPassword($token));
+    }
+
+    public function referralCampaigns(): HasMany
+    {
+        return $this->hasMany(ReferralCampaign::class);
     }
 
     public function referralPayouts(): HasMany

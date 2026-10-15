@@ -3,6 +3,9 @@
 namespace App\Notifications;
 
 use App\Models\ReferralPayout;
+use App\Models\User;
+use App\Services\Referrals\PayoutMethodService;
+use App\Support\ReferralProgram;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -32,12 +35,14 @@ class ReferralPayoutProcessed extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $amount = number_format($this->payout->amount_cents / 100, 2);
+        $amount = ReferralProgram::money($this->payout->amount_cents, $this->payout->currency);
+        $portal = $notifiable instanceof User && $notifiable->isAffiliateOnly() ? route('partner.payouts') : route('referrals.index', ['tab' => 'payouts']);
 
         return (new MailMessage)
             ->subject('Your referral payout has been sent')
-            ->line("Your payout of \${$amount} {$this->payout->currency} has been sent to your {$this->payout->payout_method}.")
+            ->line("Your payout of {$amount} has been sent to ".PayoutMethodService::summary($this->payout->payout_method, $this->payout->payout_details).'.')
             ->line("Reference: {$this->payout->reference}")
+            ->action('See your payouts', $portal)
             ->line('Thanks for referring people to AffilStack!');
     }
 
@@ -51,7 +56,7 @@ class ReferralPayoutProcessed extends Notification
             'amount_cents' => $this->payout->amount_cents,
             'currency' => $this->payout->currency,
             'reference' => $this->payout->reference,
-            'url' => route('referrals.index'),
+            'url' => $notifiable instanceof User && $notifiable->isAffiliateOnly() ? route('partner.payouts') : route('referrals.index'),
         ];
     }
 }

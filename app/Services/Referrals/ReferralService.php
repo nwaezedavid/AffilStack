@@ -5,9 +5,12 @@ namespace App\Services\Referrals;
 use App\Models\PaymentTransaction;
 use App\Models\PendingSignup;
 use App\Models\Referral;
+use App\Models\ReferralCampaign;
 use App\Models\ReferralEvent;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Support\ReferralProgram;
+use App\Support\SiteDomains;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
@@ -46,9 +49,10 @@ class ReferralService
      * $bannerKey/$source come from the Marketing Kit's tracked links ("b" and
      * utm_medium) so per-banner and per-channel clicks can be reported.
      */
-    public function recordClick(User $referrer, Request $request, ?string $bannerKey = null, ?string $source = null): void
+    public function recordClick(User $referrer, Request $request, ?string $bannerKey = null, ?string $source = null, ?ReferralCampaign $campaign = null): void
     {
         $referrer->referralClicks()->create([
+            'referral_campaign_id' => $campaign?->id,
             'ip_address' => $request->ip(),
             'user_agent' => Str::limit((string) $request->userAgent(), 500, ''),
             'banner_key' => $bannerKey,
@@ -57,13 +61,46 @@ class ReferralService
         ]);
     }
 
+    /**
+     * Set on the parent domain when the site is split across subdomains:
+     * the click lands on affilstack.com, the sign-up happens on
+     * app.affilstack.com, and both must see the same cookie.
+     */
     public function referralCookie(User $referrer): CookieValue
     {
         return Cookie::make(
             config('referrals.cookie_name'),
             $referrer->referralCode(),
-            60 * 24 * (int) config('referrals.cookie_days'),
+            60 * 24 * ReferralProgram::cookieDays(),
+            '/',
+            SiteDomains::sharedCookieDomain(),
         );
+    }
+
+    /**
+     * Which campaign link brought the visitor, or a cookie that forgets an
+     * older campaign when the latest click came through a plain link.
+     */
+    public function campaignCookie(?ReferralCampaign $campaign): CookieValue
+    {
+        $name = (string) config('referrals.campaign_cookie_name');
+
+        if ($campaign === null) {
+            return Cookie::forget($name, '/', SiteDomains::sharedCookieDomain());
+        }
+
+        return Cookie::make($name, (string) $campaign->id, 60 * 24 * ReferralProgram::cookieDays(), '/', SiteDomains::sharedCookieDomain());
+    }
+
+    public function resolveCampaignFromCookie(Request $request, User $referrer): ?ReferralCampaign
+    {
+        $id = $request->cookie((string) config('referrals.campaign_cookie_name'));
+
+        if (! is_string($id) || ! ctype_digit($id)) {
+            return null;
+        }
+
+        return ReferralCampaign::whereKey((int) $id)->where('user_id', $referrer->id)->first();
     }
 
     /**
@@ -80,7 +117,10 @@ class ReferralService
             return;
         }
 
-        $pending->update(['referred_by_user_id' => $referrer->id]);
+        $pending->update([
+            'referred_by_user_id' => $referrer->id,
+            'referral_campaign_id' => $this->resolveCampaignFromCookie($request, $referrer)?->id,
+        ]);
     }
 
     /**
@@ -96,7 +136,7 @@ class ReferralService
 
         Referral::firstOrCreate(
             ['referred_user_id' => $newUser->id],
-            ['referrer_id' => $pending->referred_by_user_id, 'status' => 'signed_up'],
+            ['referrer_id' => $pending->referred_by_user_id, 'status' => 'signed_up', 'referral_campaign_id' => $pending->referral_campaign_id],
         );
     }
 
@@ -116,11 +156,12 @@ class ReferralService
         }
 
         $isFirstEvent = ! $referral->events()->exists();
+        $rate = $referral->referrer ? ReferralProgram::rateFor($referral->referrer) : (float) config('referrals.commission_rate');
 
         $referral->events()->create([
             'payment_transaction_id' => $transaction->id,
             'event_type' => $isFirstEvent ? 'first_payment' : 'renewal',
-            'amount_cents' => (int) round($transaction->amount_cents * (float) config('referrals.commission_rate')),
+            'amount_cents' => (int) round($transaction->amount_cents * $rate),
             'currency' => $transaction->currency,
             'status' => 'pending',
             'occurred_at' => now(),

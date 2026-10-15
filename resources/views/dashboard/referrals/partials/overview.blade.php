@@ -33,7 +33,7 @@
             </div>
             <div class="rounded-xl bg-white/10 p-3 ring-1 ring-white/15">
                 <dt class="text-white/70 text-xs">Minimum payout</dt>
-                <dd class="font-semibold">${{ number_format(config('referrals.minimum_payout_cents') / 100) }}</dd>
+                <dd class="font-semibold">{{ \App\Support\ReferralProgram::money(\App\Support\ReferralProgram::minimumPayoutUsdCents()) }}</dd>
             </div>
         </dl>
     </div>
@@ -62,7 +62,7 @@
                 ['icon' => 'megaphone', 'title' => 'Post on social', 'body' => 'Posts for LinkedIn, X, Facebook, Instagram, WhatsApp and TikTok with one-click share.', 'tab' => 'social'],
                 ['icon' => 'document-text', 'title' => 'Write a review or tutorial', 'body' => 'Use the product descriptions and text links in a "tools I use" or how-to post.', 'tab' => 'links'],
             ] as $idea)
-                <a href="{{ route('referrals.index', ['tab' => $idea['tab']]) }}" data-tab-link="{{ $idea['tab'] }}"
+                <a href="{{ $kitTabUrl($idea['tab']) }}" data-tab-link="{{ $idea['tab'] }}"
                    class="group flex gap-3 rounded-xl border border-line p-4 transition hover:border-brand-100 hover:bg-brand-50/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
                     <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 group-hover:bg-white">
                         <x-dynamic-component :component="'heroicon-o-'.$idea['icon']" class="h-5 w-5" />
@@ -98,7 +98,7 @@
     </x-ui.card>
 </div>
 
-<x-ui.next-step class="mt-6" :href="route('referrals.index', ['tab' => 'banners'])" action="Browse banners" data-tab-link="banners">
+<x-ui.next-step class="mt-6" :href="$kitTabUrl('banners')" action="Browse banners" data-tab-link="banners">
     @if ($stats['clicks'] === 0)
         Start with one banner on a page that already gets traffic. It takes two minutes and keeps working while you sleep.
     @else
