@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\Blog\BlogKitController;
+use App\Http\Controllers\Api\Blog\BlogSubscribeController;
 use App\Http\Controllers\Api\ExtensionApiController;
 use App\Http\Controllers\Api\ExtensionProspectingController;
 use App\Http\Controllers\Api\V1\Admin\AdminApiController;
@@ -107,3 +109,10 @@ Route::prefix('v1')->middleware(['api-token-auth', 'log-api-request', 'throttle:
         Route::get('/revenue', [AdminApiController::class, 'revenue'])->name('api.v1.admin.revenue');
     });
 });
+
+// The AffilStack WordPress theme on blog.affilstack.com: its logo, menu,
+// footer, call to action and newsletter settings (public), and newsletter
+// sign-ups (server-to-server, with the connection key from Admin →
+// Website → Blog). See App\Services\Blog\BlogKit.
+Route::get('/blog/kit', BlogKitController::class)->middleware('throttle:120,1,blog.kit')->name('api.blog.kit');
+Route::post('/blog/subscribe', BlogSubscribeController::class)->middleware('throttle:30,1,blog.subscribe')->name('api.blog.subscribe');

@@ -7,6 +7,7 @@ use App\Http\Controllers\AffiliateSetPasswordController;
 use App\Http\Controllers\AnalyticsBeaconController;
 use App\Http\Controllers\BannerEmbedController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\BlogNewsletterConfirmController;
 use App\Http\Controllers\CheckoutCountryController;
 use App\Http\Controllers\ConsentController;
 use App\Http\Controllers\ContactController;
@@ -552,6 +553,12 @@ Route::get('/{file}', [FaviconController::class, 'show'])
     ])
     ->name('favicons.show');
 // --- end Agent 01 ----------------------------------------------------------
+
+// The link in the blog newsletter's confirmation email (double opt-in).
+// Signed and valid for 7 days; see BlogNewsletterConfirmController.
+Route::get('/newsletter/confirm', BlogNewsletterConfirmController::class)
+    ->middleware(['signed', 'throttle:30,1,signed-links'])
+    ->name('blog.newsletter.confirm');
 
 // ── Lifecycle email preferences (agent 03) ──────────────────────────────
 // Signed per-user links from the footer of birthday/festive/re-engagement
