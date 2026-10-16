@@ -70,13 +70,13 @@
                         <label for="name" class="block text-sm font-medium text-navy-900 mb-1">Name</label>
                         <input type="text" name="name" id="name" value="{{ old('name') }}" required
                             class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        @error('name')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                        @error('name')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                     </div>
                     <div>
                         <label for="email" class="block text-sm font-medium text-navy-900 mb-1">Email</label>
                         <input type="email" name="email" id="email" value="{{ old('email') }}" required
                             class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        @error('email')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                        @error('email')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                     </div>
                 </div>
 
@@ -84,14 +84,14 @@
                     <label for="subject" class="block text-sm font-medium text-navy-900 mb-1">Subject (optional)</label>
                     <input type="text" name="subject" id="subject" value="{{ old('subject') }}"
                         class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    @error('subject')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                    @error('subject')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                 </div>
 
                 <div>
                     <label for="message" class="block text-sm font-medium text-navy-900 mb-1">Message</label>
                     <textarea name="message" id="message" rows="6" required
                         class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">{{ old('message') }}</textarea>
-                    @error('message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                    @error('message')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                 </div>
 
                 <button type="submit" class="w-full rounded-md bg-navy-900 text-white px-6 py-3 text-sm font-medium hover:bg-navy-800 transition">

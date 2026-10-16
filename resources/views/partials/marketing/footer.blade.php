@@ -62,6 +62,7 @@
 
         <div class="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
             <p>{{ $footerText }}</p>
+            @include('partials.locale.website-switcher', ['variant' => 'footer'])
             <p>{{ \App\Support\Website\NavigationMenu::label('footer_bottom_note') }}</p>
         </div>
     </div>

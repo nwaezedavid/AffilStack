@@ -19,7 +19,7 @@
             </div>
 
             @if ($error)
-                <p class="mt-6 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ $error }}</p>
+                <p class="mt-6 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ \App\Support\Translation\Mark::text($error) }}</p>
                 <x-ui.button class="mt-6" variant="secondary" :href="route('wordpress.index')">Back to WordPress Sites</x-ui.button>
             @else
                 <div class="mt-6 rounded-xl border border-line p-4">

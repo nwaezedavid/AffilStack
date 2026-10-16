@@ -82,7 +82,7 @@ PHP,
                     <x-ui.button variant="primary" icon="plus">Add endpoint</x-ui.button>
                 </div>
                 @error('url')
-                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-xs text-red-600">{{ \App\Support\Translation\Mark::text($message) }}</p>
                 @enderror
             </div>
             <fieldset>
@@ -96,7 +96,7 @@ PHP,
                     @endforeach
                 </div>
                 @error('events')
-                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                    <p class="mt-1 text-xs text-red-600">{{ \App\Support\Translation\Mark::text($message) }}</p>
                 @enderror
             </fieldset>
         </form>

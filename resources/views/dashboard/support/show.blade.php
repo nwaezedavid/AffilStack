@@ -56,7 +56,7 @@
         @csrf
         <label class="block text-sm font-medium text-ink-900 mb-1">Add a reply</label>
         <textarea name="message" rows="4" required maxlength="5000" class="w-full rounded-md border-line focus:border-brand-500 focus:ring-brand-500 text-sm"></textarea>
-        @error('message') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+        @error('message') <p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p> @enderror
         <button type="submit" class="mt-3 rounded-md bg-navy-900 text-white text-sm font-medium px-4 py-2 hover:bg-navy-800 transition">
             Send reply
         </button>

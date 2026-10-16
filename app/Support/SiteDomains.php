@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Support\Translation\LocalizedUrls;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -72,9 +73,11 @@ class SiteDomains
      */
     public static function marketing(Closure $routes): void
     {
+        // "localized-url": these pages have an address per language
+        // (affilstack.com/fr/pricing) — see LocalizedUrls.
         static::isSplit()
-            ? Route::domain(static::marketingHost())->group($routes)
-            : Route::group([], $routes);
+            ? Route::domain(static::marketingHost())->middleware(LocalizedUrls::MIDDLEWARE)->group($routes)
+            : Route::middleware(LocalizedUrls::MIDDLEWARE)->group($routes);
     }
 
     /**

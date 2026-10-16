@@ -38,7 +38,7 @@
                    required maxlength="255"
                    class="w-full rounded-md border border-line px-2.5 py-2 text-sm">
             @error('author_name')
-                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                <p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>
             @enderror
         </div>
 
@@ -68,7 +68,7 @@
                       class="w-full rounded-md border border-line px-2.5 py-2 text-sm"
                       placeholder="What difference has AffilStack made for you?">{{ old('quote', $testimonial->quote ?? '') }}</textarea>
             @error('quote')
-                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                <p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>
             @enderror
         </div>
 

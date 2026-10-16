@@ -12,7 +12,7 @@
     {{ $slot }}
     @if ($error)
         <p class="flex items-start gap-1 text-xs text-red-600" @if ($for) id="{{ $for }}-error" @endif>
-            <x-heroicon-m-exclamation-circle class="h-4 w-4 shrink-0" /> {{ $error }}
+            <x-heroicon-m-exclamation-circle class="h-4 w-4 shrink-0" /> {{ \App\Support\Translation\Mark::text($error) }}
         </p>
     @elseif ($hint)
         <p class="text-xs text-ink-400" @if ($for) id="{{ $for }}-hint" @endif>{{ $hint }}</p>

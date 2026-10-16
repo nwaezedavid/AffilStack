@@ -120,6 +120,7 @@
                     {{-- Mobile apps (agent 02): "Get the mobile app" card, hidden until a store link is set. --}}
                     @include('partials.dashboard.mobile-app-card')
                 @endunless
+                <div class="px-3">@include('partials.locale.switcher-form', ['tone' => 'dark'])</div>
                 <a href="{{ route('profile') }}" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm {{ $sidebarText }} {{ $sidebarHover }} hover:text-white">
                     <x-heroicon-o-user-circle class="h-5 w-5 shrink-0 opacity-80" /> Profile & Security
                 </a>
@@ -182,19 +183,19 @@
             <main class="p-4 sm:p-6 lg:p-8 max-w-6xl">
                 @if (session('success'))
                     <div class="mb-5 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-4 py-2.5 whitespace-pre-line">
-                        {{ session('success') }}
+                        {{ \App\Support\Translation\Mark::flash(session('success')) }}
                     </div>
                 @endif
                 @if (session('error'))
                     <div class="mb-5 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-2.5">
-                        {{ session('error') }}
+                        {{ \App\Support\Translation\Mark::flash(session('error')) }}
                     </div>
                 @endif
                 @if ($errors->any())
                     <div class="mb-5 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-2.5">
                         <ul class="list-disc list-inside space-y-1">
                             @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
+                                <li>{{ \App\Support\Translation\Mark::text($error) }}</li>
                             @endforeach
                         </ul>
                     </div>

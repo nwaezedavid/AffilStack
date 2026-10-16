@@ -215,13 +215,13 @@
                         <label for="name" class="block text-sm font-medium text-navy-900 mb-1">Name</label>
                         <input type="text" name="name" id="name" value="{{ old('name') }}" required
                             class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        @error('name')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                        @error('name')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                     </div>
                     <div>
                         <label for="email" class="block text-sm font-medium text-navy-900 mb-1">Email</label>
                         <input type="email" name="email" id="email" value="{{ old('email') }}" required
                             class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        @error('email')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                        @error('email')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                     </div>
                 </div>
 
@@ -230,13 +230,13 @@
                         <label for="phone" class="block text-sm font-medium text-navy-900 mb-1">Phone (optional)</label>
                         <input type="text" name="phone" id="phone" value="{{ old('phone') }}"
                             class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        @error('phone')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                        @error('phone')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                     </div>
                     <div>
                         <label for="website_url" class="block text-sm font-medium text-navy-900 mb-1">Website, YouTube, or social profile (optional)</label>
                         <input type="url" name="website_url" id="website_url" value="{{ old('website_url') }}" placeholder="https://"
                             class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        @error('website_url')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                        @error('website_url')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                     </div>
                 </div>
 
@@ -250,7 +250,7 @@
                                 <option value="{{ $value }}" @selected(old('audience_size') === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
-                        @error('audience_size')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                        @error('audience_size')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                     </div>
                     <div>
                         <label for="experience_level" class="block text-sm font-medium text-navy-900 mb-1">Affiliate marketing experience</label>
@@ -261,7 +261,7 @@
                                 <option value="{{ $value }}" @selected(old('experience_level') === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
-                        @error('experience_level')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                        @error('experience_level')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                     </div>
                 </div>
 
@@ -270,14 +270,14 @@
                     <textarea name="promotion_channels" id="promotion_channels" rows="3" required
                         placeholder="e.g. YouTube channel, blog, email list, paid ads..."
                         class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">{{ old('promotion_channels') }}</textarea>
-                    @error('promotion_channels')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                    @error('promotion_channels')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                 </div>
 
                 <div>
                     <label for="message" class="block text-sm font-medium text-navy-900 mb-1">Anything else we should know? (optional)</label>
                     <textarea name="message" id="message" rows="3"
                         class="w-full rounded-md border border-line px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">{{ old('message') }}</textarea>
-                    @error('message')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
+                    @error('message')<p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p>@enderror
                 </div>
 
                 <button type="submit" class="w-full sm:w-auto rounded-md bg-navy-900 text-white px-6 py-3 text-sm font-medium hover:bg-navy-800 transition">

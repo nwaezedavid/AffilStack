@@ -60,7 +60,7 @@
                     <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700" role="alert">
                         <ul class="space-y-1">
                             @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
+                                <li>{{ \App\Support\Translation\Mark::text($error) }}</li>
                             @endforeach
                         </ul>
                     </div>
@@ -68,6 +68,7 @@
 
                 @yield('content')
             </div>
+            <div class="mt-6 flex justify-center">@include('partials.locale.switcher-form', ['tone' => 'light'])</div>
         </main>
     </div>
     @include('partials.consent.banner', ['context' => 'guest'])

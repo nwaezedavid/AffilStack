@@ -27,13 +27,13 @@
         <div class="bg-surface border border-line rounded-xl shadow-sm p-8">
             @if (session('status'))
                 <div class="mb-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-3 py-2">
-                    {{ session('status') }}
+                    {{ \App\Support\Translation\Mark::flash(session('status')) }}
                 </div>
             @endif
 
             @if (session('error'))
                 <div class="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                    {{ session('error') }}
+                    {{ \App\Support\Translation\Mark::flash(session('error')) }}
                 </div>
             @endif
 
@@ -41,7 +41,7 @@
                 <div class="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                     <ul class="list-disc list-inside space-y-1">
                         @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
+                            <li>{{ \App\Support\Translation\Mark::text($error) }}</li>
                         @endforeach
                     </ul>
                 </div>
@@ -49,6 +49,7 @@
 
             @yield('content')
         </div>
+        <div class="mt-6 flex justify-center">@include('partials.locale.switcher-form', ['tone' => 'light'])</div>
     </div>
 
     {{-- Agent 04: cookie consent banner + preferences (no trackers load on these pages). --}}

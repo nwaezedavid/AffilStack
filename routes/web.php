@@ -63,6 +63,7 @@ use App\Http\Controllers\GoogleSiteAnalyticsController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LifecycleEmailPreferenceController;
 use App\Http\Controllers\LinkController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MobileAppRedirectController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
@@ -152,6 +153,11 @@ if (SiteDomains::isSplit()) {
 // public, no auth needed: it's used from the pre-signup pricing/signup
 // pages as much as from the logged-in billing page.
 Route::post('/checkout-country', [CheckoutCountryController::class, 'update'])->name('checkout.country.update');
+
+// Language switcher (dashboard, partner portal, sign-in pages) and the
+// "stay in English" answer to the language suggestion — see LocaleController.
+Route::post('/locale', [LocaleController::class, 'update'])->middleware('throttle:30,1,locale')->name('locale.update');
+Route::get('/locale/stay', [LocaleController::class, 'stay'])->middleware('throttle:30,1,locale')->name('locale.stay');
 
 SiteDomains::marketing(function () {
     Route::get('/contact', [ContactController::class, 'show'])->name('contact.show');

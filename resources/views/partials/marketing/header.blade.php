@@ -138,6 +138,7 @@
 
         {{-- Desktop: right menu; below lg only the main button + menu toggle --}}
         <div class="flex items-center gap-1.5 justify-self-end">
+            @include('partials.locale.website-switcher', ['variant' => 'header'])
             <a href="{{ $expertUrl }}" class="hidden items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-ink-600 transition hover:bg-surface-muted hover:text-navy-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 lg:inline-flex" data-nav-expert>
                 <x-heroicon-o-chat-bubble-left-right class="h-4 w-4 text-brand-600" aria-hidden="true" />
                 {{ NavigationMenu::label('nav_expert_label') }}
@@ -309,6 +310,7 @@
                     <x-heroicon-m-arrow-right class="h-4 w-4 text-gold-300" aria-hidden="true" />
                 </a>
             </div>
+            @include('partials.locale.website-switcher', ['variant' => 'drawer'])
         </div>
     </div>
 </div>

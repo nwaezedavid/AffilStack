@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Support\Translation\Mark;
+
 /**
  * Notification emails run every line through Markdown after Blade escapes
  * the HTML, so text written by someone else — a CRM reply from a stranger,
@@ -16,6 +18,10 @@ class MailText
         // Only what's needed to stop links and images: Blade already turns
         // < and > into entities, and escaping more would leave visible
         // backslashes in the plain-text part of the email.
-        return addcslashes((string) $value, '\\[]!');
+        $escaped = addcslashes((string) $value, '\\[]!');
+
+        // In an email being translated, mark it as the recipient's data so
+        // it's kept out of translation (see Mark).
+        return Mark::$protect && $escaped !== '' ? Mark::VALUE_OPEN.$escaped.Mark::VALUE_CLOSE : $escaped;
     }
 }

@@ -12,6 +12,8 @@ use App\Models\Tutorial;
 use App\Support\Seo\PublicPages;
 use App\Support\Seo\RobotsTxt;
 use App\Support\SiteDomains;
+use App\Support\Translation\Languages;
+use App\Support\Translation\LocalizedUrls;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -89,6 +91,17 @@ class SeoController extends Controller
             }
 
             $urls[] = ['loc' => $loc, 'priority' => '0.4', 'lastmod' => $page->updated_at->toAtomString()];
+        }
+
+        // Feature 6: each website page's address in every live language.
+        foreach ($urls as $index => $url) {
+            $urls[$index]['alternates'] = LocalizedUrls::alternatesFor($url['loc']);
+
+            foreach ($urls[$index]['alternates'] as $code => $href) {
+                if ($code !== Languages::SOURCE && rtrim($href, '/') !== rtrim($url['loc'], '/')) {
+                    $urls[] = ['loc' => $href, 'priority' => $url['priority'], 'lastmod' => $url['lastmod'] ?? null, 'alternates' => $urls[$index]['alternates']];
+                }
+            }
         }
 
         $xml = view('sitemap', compact('urls'))->render();

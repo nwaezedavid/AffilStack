@@ -46,7 +46,7 @@
                     <span>I've read and accept the <a href="{{ route('refund-policy') }}" target="_blank" class="text-brand-600 hover:text-brand-700 underline">Refund &amp; Cancellation Policy</a>.</span>
                 </label>
                 @error('accepts_refund_policy')
-                    <p class="text-xs text-red-600">{{ $message }}</p>
+                    <p class="text-xs text-red-600">{{ \App\Support\Translation\Mark::text($message) }}</p>
                 @enderror
                 <button type="submit" class="w-full rounded-md bg-navy-900 text-white text-sm font-medium py-2.5 hover:bg-navy-800 transition">
                     Continue to secure payment

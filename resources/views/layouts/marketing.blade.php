@@ -44,12 +44,12 @@
 
     @if (session('success'))
         <div class="max-w-5xl mx-auto px-6 mt-6">
-            <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-4 py-2.5">{{ session('success') }}</div>
+            <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-4 py-2.5">{{ \App\Support\Translation\Mark::flash(session('success')) }}</div>
         </div>
     @endif
     @if (session('error'))
         <div class="max-w-5xl mx-auto px-6 mt-6">
-            <div class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-2.5">{{ session('error') }}</div>
+            <div class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-4 py-2.5">{{ \App\Support\Translation\Mark::flash(session('error')) }}</div>
         </div>
     @endif
 

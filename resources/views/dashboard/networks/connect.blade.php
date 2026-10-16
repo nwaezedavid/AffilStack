@@ -43,7 +43,7 @@
                                    aria-describedby="help-{{ $name }}">
                             <p id="help-{{ $name }}" class="mt-1 text-xs text-ink-400">{{ $field['help'] }}</p>
                             @error($name)
-                                <p class="mt-1 text-xs text-rose-700">{{ $message }}</p>
+                                <p class="mt-1 text-xs text-rose-700">{{ \App\Support\Translation\Mark::text($message) }}</p>
                             @enderror
                         </div>
                     @endforeach

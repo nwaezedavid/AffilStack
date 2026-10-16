@@ -17,7 +17,7 @@
                     <label class="block text-sm font-medium text-ink-900 mb-1">Subject</label>
                     <input type="text" name="subject" value="{{ old('subject') }}" required maxlength="255"
                         class="w-full rounded-md border-line focus:border-brand-500 focus:ring-brand-500 text-sm">
-                    @error('subject') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    @error('subject') <p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p> @enderror
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -43,7 +43,7 @@
                     <label class="block text-sm font-medium text-ink-900 mb-1">Tell us what's going on</label>
                     <textarea name="message" rows="6" required maxlength="5000"
                         class="w-full rounded-md border-line focus:border-brand-500 focus:ring-brand-500 text-sm">{{ old('message') }}</textarea>
-                    @error('message') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                    @error('message') <p class="text-xs text-red-600 mt-1">{{ \App\Support\Translation\Mark::text($message) }}</p> @enderror
                 </div>
 
                 <button type="submit" class="rounded-md bg-navy-900 text-white text-sm font-medium px-4 py-2 hover:bg-navy-800 transition">

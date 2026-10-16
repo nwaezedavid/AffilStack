@@ -7,11 +7,14 @@ use App\Http\Middleware\EnsureAccountNotSuspended;
 use App\Http\Middleware\EnsureAdminApiToken;
 use App\Http\Middleware\EnsureIdempotency;
 use App\Http\Middleware\EnsureTokenScope;
+use App\Http\Middleware\LocalizeResponse;
 use App\Http\Middleware\LogApiRequest;
+use App\Http\Middleware\MarkLocalizedUrl;
 use App\Http\Middleware\MeterApiUsage;
 use App\Http\Middleware\RestrictAffiliateOnlyAccounts;
 use App\Http\Middleware\RestrictAgencySeats;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\StripLocalePrefix;
 use App\Http\Middleware\TrackUserActivity;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -51,6 +54,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // docblock. Global (web + api) since every response needs them.
         $middleware->append(SecurityHeaders::class);
 
+        // Feature 6: /fr/pricing is the French /pricing — the language code
+        // comes off the address before routing (see StripLocalePrefix), and
+        // every web page is shown in the visitor's language (LocalizeResponse).
+        $middleware->prepend(StripLocalePrefix::class);
+
         $middleware->alias([
             'restrict-agency-seats' => RestrictAgencySeats::class,
             'restrict-affiliate-only' => RestrictAffiliateOnlyAccounts::class,
@@ -63,12 +71,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'log-api-request' => LogApiRequest::class,
             'cache-public-page' => CachePublicPage::class,
             'allow-embedding' => AllowEmbedding::class,
+            'localized-url' => MarkLocalizedUrl::class,
         ]);
 
         // Agent 03: keeps users.last_active_at fresh (throttled to one
         // write per user every few minutes) for the admin active/inactive
         // view and the re-engagement emails — see TrackUserActivity.
         $middleware->appendToGroup('web', TrackUserActivity::class);
+        $middleware->appendToGroup('web', LocalizeResponse::class);
 
         // The Partner Portal has its own sign-in page on the affiliate host.
         $middleware->redirectGuestsTo(fn (Request $request) => $request->routeIs('partner.*') ? route('partner.login') : route('login'));
