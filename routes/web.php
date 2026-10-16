@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AnalyticsExportController;
 use App\Http\Controllers\AffiliateBannerController;
 use App\Http\Controllers\AnalyticsBeaconController;
+use App\Http\Controllers\Api\WordPress\ConnectorController as WordPressConnectorController;
 use App\Http\Controllers\BannerEmbedController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BlogNewsletterConfirmController;
@@ -46,6 +47,8 @@ use App\Http\Controllers\Dashboard\SwipeFileController;
 use App\Http\Controllers\Dashboard\TeamController;
 use App\Http\Controllers\Dashboard\TikTokController;
 use App\Http\Controllers\Dashboard\UgcController;
+use App\Http\Controllers\Dashboard\WordPressController;
+use App\Http\Controllers\Dashboard\WordPressSendController;
 use App\Http\Controllers\Dashboard\XController;
 use App\Http\Controllers\Dashboard\YouTubeController;
 use App\Http\Controllers\FaqController;
@@ -330,6 +333,16 @@ SiteDomains::app(function () {
         // Task #2: "Publish to X" on a rendered ugc_video generation — see
         // SocialPublishController and each SocialPublishProvider implementation.
         Route::post('/generations/{generation}/publish/{provider}', [SocialPublishController::class, 'store'])->name('generations.publish');
+        Route::post('/generations/{generation}/wordpress', [WordPressSendController::class, 'store'])->middleware('throttle:30,1,generations.wordpress')->name('generations.wordpress');
+
+        // The AffilStack Connector WordPress plugin — see WordPressController.
+        Route::get('/wordpress', [WordPressController::class, 'index'])->name('wordpress.index');
+        Route::get('/wordpress/plugin/download', [WordPressController::class, 'download'])->name('wordpress.download');
+        Route::get('/wordpress/connect', [WordPressController::class, 'connect'])->name('wordpress.connect');
+        Route::post('/wordpress/connect', [WordPressController::class, 'approve'])->middleware('throttle:20,1,wordpress.approve')->name('wordpress.approve');
+        Route::patch('/wordpress/sites/{site}', [WordPressController::class, 'update'])->name('wordpress.sites.update');
+        Route::post('/wordpress/sites/{site}/test', [WordPressController::class, 'test'])->middleware('throttle:20,1,wordpress.test')->name('wordpress.sites.test');
+        Route::delete('/wordpress/sites/{site}', [WordPressController::class, 'destroy'])->name('wordpress.sites.destroy');
 
         Route::get('/leads', [LeadFinderController::class, 'index'])->middleware('throttle:paid-lookups')->name('leads.index');
         Route::post('/leads/search', [LeadFinderController::class, 'search'])->middleware('throttle:paid-lookups')->name('leads.search');
@@ -560,6 +573,13 @@ SiteDomains::app(function () {
         Route::put('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
     });
 });
+
+// The AffilStack Connector plugin's update download — reached only through
+// the short-lived signed link plugin-info hands a connected site.
+Route::get('/wordpress/plugin/package/{version}', [WordPressConnectorController::class, 'package'])
+    ->middleware(['signed', 'throttle:30,1,wordpress.package'])
+    ->where('version', '[0-9.]+')
+    ->name('wordpress.plugin.package');
 
 // ---- Agent 05: affiliate Marketing Kit — public banner images & embeds ----
 // Served outside the "web" middleware group on purpose: no session, no CSRF

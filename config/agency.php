@@ -49,6 +49,7 @@ return [
         'generations.nurture-started',
         'generations.linkedin.export',
         'generations.publish',
+        'generations.wordpress',
         'social-connections.index',
         'social-connections.redirect',
         'social-connections.callback',

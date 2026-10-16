@@ -1,0 +1,80 @@
+.affilstack-wrap .affilstack-card {
+	max-width: 640px;
+	margin-top: 16px;
+	padding: 20px 24px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+}
+
+.affilstack-status {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 12px;
+	font-size: 15px;
+	font-weight: 600;
+	color: #50575e;
+}
+
+.affilstack-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background: #a7aaad;
+}
+
+.affilstack-status--on {
+	color: #00703c;
+}
+
+.affilstack-status--on .affilstack-dot {
+	background: #00a32a;
+	box-shadow: 0 0 0 3px rgba(0, 163, 42, 0.15);
+}
+
+.affilstack-facts {
+	margin: 4px 0 16px;
+	border-collapse: collapse;
+}
+
+.affilstack-facts th,
+.affilstack-facts td {
+	padding: 4px 16px 4px 0;
+	text-align: left;
+	vertical-align: top;
+}
+
+.affilstack-facts th {
+	font-weight: 500;
+	color: #646970;
+}
+
+.affilstack-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 16px;
+}
+
+.affilstack-inline {
+	display: inline;
+	margin: 0;
+}
+
+.affilstack-danger.button-link {
+	color: #b32d2e;
+}
+
+.affilstack-danger.button-link:hover,
+.affilstack-danger.button-link:focus {
+	color: #8a2424;
+}
+
+.affilstack-wrap h2 {
+	margin-top: 32px;
+}
+
+.affilstack-recent {
+	max-width: 900px;
+}

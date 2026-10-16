@@ -82,6 +82,8 @@ class BlogArticleService
             - "target_keyword": the primary keyword this article targets.
             - "article_markdown": the full article in Markdown, 900-1400 words, with H2/H3 subheadings, short paragraphs, and the affiliate link placeholder used as described above.
             - "suggested_tags": array of 4-6 short tag strings.
+            - "suggested_category": one short blog category name for this article (2-3 words, e.g. "Email Marketing").
+            - "faq": array of 3-5 objects with "question" and "answer" keys: real questions readers search for about this product or topic, each answered in 1-3 plain sentences. Don't repeat them inside article_markdown.
             PROMPT;
 
         $userPrompt = "Product: {$offer->product_name}\n"

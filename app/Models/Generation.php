@@ -128,4 +128,9 @@ class Generation extends Model
 
         return $this->offer !== null && $this->offer->isAccessibleBy($user);
     }
+
+    public function wordpressDeliveries(): HasMany
+    {
+        return $this->hasMany(WordpressDelivery::class);
+    }
 }

@@ -85,6 +85,21 @@ class PlanForm
                         CheckboxList::make('channels')
                             ->options(Plan::channelLabels())
                             ->columns(4),
+                        Select::make('wordpress_sites_limit')
+                            ->label('WordPress plugin')
+                            ->helperText('Whether this plan includes the AffilStack Connector plugin, and how many WordPress sites a customer can connect to receive articles as drafts.')
+                            ->options([
+                                0 => 'Not included',
+                                1 => '1 site',
+                                3 => '3 sites',
+                                5 => '5 sites',
+                                10 => '10 sites',
+                                25 => '25 sites',
+                                -1 => 'Unlimited sites',
+                            ])
+                            ->default(0)
+                            ->required()
+                            ->selectablePlaceholder(false),
                         KeyValue::make('features')
                             ->label('Extra feature flags (optional)')
                             ->keyLabel('Flag')

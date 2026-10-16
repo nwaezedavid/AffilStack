@@ -68,6 +68,7 @@ class DashboardNavigation
             ['label' => 'Connections', 'items' => [
                 ['name' => 'email-connections.index', 'match' => 'email-connections.*', 'label' => 'Email Sending', 'icon' => 'envelope'],
                 ['name' => 'social-connections.index', 'match' => 'social-connections.*', 'label' => 'Connected Accounts', 'icon' => 'link'],
+                ['name' => 'wordpress.index', 'match' => 'wordpress.*', 'label' => 'WordPress Sites', 'icon' => 'globe-alt'],
                 ['name' => 'api-access.index', 'match' => 'api-access.*', 'label' => 'API & Integrations', 'icon' => 'code-bracket-square'],
             ]],
             ['label' => 'Account', 'items' => [

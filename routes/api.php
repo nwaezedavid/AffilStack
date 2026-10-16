@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\OffersController;
 use App\Http\Controllers\Api\V1\OpenApiSpecController;
 use App\Http\Controllers\Api\V1\ReferralsController;
 use App\Http\Controllers\Api\V1\ZapierSubscriptionsController;
+use App\Http\Controllers\Api\WordPress\ConnectorController;
 use Illuminate\Support\Facades\Route;
 
 // The browser capture extension's entire backend surface (item 11).
@@ -116,3 +117,10 @@ Route::prefix('v1')->middleware(['api-token-auth', 'log-api-request', 'throttle:
 // Website → Blog). See App\Services\Blog\BlogKit.
 Route::get('/blog/kit', BlogKitController::class)->middleware('throttle:120,1,blog.kit')->name('api.blog.kit');
 Route::post('/blog/subscribe', BlogSubscribeController::class)->middleware('throttle:30,1,blog.subscribe')->name('api.blog.subscribe');
+
+// The AffilStack Connector WordPress plugin's own calls — see
+// ConnectorController. exchange is protected by a one-time code, the rest
+// by the site's request signature.
+Route::post('/wordpress/exchange', [ConnectorController::class, 'exchange'])->middleware('throttle:20,1,wordpress.exchange')->name('api.wordpress.exchange');
+Route::get('/wordpress/plugin-info', [ConnectorController::class, 'pluginInfo'])->middleware('throttle:60,1,wordpress.plugin-info')->name('api.wordpress.plugin-info');
+Route::post('/wordpress/disconnect', [ConnectorController::class, 'disconnect'])->middleware('throttle:20,1,wordpress.disconnect')->name('api.wordpress.disconnect');

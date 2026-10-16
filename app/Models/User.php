@@ -466,6 +466,15 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         $this->notify($this->isAffiliateOnly() ? new PartnerResetPassword($token) : new ResetPassword($token));
     }
 
+    /**
+     * WordPress sites connected through the AffilStack Connector plugin.
+     * Owned by the billable account (team seats share the owner's sites).
+     */
+    public function wordpressSites(): HasMany
+    {
+        return $this->hasMany(WordpressSite::class);
+    }
+
     public function referralCampaigns(): HasMany
     {
         return $this->hasMany(ReferralCampaign::class);
