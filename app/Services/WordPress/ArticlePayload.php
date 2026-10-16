@@ -27,7 +27,7 @@ class ArticlePayload
         $title = trim((string) ($meta['title'] ?? 'New article'));
         // The title comes off before the disclosure goes on top.
         $body = $this->stripLeadingTitle((string) $generation->output, $title);
-        $markdown = $offer ? $offer->cloak($body, $generation->module) : $body;
+        $markdown = $offer ? $offer->cloak($body, $generation->module, generation: $generation) : $body;
         $faq = static::faq($meta['faq'] ?? []);
 
         $content = Str::markdown($markdown, [

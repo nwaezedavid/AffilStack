@@ -1,4 +1,4 @@
-@php($article = $offer->cloak($gen->output_meta['article_markdown'] ?? '', $gen->module))
+@php($article = $offer->cloak($gen->output_meta['article_markdown'] ?? '', $gen->module, generation: $gen))
 <h4 class="font-display text-lg font-semibold text-navy-900">{{ $gen->output_meta['headline'] ?? 'LinkedIn article' }}</h4>
 <div class="mt-3 flex flex-wrap items-center gap-2">
     @include('dashboard.offers._disclosure_badge', ['text' => $gen->output_meta['article_markdown'] ?? ''])

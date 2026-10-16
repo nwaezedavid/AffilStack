@@ -1,4 +1,4 @@
-@php($description = $offer->cloak($gen->output_meta['description'] ?? '', $gen->module))
+@php($description = $offer->cloak($gen->output_meta['description'] ?? '', $gen->module, generation: $gen))
 <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">Title options — pick one</p>
 <ul class="space-y-1.5">
     @foreach ($gen->output_meta['title_options'] ?? [] as $title)

@@ -1,6 +1,6 @@
 @php
-    $script = $offer->cloak($gen->output_meta['script'] ?? '', $gen->module, withDisclosure: false);
-    $caption = $offer->cloak($gen->output_meta['caption'] ?? '', $gen->module);
+    $script = $offer->cloak($gen->output_meta['script'] ?? '', $gen->module, generation: $gen, withDisclosure: false);
+    $caption = $offer->cloak($gen->output_meta['caption'] ?? '', $gen->module, generation: $gen);
     $hashtags = implode(' ', $gen->output_meta['hashtags'] ?? []);
 @endphp
 <div class="grid gap-4 lg:grid-cols-2">

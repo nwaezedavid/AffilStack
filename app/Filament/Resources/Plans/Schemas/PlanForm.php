@@ -100,6 +100,20 @@ class PlanForm
                             ->default(0)
                             ->required()
                             ->selectablePlaceholder(false),
+                        Select::make('network_connections_limit')
+                            ->label('Affiliate network connections')
+                            ->helperText('How many affiliate networks (Impact, PartnerStack, Awin, CJ, ClickBank, Digistore24) a customer can connect to import commissions and programs.')
+                            ->options([
+                                0 => 'Not included',
+                                1 => '1 network',
+                                2 => '2 networks',
+                                3 => '3 networks',
+                                6 => 'All 6 networks',
+                                -1 => 'Unlimited',
+                            ])
+                            ->default(0)
+                            ->required()
+                            ->selectablePlaceholder(false),
                         KeyValue::make('features')
                             ->label('Extra feature flags (optional)')
                             ->keyLabel('Flag')

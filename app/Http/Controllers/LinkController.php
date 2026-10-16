@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TrackedLink;
 use App\Services\Links\LinkCloakingService;
+use App\Services\Networks\NetworkRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -33,6 +34,13 @@ class LinkController extends Controller
      */
     protected function withTrackingParam(string $destinationUrl, string $code): string
     {
+        // Links made by a network AffilStack knows get the sub-ID in that
+        // network's own parameter (clickref, subId1, sid, tid…), which is
+        // what its reports — and so the earnings sync — echo back.
+        if ($adapter = NetworkRegistry::forUrl($destinationUrl)) {
+            return $adapter->withSubId($destinationUrl, $code);
+        }
+
         $param = config('earnings.tracking_param');
         $parts = parse_url($destinationUrl);
 

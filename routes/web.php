@@ -34,8 +34,11 @@ use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\LinkedInReplyAssistantController;
 use App\Http\Controllers\Dashboard\LocalizationController;
+use App\Http\Controllers\Dashboard\NetworkProgramsController;
+use App\Http\Controllers\Dashboard\NetworksController;
 use App\Http\Controllers\Dashboard\OfferController;
 use App\Http\Controllers\Dashboard\OfferFeatureController;
+use App\Http\Controllers\Dashboard\OfferNetworkLinkController;
 use App\Http\Controllers\Dashboard\OnboardingController;
 use App\Http\Controllers\Dashboard\PinterestController;
 use App\Http\Controllers\Dashboard\ReferralController as DashboardReferralController;
@@ -344,6 +347,20 @@ SiteDomains::app(function () {
         Route::post('/wordpress/sites/{site}/test', [WordPressController::class, 'test'])->middleware('throttle:20,1,wordpress.test')->name('wordpress.sites.test');
         Route::delete('/wordpress/sites/{site}', [WordPressController::class, 'destroy'])->name('wordpress.sites.destroy');
 
+        // Affiliate network connections — see NetworksController.
+        Route::get('/networks', [NetworksController::class, 'index'])->name('networks.index');
+        Route::get('/networks/programs', [NetworkProgramsController::class, 'index'])->name('networks.programs');
+        Route::post('/networks/programs/{program}/import', [NetworkProgramsController::class, 'import'])->middleware('throttle:20,1,networks.import')->name('networks.programs.import');
+        Route::post('/networks/digistore24/approve', [NetworksController::class, 'digistoreApprove'])->middleware('throttle:10,1,networks.approve')->name('networks.digistore24.approve');
+        Route::get('/networks/digistore24/return', [NetworksController::class, 'digistoreReturn'])->middleware('throttle:10,1,networks.approve')->name('networks.digistore24.return');
+        Route::get('/networks/{network}/connect', [NetworksController::class, 'connect'])->name('networks.connect');
+        Route::post('/networks/{network}/connect', [NetworksController::class, 'store'])->middleware('throttle:10,1,networks.connect')->name('networks.store');
+        Route::post('/networks/connections/{connection}/sync', [NetworksController::class, 'sync'])->middleware('throttle:10,1,networks.sync')->name('networks.sync');
+        Route::post('/networks/connections/{connection}/programs', [NetworkProgramsController::class, 'addByHand'])->middleware('throttle:20,1,networks.add')->name('networks.programs.add');
+        Route::delete('/networks/connections/{connection}', [NetworksController::class, 'destroy'])->name('networks.destroy');
+        Route::post('/offers/{offer}/network-link', [OfferNetworkLinkController::class, 'store'])->middleware('throttle:20,1,offers.network-link')->name('offers.network-link.store');
+        Route::patch('/offers/{offer}/network-link', [OfferNetworkLinkController::class, 'update'])->name('offers.network-link.update');
+
         Route::get('/leads', [LeadFinderController::class, 'index'])->middleware('throttle:paid-lookups')->name('leads.index');
         Route::post('/leads/search', [LeadFinderController::class, 'search'])->middleware('throttle:paid-lookups')->name('leads.search');
         Route::post('/leads/import', [LeadFinderController::class, 'import'])->middleware('throttle:paid-lookups')->name('leads.import');
@@ -356,6 +373,7 @@ SiteDomains::app(function () {
         Route::post('/earnings/import', [EarningsController::class, 'storeImport'])->name('earnings.import');
         Route::patch('/earnings/{earning}/assign-offer', [EarningsController::class, 'assignOffer'])->name('earnings.assign-offer');
         Route::delete('/earnings/{earning}', [EarningsController::class, 'destroy'])->name('earnings.destroy');
+        Route::patch('/earnings-currency', [EarningsController::class, 'currency'])->name('earnings.currency');
 
         Route::get('/referrals', [DashboardReferralController::class, 'index'])->name('referrals.index');
         Route::post('/referrals/payout-method', [DashboardReferralController::class, 'savePayoutMethod'])->name('referrals.payout-method');

@@ -1,5 +1,5 @@
 @php
-    $article = $offer->cloak($gen->output, $gen->module);
+    $article = $offer->cloak($gen->output, $gen->module, generation: $gen);
     $wpService = app(\App\Services\WordPress\WordPressSiteService::class);
     $wpSites = $gen->status === 'completed' ? $wpService->owner(auth()->user())->wordpressSites()->connected()->orderBy('name')->get() : collect();
     $wpDeliveries = $gen->wordpressDeliveries()->with('site')->get()->keyBy('wordpress_site_id');

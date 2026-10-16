@@ -95,6 +95,6 @@ class SocialPublishController extends Controller
         $title = (string) ($match['title'] ?? $offer->product_name);
         $rawCaption = (string) ($match['caption'] ?? "Check out {$offer->product_name}!");
 
-        return [$title, $offer->cloak($rawCaption, $ugcVideoGeneration->module)];
+        return [$title, $offer->cloak($rawCaption, $ugcVideoGeneration->module, generation: $ugcVideoGeneration)];
     }
 }

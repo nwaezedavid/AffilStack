@@ -243,3 +243,17 @@ ScheduleMonitoring::track(
     'analytics:purge',
 );
 // --- end agent 04 ---
+
+// --- Feature 5: affiliate network connections --------------------------------
+// Exchange rates first (earnings totals across currencies), then every
+// connected network's programs and commissions. Customers can also press
+// "Sync now" between runs.
+ScheduleMonitoring::track(
+    Schedule::command('fx:refresh')->dailyAt('03:37')->withoutOverlapping(30),
+    'fx:refresh',
+);
+
+ScheduleMonitoring::track(
+    Schedule::command('networks:sync')->dailyAt('04:23')->withoutOverlapping(30),
+    'networks:sync',
+);

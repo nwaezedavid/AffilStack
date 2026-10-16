@@ -1,4 +1,4 @@
-@php($post = $offer->cloak($gen->output_meta['post_text'] ?? '', $gen->module))
+@php($post = $offer->cloak($gen->output_meta['post_text'] ?? '', $gen->module, generation: $gen))
 <div class="rounded-2xl bg-surface-muted p-4">
     <p class="whitespace-pre-line text-sm leading-relaxed text-ink-900">{{ $post }}</p>
 </div>

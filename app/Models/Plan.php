@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
 #[Fillable([
     'name', 'slug', 'description', 'price_monthly_cents', 'price_yearly_cents',
     'currency', 'credits_per_month', 'active_products_limit', 'contact_limit',
-    'team_seats', 'seat_mode', 'channels', 'features', 'is_featured', 'is_active', 'sort_order', 'wordpress_sites_limit',
+    'team_seats', 'seat_mode', 'channels', 'features', 'is_featured', 'is_active', 'sort_order', 'wordpress_sites_limit', 'network_connections_limit',
 ])]
 class Plan extends Model
 {
@@ -71,6 +71,7 @@ class Plan extends Model
             'channels' => 'array',
             'features' => 'array',
             'wordpress_sites_limit' => 'integer',
+            'network_connections_limit' => 'integer',
             'is_featured' => 'boolean',
             'is_active' => 'boolean',
         ];

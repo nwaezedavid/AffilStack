@@ -17,8 +17,13 @@ return [
     // Shown in the network picker on the manual-entry and CSV-import forms.
     // "other" always exists so a network not listed here isn't a dead end.
     'networks' => [
-        'partnerstack' => 'PartnerStack',
         'impact' => 'Impact',
+        'partnerstack' => 'PartnerStack',
+        'awin' => 'Awin',
+        'cj' => 'CJ Affiliate',
+        'clickbank' => 'ClickBank',
+        'digistore24' => 'Digistore24',
+        // Kept for entries imported before ShareASale moved to Awin (2025).
         'shareasale' => 'ShareASale',
         'other' => 'Other',
     ],

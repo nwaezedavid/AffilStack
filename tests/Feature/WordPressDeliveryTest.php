@@ -59,7 +59,7 @@ class WordPressDeliveryTest extends TestCase
             'user_id' => $user->id,
             'product_name' => 'Acme Mailer',
             'product_url' => 'https://acme.example',
-            'affiliate_url' => 'https://partners.acme.example/?ref=me',
+            'affiliate_link' => 'https://partners.acme.example/?ref=me',
             'affiliate_network' => 'ShareASale',
             'status' => 'ready',
         ]);

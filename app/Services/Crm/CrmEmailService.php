@@ -76,8 +76,8 @@ class CrmEmailService
         $offer = $generation->offer;
         $rawBody = (string) ($email['body'] ?? '');
         $hasLink = $offer->hasLinkPlaceholder($rawBody);
-        $shortLink = $hasLink ? $this->linkCloaking->getOrCreateForOffer($offer, $generation->module) : null;
-        $cloakedBody = $offer->cloak($rawBody, $generation->module);
+        $shortLink = $hasLink ? $this->linkCloaking->getOrCreateForOffer($offer, $generation->module, $generation) : null;
+        $cloakedBody = $offer->cloak($rawBody, $generation->module, generation: $generation);
 
         $trackingToken = $this->uniqueTrackingToken();
         $body = $shortLink

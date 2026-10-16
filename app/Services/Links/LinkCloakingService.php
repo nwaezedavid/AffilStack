@@ -3,6 +3,7 @@
 namespace App\Services\Links;
 
 use App\Jobs\ResolveLinkClickGeo;
+use App\Models\Generation;
 use App\Models\LinkClick;
 use App\Models\Offer;
 use App\Models\TrackedLink;
@@ -22,14 +23,16 @@ class LinkCloakingService
     /**
      * One link per (offer, content channel) — regenerating that channel's
      * content reuses the existing link rather than fragmenting click history
-     * across a new one every time.
+     * across a new one every time. With a $generation, one link per piece
+     * of content instead: its code is the sub-ID the affiliate network
+     * reports back, so a sale is traced to the post that made it.
      */
-    public function getOrCreateForOffer(Offer $offer, string $module = 'general'): TrackedLink
+    public function getOrCreateForOffer(Offer $offer, string $module = 'general', ?Generation $generation = null): TrackedLink
     {
         $destination = self::destinationFor($offer);
 
         $link = TrackedLink::firstOrCreate(
-            ['offer_id' => $offer->id, 'module' => $module],
+            ['offer_id' => $offer->id, 'module' => $module, 'generation_id' => $generation?->id],
             [
                 'user_id' => $offer->user_id,
                 'destination_url' => $destination,
@@ -48,12 +51,17 @@ class LinkCloakingService
     }
 
     /**
-     * Where a product's tracked links send people: the customer's own
+     * Where a product's tracked links send people: the affiliate network's
+     * own tracked link when the customer chose it, otherwise their own
      * affiliate link (that's what earns the commission), or the product
      * page when no affiliate link has been added yet.
      */
     public static function destinationFor(Offer $offer): string
     {
+        if ($offer->use_network_link && filled($offer->network_link)) {
+            return (string) $offer->network_link;
+        }
+
         return filled($offer->affiliate_link) ? (string) $offer->affiliate_link : (string) $offer->product_url;
     }
 

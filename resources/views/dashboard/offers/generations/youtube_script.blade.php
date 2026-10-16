@@ -1,4 +1,4 @@
-@php($script = $offer->cloak($gen->output_meta['script_markdown'] ?? '', $gen->module, withDisclosure: false))
+@php($script = $offer->cloak($gen->output_meta['script_markdown'] ?? '', $gen->module, generation: $gen, withDisclosure: false))
 <h4 class="font-display text-lg font-semibold text-navy-900">{{ $gen->output_meta['working_title'] ?? 'Video script' }}</h4>
 <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink-600">
     <span class="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 font-medium text-red-700"><x-heroicon-m-clock class="h-3.5 w-3.5" /> ~{{ $gen->output_meta['estimated_length_minutes'] ?? '?' }} min</span>

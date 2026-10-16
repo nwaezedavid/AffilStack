@@ -62,6 +62,10 @@
         @endif
     </div>
 
+    @if ($offer->user_id === auth()->id())
+        @include('dashboard.offers.partials.network-link')
+    @endif
+
     <div class="mb-8">
         @include('dashboard.offers.partials.results', ['context' => 'hub'])
     </div>

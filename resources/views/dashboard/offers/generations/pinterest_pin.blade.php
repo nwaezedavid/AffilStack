@@ -6,7 +6,7 @@
 <div class="mt-3 grid gap-3 md:grid-cols-3">
     @foreach ($gen->output_meta['pins'] ?? [] as $i => $pin)
         @php
-            $pinText = $offer->cloak($pin['description'] ?? '', $gen->module);
+            $pinText = $offer->cloak($pin['description'] ?? '', $gen->module, generation: $gen);
             $pinCopy = trim(($pin['title'] ?? '')."\n\n".$pinText);
         @endphp
         <div class="flex flex-col rounded-2xl bg-white p-4 ring-1 ring-line">

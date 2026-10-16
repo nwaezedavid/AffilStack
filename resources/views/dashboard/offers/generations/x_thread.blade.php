@@ -1,5 +1,5 @@
 @php
-    $tweets = collect($gen->output_meta['thread'] ?? [])->values()->map(fn ($tweet, $i) => $offer->cloak($tweet['text'] ?? '', $gen->module, withDisclosure: $i === 0));
+    $tweets = collect($gen->output_meta['thread'] ?? [])->values()->map(fn ($tweet, $i) => $offer->cloak($tweet['text'] ?? '', $gen->module, generation: $gen, withDisclosure: $i === 0));
     $threadText = $tweets->implode("\n\n");
 @endphp
 <div class="flex flex-wrap items-center gap-2">

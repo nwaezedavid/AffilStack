@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'ideal_customer_summary', 'where_to_find', 'recommended_channel',
     'recommended_angle', 'research_data', 'disclosure_country',
     'suggested_maps_niche', 'suggested_maps_location',
+    'network_program_id', 'network_link', 'use_network_link',
 ])]
 class Offer extends Model
 {
@@ -32,6 +33,7 @@ class Offer extends Model
         return [
             'is_sandbox' => 'boolean',
             'research_data' => 'array',
+            'use_network_link' => 'boolean',
         ];
     }
 
@@ -80,16 +82,20 @@ class Offer extends Model
     protected static function booted(): void
     {
         static::updated(function (Offer $offer): void {
-            if (! $offer->wasChanged(['affiliate_link', 'product_url'])) {
+            if (! $offer->wasChanged(['affiliate_link', 'product_url', 'network_link', 'use_network_link'])) {
                 return;
             }
 
-            $oldAffiliate = $offer->getOriginal('affiliate_link');
-            $oldProduct = $offer->getOriginal('product_url');
-            $oldDestination = filled($oldAffiliate) ? $oldAffiliate : $oldProduct;
+            $before = (new Offer)->setRawAttributes($offer->getRawOriginal());
+            $previous = array_values(array_unique(array_filter([
+                LinkCloakingService::destinationFor($before),
+                $before->affiliate_link,
+                $before->network_link,
+                $before->product_url,
+            ])));
 
             $offer->trackedLinks()
-                ->whereIn('destination_url', array_values(array_unique(array_filter([$oldDestination, $oldProduct]))))
+                ->whereIn('destination_url', $previous)
                 ->update(['destination_url' => LinkCloakingService::destinationFor($offer)]);
         });
     }
@@ -97,6 +103,14 @@ class Offer extends Model
     public function trackedLinks(): HasMany
     {
         return $this->hasMany(TrackedLink::class);
+    }
+
+    /**
+     * The affiliate network program this product was added from, if any.
+     */
+    public function networkProgram(): BelongsTo
+    {
+        return $this->belongsTo(NetworkProgram::class);
     }
 
     public function earnings(): HasMany
@@ -122,14 +136,17 @@ class Offer extends Model
      * $withDisclosure = false for working documents that aren't themselves
      * published (a YouTube recording script, a TikTok voiceover script) —
      * their public surface (description/caption) already carries it.
+     *
+     * Pass the $generation the text belongs to and it gets its own link,
+     * so sales can be traced back to that exact piece of content.
      */
-    public function cloak(?string $text, string $module = 'general', bool $withDisclosure = true): string
+    public function cloak(?string $text, string $module = 'general', bool $withDisclosure = true, ?Generation $generation = null): string
     {
         if (! $this->hasLinkPlaceholder($text)) {
             return $text ?? '';
         }
 
-        $link = app(LinkCloakingService::class)->getOrCreateForOffer($this, $module);
+        $link = app(LinkCloakingService::class)->getOrCreateForOffer($this, $module, $generation);
         $text = str_replace(self::LINK_PLACEHOLDER, $link->short_url, $text);
 
         if (! $withDisclosure) {

@@ -9,7 +9,7 @@
     @foreach ($gen->output_meta['emails'] ?? [] as $email)
         @php
             $lastSend = $gen->emailSends->where('sequence_step', $email['step'] ?? null)->sortByDesc('created_at')->first();
-            $body = $offer->cloak($email['body'] ?? '', $gen->module);
+            $body = $offer->cloak($email['body'] ?? '', $gen->module, generation: $gen);
         @endphp
         <li class="rounded-2xl bg-white p-4 ring-1 ring-line">
             <div class="flex flex-wrap items-center justify-between gap-2">

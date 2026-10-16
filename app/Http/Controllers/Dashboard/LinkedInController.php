@@ -65,11 +65,11 @@ class LinkedInController extends Controller
         $offer = $generation->offer;
 
         if ($generation->module === 'linkedin_post') {
-            $body = $offer->cloak($generation->output_meta['post_text'] ?? '', $generation->module);
+            $body = $offer->cloak($generation->output_meta['post_text'] ?? '', $generation->module, generation: $generation);
             $filename = "linkedin-post-{$generation->id}.txt";
         } else {
             $headline = $generation->output_meta['headline'] ?? '';
-            $article = $offer->cloak($generation->output_meta['article_markdown'] ?? '', $generation->module);
+            $article = $offer->cloak($generation->output_meta['article_markdown'] ?? '', $generation->module, generation: $generation);
             $body = "{$headline}\n\n{$article}";
             $filename = "linkedin-article-{$generation->id}.txt";
         }

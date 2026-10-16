@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Earning;
+use App\Models\Generation;
 use App\Models\TrackedLink;
+use App\Models\User;
 use App\Services\Earnings\EarningsImportService;
+use App\Support\ExchangeRates;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -15,23 +18,29 @@ class EarningsController extends Controller
     public function index(): View
     {
         $user = auth()->user();
+        $currency = static::displayCurrency($user);
+        $convert = fn (int $usdCents): int => ExchangeRates::fromUsdCents($usdCents, $currency);
 
-        $entries = $user->earnings()->with(['offer', 'trackedLink'])->latest('converted_at')->paginate(25);
+        $entries = $user->earnings()->with(['offer', 'trackedLink', 'generation'])->latest('converted_at')->paginate(25);
+
+        // Declined/reversed commissions stay listed but never count.
+        $counted = fn () => $user->earnings()->where('status', '!=', 'declined');
 
         $totals = [
-            'total_cents' => (int) $user->earnings()->sum('amount_cents'),
-            'pending_cents' => (int) $user->earnings()->where('status', 'pending')->sum('amount_cents'),
-            'approved_cents' => (int) $user->earnings()->where('status', 'approved')->sum('amount_cents'),
-            'paid_cents' => (int) $user->earnings()->where('status', 'paid')->sum('amount_cents'),
+            'total_cents' => $convert((int) $counted()->sum('usd_cents')),
+            'pending_cents' => $convert((int) $counted()->where('status', 'pending')->sum('usd_cents')),
+            'approved_cents' => $convert((int) $counted()->where('status', 'approved')->sum('usd_cents')),
+            'paid_cents' => $convert((int) $counted()->where('status', 'paid')->sum('usd_cents')),
         ];
 
         $totalClicks = (int) $user->trackedLinks()->sum('clicks_count');
         $epcCents = $totalClicks > 0 ? (int) round($totals['total_cents'] / $totalClicks) : 0;
 
         $byOffer = $user->offers()
-            ->withSum(['earnings as earnings_cents' => fn ($query) => $query->where('earnings.user_id', $user->id)], 'amount_cents')
+            ->withSum(['earnings as earnings_usd' => fn ($query) => $query->where('earnings.user_id', $user->id)->where('earnings.status', '!=', 'declined')], 'usd_cents')
             ->withSum('trackedLinks as clicks', 'clicks_count')
             ->get()
+            ->each(fn ($offer) => $offer->earnings_cents = $convert((int) $offer->earnings_usd))
             ->filter(fn ($offer) => $offer->earnings_cents > 0 || $offer->clicks > 0)
             ->sortByDesc('earnings_cents')
             ->values();
@@ -39,9 +48,10 @@ class EarningsController extends Controller
         $earningsByChannel = Earning::query()
             ->join('tracked_links', 'tracked_links.id', '=', 'earnings.tracked_link_id')
             ->where('earnings.user_id', $user->id)
-            ->selectRaw('tracked_links.module as module, sum(earnings.amount_cents) as earnings_cents')
+            ->where('earnings.status', '!=', 'declined')
+            ->selectRaw('tracked_links.module as module, sum(earnings.usd_cents) as earnings_usd')
             ->groupBy('tracked_links.module')
-            ->pluck('earnings_cents', 'module');
+            ->pluck('earnings_usd', 'module');
 
         $clicksByChannel = TrackedLink::where('user_id', $user->id)
             ->selectRaw('module, sum(clicks_count) as clicks')
@@ -51,23 +61,73 @@ class EarningsController extends Controller
         $byChannel = $clicksByChannel->keys()->merge($earningsByChannel->keys())->unique()
             ->map(fn ($module) => [
                 'module' => $module,
-                'earnings_cents' => (int) ($earningsByChannel[$module] ?? 0),
+                'earnings_cents' => $convert((int) ($earningsByChannel[$module] ?? 0)),
                 'clicks' => (int) ($clicksByChannel[$module] ?? 0),
             ])
             ->sortByDesc('earnings_cents')
             ->values();
 
-        $unmatched = $user->earnings()->whereNull('offer_id')->latest('converted_at')->limit(20)->get();
-        $unmatchedCount = $user->earnings()->whereNull('offer_id')->count();
+        // Content attribution: sales traced to the exact piece of content
+        // through its own tracked link (network sub-IDs).
+        $earningsByContent = Earning::query()
+            ->where('user_id', $user->id)
+            ->whereNotNull('generation_id')
+            ->where('status', '!=', 'declined')
+            ->selectRaw('generation_id, sum(usd_cents) as earnings_usd, count(*) as sales')
+            ->groupBy('generation_id')
+            ->orderByDesc('earnings_usd')
+            ->limit(15)
+            ->get()
+            ->keyBy('generation_id');
+
+        $byContent = Generation::query()
+            ->with('offer:id,product_name')
+            ->whereIn('id', $earningsByContent->keys())
+            ->get()
+            ->map(fn (Generation $generation) => [
+                'generation' => $generation,
+                'earnings_cents' => $convert((int) $earningsByContent[$generation->id]->earnings_usd),
+                'sales' => (int) $earningsByContent[$generation->id]->sales,
+                'clicks' => (int) TrackedLink::where('generation_id', $generation->id)->sum('clicks_count'),
+            ])
+            ->sortByDesc('earnings_cents')
+            ->values();
+
+        $unmatched = $user->earnings()->whereNull('offer_id')->where('status', '!=', 'declined')->latest('converted_at')->limit(20)->get();
+        $unmatchedCount = $user->earnings()->whereNull('offer_id')->where('status', '!=', 'declined')->count();
 
         $offers = $user->offers()->orderBy('product_name')->get(['id', 'product_name']);
-        $trackedLinks = $user->trackedLinks()->with('offer')->get(['id', 'offer_id', 'module', 'code']);
+        $trackedLinks = $user->trackedLinks()->whereNull('generation_id')->with('offer')->get(['id', 'offer_id', 'module', 'code']);
         $networks = config('earnings.networks');
+        $connections = $user->networkConnections()->get();
+        $currencies = $user->earnings()->where('status', '!=', 'declined')->distinct()->pluck('currency');
 
         return view('dashboard.earnings.index', compact(
-            'entries', 'totals', 'totalClicks', 'epcCents', 'byOffer', 'byChannel',
-            'unmatched', 'unmatchedCount', 'offers', 'trackedLinks', 'networks',
+            'entries', 'totals', 'totalClicks', 'epcCents', 'byOffer', 'byChannel', 'byContent',
+            'unmatched', 'unmatchedCount', 'offers', 'trackedLinks', 'networks', 'currency', 'connections', 'currencies',
         ));
+    }
+
+    /**
+     * The currency totals are shown in: the customer's choice, or naira
+     * for Nigerian accounts and US dollars for everyone else.
+     */
+    public static function displayCurrency(User $user): string
+    {
+        if (in_array($user->earnings_currency, ['USD', 'NGN'], true)) {
+            return $user->earnings_currency;
+        }
+
+        return in_array(strtoupper((string) $user->country), ['NG', 'NIGERIA'], true) ? 'NGN' : 'USD';
+    }
+
+    public function currency(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['currency' => ['required', 'in:USD,NGN']]);
+
+        $request->user()->update(['earnings_currency' => $data['currency']]);
+
+        return back()->with('success', 'Totals are now shown in '.($data['currency'] === 'NGN' ? 'naira' : 'US dollars').'.');
     }
 
     public function storeManual(Request $request, EarningsImportService $service): RedirectResponse

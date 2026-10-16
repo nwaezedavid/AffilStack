@@ -32,7 +32,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'avatar_path', 'birth_date', 'phone', 'gender', 'religion', 'business_website', 'business_industry', 'city', 'state_region', 'timezone', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role', 'refund_policy_accepted_at', 'is_affiliate_only', 'api_wallet_balance_cents', 'api_wallet_auto_recharge_enabled', 'api_wallet_auto_recharge_threshold_cents', 'api_wallet_auto_recharge_amount_cents', 'api_wallet_payment_method_id', 'show_on_partner_leaderboard', 'partner_news_seen_at'])]
+#[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'avatar_path', 'birth_date', 'phone', 'gender', 'religion', 'business_website', 'business_industry', 'city', 'state_region', 'timezone', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role', 'refund_policy_accepted_at', 'is_affiliate_only', 'api_wallet_balance_cents', 'api_wallet_auto_recharge_enabled', 'api_wallet_auto_recharge_threshold_cents', 'api_wallet_auto_recharge_amount_cents', 'api_wallet_payment_method_id', 'show_on_partner_leaderboard', 'partner_news_seen_at', 'earnings_currency'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'app_authentication_secret', 'app_authentication_recovery_codes', 'payout_details'])]
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery
 {
@@ -473,6 +473,11 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     public function wordpressSites(): HasMany
     {
         return $this->hasMany(WordpressSite::class);
+    }
+
+    public function networkConnections(): HasMany
+    {
+        return $this->hasMany(NetworkConnection::class);
     }
 
     public function referralCampaigns(): HasMany

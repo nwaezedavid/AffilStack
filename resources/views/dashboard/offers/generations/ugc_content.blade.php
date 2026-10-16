@@ -1,5 +1,5 @@
 @php
-    $ugcScript = $offer->cloak($gen->output_meta['script'] ?? '', $gen->module, withDisclosure: false);
+    $ugcScript = $offer->cloak($gen->output_meta['script'] ?? '', $gen->module, generation: $gen, withDisclosure: false);
     $angleName = null;
     if (isset($gen->input['angles_generation_id'], $gen->input['angle_index'])) {
         $angleName = $offer->generations->firstWhere('id', $gen->input['angles_generation_id'])?->output_meta['angles'][$gen->input['angle_index']]['name'] ?? null;
@@ -32,7 +32,7 @@
         <div class="grid gap-2.5 md:grid-cols-2">
             @foreach ($gen->output_meta['platforms'] as $platform)
                 @php
-                    $caption = $offer->cloak($platform['caption'] ?? '', $gen->module);
+                    $caption = $offer->cloak($platform['caption'] ?? '', $gen->module, generation: $gen);
                     $tags = implode(' ', array_map(fn ($tag) => str_starts_with($tag, '#') ? $tag : '#'.$tag, $platform['tags'] ?? []));
                 @endphp
                 <div class="rounded-2xl bg-white p-4 ring-1 ring-line">

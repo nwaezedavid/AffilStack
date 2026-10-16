@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * gets one of these lazily, via Offer::cloak() — see that method and
  * LinkCloakingService.
  */
-#[Fillable(['user_id', 'offer_id', 'module', 'code', 'destination_url', 'clicks_count'])]
+#[Fillable(['user_id', 'offer_id', 'generation_id', 'module', 'code', 'destination_url', 'clicks_count'])]
 class TrackedLink extends Model
 {
     public function user(): BelongsTo
@@ -27,6 +27,15 @@ class TrackedLink extends Model
     public function offer(): BelongsTo
     {
         return $this->belongsTo(Offer::class);
+    }
+
+    /**
+     * The piece of content this link was made for (null for the older
+     * per-channel links).
+     */
+    public function generation(): BelongsTo
+    {
+        return $this->belongsTo(Generation::class);
     }
 
     public function clicks(): HasMany
