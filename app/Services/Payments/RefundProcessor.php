@@ -8,6 +8,7 @@ use App\Models\PaymentTransaction;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Services\Credits\CreditManager;
+use App\Services\Marketplace\AddonBilling;
 use App\Services\Referrals\ReferralService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -117,6 +118,10 @@ class RefundProcessor
             }
 
             $this->clawBackCredits($user, $this->creditsGrantedFor($user, $subscription), $transaction);
+        }
+
+        if ($transaction->type === 'addon_subscription') {
+            app(AddonBilling::class)->reverse($transaction, $transaction->status);
         }
 
         if ($transaction->type === 'credit_topup' && $transaction->creditPackage) {

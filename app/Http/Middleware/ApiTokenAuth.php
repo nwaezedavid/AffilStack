@@ -52,6 +52,26 @@ class ApiTokenAuth
             return response()->json(['message' => 'This account is suspended.'], 403);
         }
 
+        if ($token->hasExpired()) {
+            return response()->json(['message' => 'This access token has expired. Use your refresh token to get a new one.'], 401);
+        }
+
+        // A connected app's token (feature 7): only while the customer
+        // still has the app, and only on endpoints apps may use.
+        if ($token->isAppToken()) {
+            $install = $token->install;
+
+            if (! $install || ! $install->isUsable() || ! in_array($install->addon?->status, ['published', 'draft', 'retired'], true) || ! $install->addon->developer?->isActive()) {
+                return response()->json(['message' => 'Invalid or revoked token.'], 401);
+            }
+
+            $declaresScope = collect($request->route()?->gatherMiddleware() ?? [])->contains(fn ($middleware) => is_string($middleware) && str_starts_with($middleware, 'app-scope:'));
+
+            if (! $declaresScope) {
+                return response()->json(['message' => 'Connected apps cannot use this endpoint.'], 403);
+            }
+        }
+
         $token->update(['last_used_at' => now()]);
 
         $request->setUserResolver(fn () => $user);

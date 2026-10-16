@@ -242,6 +242,15 @@ class BillingController extends Controller
                 return redirect()->route('api-access.index')->with('success', '$'.number_format($transaction->amount_cents / 100, 2).' has been added to your API wallet.');
             }
 
+            // A paid marketplace add-on: back to where they were (a
+            // connected app's "Connect" screen), or to the add-on.
+            if ($transaction->type === 'addon_subscription' && $transaction->addonInstall) {
+                $return = $request->session()->pull('addon_return');
+
+                return redirect()->to(is_string($return) && str_starts_with($return, url('/')) ? $return : route('addons.show', $transaction->addonInstall))
+                    ->with('success', 'Payment received — your add-on is active.');
+            }
+
             return redirect()->route('dashboard')->with('success', 'Your plan is now active. Welcome to AffilStack.');
         }
 

@@ -5,6 +5,9 @@ use App\Http\Middleware\ApiTokenAuth;
 use App\Http\Middleware\CachePublicPage;
 use App\Http\Middleware\EnsureAccountNotSuspended;
 use App\Http\Middleware\EnsureAdminApiToken;
+use App\Http\Middleware\EnsureAppScope;
+use App\Http\Middleware\EnsureDeveloperAuthenticated;
+use App\Http\Middleware\EnsureDeveloperProfile;
 use App\Http\Middleware\EnsureIdempotency;
 use App\Http\Middleware\EnsureTokenScope;
 use App\Http\Middleware\LocalizeResponse;
@@ -67,6 +70,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin-api-token' => EnsureAdminApiToken::class,
             'meter-api-usage' => MeterApiUsage::class,
             'token-scope' => EnsureTokenScope::class,
+            'app-scope' => EnsureAppScope::class,
+            'developer-auth' => EnsureDeveloperAuthenticated::class,
+            'developer-profile' => EnsureDeveloperProfile::class,
             'idempotent' => EnsureIdempotency::class,
             'log-api-request' => LogApiRequest::class,
             'cache-public-page' => CachePublicPage::class,

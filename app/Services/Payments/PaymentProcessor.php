@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Agents\SamAgentService;
 use App\Services\ApiWallet\ApiWalletManager;
 use App\Services\Credits\CreditManager;
+use App\Services\Marketplace\AddonBilling;
 use App\Services\Referrals\ReferralService;
 use Carbon\Carbon;
 use Filament\Notifications\Notification;
@@ -139,6 +140,11 @@ class PaymentProcessor
 
         if ($transaction->type === 'api_wallet_topup') {
             $this->grantApiWalletTopup($transaction, $gateway, $result);
+        }
+
+        // A month of a paid marketplace add-on (feature 7).
+        if ($transaction->type === AddonBilling::TYPE && $transaction->user) {
+            app(AddonBilling::class)->activate($transaction, $this->paymentMethods->record($transaction->user, $gateway, $result));
         }
 
         return $transaction;

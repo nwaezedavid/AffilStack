@@ -43,7 +43,7 @@ class ExtensionController extends Controller
     {
         $user = auth()->user();
 
-        $tokens = $user->apiTokens()->latest()->get();
+        $tokens = $user->apiTokens()->where('type', '!=', 'app')->latest()->get();
         $clips = $user->researchClips()->with('offer')->latest()->get();
         $offers = $user->offers()->orderBy('product_name')->get();
 

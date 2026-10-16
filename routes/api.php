@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Blog\BlogKitController;
 use App\Http\Controllers\Api\Blog\BlogSubscribeController;
 use App\Http\Controllers\Api\ExtensionApiController;
 use App\Http\Controllers\Api\ExtensionProspectingController;
+use App\Http\Controllers\Api\OAuthTokenController;
 use App\Http\Controllers\Api\V1\Admin\AdminApiController;
 use App\Http\Controllers\Api\V1\CrmContactsController;
 use App\Http\Controllers\Api\V1\GenerationsController;
@@ -51,6 +52,11 @@ Route::middleware(['api-token-auth', 'throttle:api'])->group(function () {
 // Postman/Insomnia and the JS/Python SDKs can import it directly, the same
 // way Stripe/Twilio publish theirs. Deliberately outside the v1 group
 // below so it never inherits api-token-auth.
+// Feature 7: "Connect with AffilStack" — connected apps swap codes for
+// tokens here (client id + secret in the body or Basic auth).
+Route::post('/oauth/token', [OAuthTokenController::class, 'token'])->middleware('throttle:60,1,oauth.token')->name('api.oauth.token');
+Route::post('/oauth/revoke', [OAuthTokenController::class, 'revoke'])->middleware('throttle:60,1,oauth.revoke')->name('api.oauth.revoke');
+
 Route::get('/v1/openapi.yaml', [OpenApiSpecController::class, 'show'])->name('api.v1.openapi');
 
 // The general-purpose API (task #6) — one bearer token (dashboard: "API
@@ -64,31 +70,31 @@ Route::get('/v1/openapi.yaml', [OpenApiSpecController::class, 'show'])->name('ap
 // read-only token's writes. throttle:api (item #3) replaces the old flat
 // throttle:60,1 with config('api_billing.rate_limits')'s per-plan limits.
 Route::prefix('v1')->middleware(['api-token-auth', 'log-api-request', 'throttle:api', 'token-scope'])->group(function () {
-    Route::get('/me', [MeController::class, 'show'])->name('api.v1.me');
+    Route::get('/me', [MeController::class, 'show'])->middleware('app-scope:profile:read')->name('api.v1.me');
 
-    Route::get('/offers', [OffersController::class, 'index'])->name('api.v1.offers.index');
+    Route::get('/offers', [OffersController::class, 'index'])->middleware('app-scope:offers:read')->name('api.v1.offers.index');
     // Metered — see config('api_billing.costs') and MeterApiUsage (which
     // skips the charge entirely for a sandbox token — item #5). idempotent
     // (item #1) runs first so a replayed call short-circuits before it
     // could ever be billed again.
-    Route::post('/offers', [OffersController::class, 'store'])->middleware(['idempotent', 'meter-api-usage'])->name('api.v1.offers.store');
-    Route::get('/offers/{offer}', [OffersController::class, 'show'])->name('api.v1.offers.show');
+    Route::post('/offers', [OffersController::class, 'store'])->middleware(['app-scope:offers:write', 'idempotent', 'meter-api-usage'])->name('api.v1.offers.store');
+    Route::get('/offers/{offer}', [OffersController::class, 'show'])->middleware('app-scope:offers:read')->name('api.v1.offers.show');
 
-    Route::get('/generations', [GenerationsController::class, 'index'])->name('api.v1.generations.index');
-    Route::get('/generations/{generation}', [GenerationsController::class, 'show'])->name('api.v1.generations.show');
+    Route::get('/generations', [GenerationsController::class, 'index'])->middleware('app-scope:content:read')->name('api.v1.generations.index');
+    Route::get('/generations/{generation}', [GenerationsController::class, 'show'])->middleware('app-scope:content:read')->name('api.v1.generations.show');
 
-    Route::get('/crm-contacts', [CrmContactsController::class, 'index'])->name('api.v1.crm-contacts.index');
-    Route::post('/crm-contacts', [CrmContactsController::class, 'store'])->middleware('idempotent')->name('api.v1.crm-contacts.store');
+    Route::get('/crm-contacts', [CrmContactsController::class, 'index'])->middleware('app-scope:crm:read')->name('api.v1.crm-contacts.index');
+    Route::post('/crm-contacts', [CrmContactsController::class, 'store'])->middleware(['app-scope:crm:write', 'idempotent'])->name('api.v1.crm-contacts.store');
     // Bulk create (API roadmap item #6) — deliberately not wrapped in
     // idempotent: a batch of N contacts isn't a single retryable operation
     // the same way one create is, and bulkStore()'s partial-success
     // response (created/failed, by index) already makes a safe retry of
     // just the failed items straightforward without it.
-    Route::post('/crm-contacts/bulk', [CrmContactsController::class, 'bulkStore'])->name('api.v1.crm-contacts.bulk-store');
-    Route::get('/crm-contacts/{contact}', [CrmContactsController::class, 'show'])->name('api.v1.crm-contacts.show');
-    Route::patch('/crm-contacts/{contact}', [CrmContactsController::class, 'update'])->name('api.v1.crm-contacts.update');
+    Route::post('/crm-contacts/bulk', [CrmContactsController::class, 'bulkStore'])->middleware('app-scope:crm:write')->name('api.v1.crm-contacts.bulk-store');
+    Route::get('/crm-contacts/{contact}', [CrmContactsController::class, 'show'])->middleware('app-scope:crm:read')->name('api.v1.crm-contacts.show');
+    Route::patch('/crm-contacts/{contact}', [CrmContactsController::class, 'update'])->middleware('app-scope:crm:write')->name('api.v1.crm-contacts.update');
 
-    Route::get('/referrals/summary', [ReferralsController::class, 'summary'])->name('api.v1.referrals.summary');
+    Route::get('/referrals/summary', [ReferralsController::class, 'summary'])->middleware('app-scope:referrals:read')->name('api.v1.referrals.summary');
 
     // API roadmap item #9 — backs the Zapier platform app's REST Hook
     // triggers (see integrations/zapier/triggers/*.js). Zapier calls these

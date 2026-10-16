@@ -36,10 +36,14 @@ class ReferralPayoutProcessed extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $amount = ReferralProgram::money($this->payout->amount_cents, $this->payout->currency);
-        $portal = $notifiable instanceof User && $notifiable->isAffiliateOnly() ? route('partner.payouts') : route('referrals.index', ['tab' => 'payouts']);
+        $portal = match (true) {
+            $this->payout->isDeveloperPayout() => route('developer.earnings'),
+            $notifiable instanceof User && $notifiable->isAffiliateOnly() => route('partner.payouts'),
+            default => route('referrals.index', ['tab' => 'payouts']),
+        };
 
         return (new MailMessage)
-            ->subject('Your referral payout has been sent')
+            ->subject($this->payout->isDeveloperPayout() ? 'Your developer payout has been sent' : 'Your referral payout has been sent')
             ->line("Your payout of {$amount} has been sent to ".PayoutMethodService::summary($this->payout->payout_method, $this->payout->payout_details).'.')
             ->line("Reference: {$this->payout->reference}")
             ->action('See your payouts', $portal)
@@ -56,7 +60,11 @@ class ReferralPayoutProcessed extends Notification
             'amount_cents' => $this->payout->amount_cents,
             'currency' => $this->payout->currency,
             'reference' => $this->payout->reference,
-            'url' => $notifiable instanceof User && $notifiable->isAffiliateOnly() ? route('partner.payouts') : route('referrals.index'),
+            'url' => match (true) {
+                $this->payout->isDeveloperPayout() => route('developer.earnings'),
+                $notifiable instanceof User && $notifiable->isAffiliateOnly() => route('partner.payouts'),
+                default => route('referrals.index'),
+            },
         ];
     }
 }

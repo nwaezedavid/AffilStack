@@ -257,3 +257,15 @@ ScheduleMonitoring::track(
     Schedule::command('networks:sync')->dailyAt('04:23')->withoutOverlapping(30),
     'networks:sync',
 );
+
+// Feature 7: paid marketplace add-ons renew from saved cards; developers'
+// earnings become payable once the refund window has passed.
+ScheduleMonitoring::track(
+    Schedule::command('marketplace:renew')->hourlyAt(17)->withoutOverlapping(30),
+    'marketplace:renew',
+);
+
+ScheduleMonitoring::track(
+    Schedule::command('marketplace:release-earnings')->dailyAt('05:11')->withoutOverlapping(30),
+    'marketplace:release-earnings',
+);

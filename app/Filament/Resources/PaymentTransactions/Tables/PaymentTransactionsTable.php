@@ -45,7 +45,7 @@ class PaymentTransactionsTable
                     'subscription' => 'Subscription',
                     'renewal' => 'Renewal',
                     'credit_topup' => 'Credit top-up',
-                    'addon' => 'Add-on',
+                    'addon_subscription' => 'Add-on subscription',
                     'api_wallet_topup' => 'API wallet top-up',
                     'api_wallet_auto_recharge' => 'API wallet auto-recharge',
                 ]),

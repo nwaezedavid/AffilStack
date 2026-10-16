@@ -35,6 +35,7 @@ return [
         'system' => 'System — scheduled task run history, API tokens, connections health check',
         'site' => 'Site — branding, SEO, redirects & 404 monitor, Google login, Google Analytics/Search Console/Tag Manager, Bing Webmaster, Gmail-sending, and LinkedIn Connect settings',
         'users_access' => 'Users & Access — manage customer accounts (never roles or admin sub-accounts)',
+        'marketplace' => 'Marketplace — developers, add-on reviews, add-ons, developer earnings, marketplace settings',
     ],
 
 ];

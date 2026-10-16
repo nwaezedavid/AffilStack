@@ -39,7 +39,7 @@ use Illuminate\Support\Str;
  * only its SHA-256 hash ever persisted. See App\Http\Middleware\ApiTokenAuth
  * for the other half.
  */
-#[Fillable(['user_id', 'type', 'scope', 'is_sandbox', 'name', 'token_hash', 'last_used_at'])]
+#[Fillable(['user_id', 'addon_install_id', 'type', 'scope', 'scopes', 'is_sandbox', 'name', 'token_hash', 'last_used_at', 'expires_at'])]
 #[Hidden(['token_hash'])]
 class ApiToken extends Model
 {
@@ -48,6 +48,8 @@ class ApiToken extends Model
         return [
             'is_sandbox' => 'boolean',
             'last_used_at' => 'datetime',
+            'scopes' => 'array',
+            'expires_at' => 'datetime',
         ];
     }
 
@@ -96,6 +98,33 @@ class ApiToken extends Model
     public function isAdminToken(): bool
     {
         return $this->type === 'admin';
+    }
+
+    /**
+     * A token a connected app got through "Connect with AffilStack".
+     */
+    public function isAppToken(): bool
+    {
+        return $this->type === 'app';
+    }
+
+    public function install(): BelongsTo
+    {
+        return $this->belongsTo(AddonInstall::class, 'addon_install_id');
+    }
+
+    public function hasExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    /**
+     * Whether an app token was granted a permission (other tokens can do
+     * everything their scope allows).
+     */
+    public function allows(string $scope): bool
+    {
+        return ! $this->isAppToken() || in_array($scope, $this->scopes ?? [], true);
     }
 
     public function isReadOnly(): bool

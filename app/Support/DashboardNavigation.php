@@ -64,8 +64,10 @@ class DashboardNavigation
                 ['name' => 'swipe-files.index', 'match' => 'swipe-files.*', 'label' => 'Swipe Files', 'icon' => 'rectangle-stack'],
                 ['name' => 'links.index', 'match' => 'links.*', 'label' => 'Links & Clicks', 'icon' => 'cursor-arrow-rays'],
                 ['name' => 'earnings.index', 'match' => 'earnings.*', 'label' => 'Earnings', 'icon' => 'chart-bar'],
+                ['name' => 'templates.index', 'match' => 'templates.*', 'label' => 'Template Library', 'icon' => 'document-duplicate'],
             ]],
             ['label' => 'Connections', 'items' => [
+                ['name' => 'marketplace.browse', 'match' => ['marketplace.*', 'addons.*', 'oauth.*'], 'label' => 'Add-on Marketplace', 'icon' => 'puzzle-piece'],
                 ['name' => 'email-connections.index', 'match' => 'email-connections.*', 'label' => 'Email Sending', 'icon' => 'envelope'],
                 ['name' => 'social-connections.index', 'match' => 'social-connections.*', 'label' => 'Connected Accounts', 'icon' => 'link'],
                 ['name' => 'networks.index', 'match' => 'networks.*', 'label' => 'Affiliate Networks', 'icon' => 'building-storefront'],

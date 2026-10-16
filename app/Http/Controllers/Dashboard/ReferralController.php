@@ -50,7 +50,7 @@ class ReferralController extends Controller
             'paid_cents' => $earningsByStatus->get('paid', 0),
         ];
 
-        $payouts = $user->referralPayouts()->latest('requested_at')->get();
+        $payouts = $user->referralPayouts()->where('source', 'referral')->latest('requested_at')->get();
 
         $tab = in_array($request->query('tab'), self::TABS, true) ? $request->query('tab') : 'overview';
         $stats = $kit->stats($user);

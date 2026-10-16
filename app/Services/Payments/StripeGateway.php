@@ -156,9 +156,15 @@ class StripeGateway implements PaymentGateway
     public function initiateOneTimeCheckout(User $user, int $amountCents, string $currency, string $description, array $meta): array
     {
         $txRef = 'affilstack_topup_'.Str::uuid();
+        $saveCard = (bool) ($meta['save_card'] ?? false);
+        unset($meta['save_card']);
         $meta = array_merge($meta, ['tx_ref' => $txRef]);
 
-        $response = $this->client()->post('/checkout/sessions', [
+        // Monthly add-ons (feature 7) are renewed by charging the saved
+        // card, which Stripe only allows for a card saved for later use.
+        $reuse = $saveCard ? ['customer_creation' => 'always', 'payment_intent_data' => ['setup_future_usage' => 'off_session']] : [];
+
+        $response = $this->client()->post('/checkout/sessions', $reuse + [
             // No 'recurring' block on the price_data below — that's what
             // makes this a one-time Stripe charge instead of a subscription
             // (the only genuine code-path difference across all 4

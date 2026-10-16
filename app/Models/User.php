@@ -422,6 +422,21 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     /**
      * As the referrer: every user this account has referred.
      */
+    public function developerProfile(): HasOne
+    {
+        return $this->hasOne(DeveloperProfile::class);
+    }
+
+    public function userTemplates(): HasMany
+    {
+        return $this->hasMany(UserTemplate::class);
+    }
+
+    public function addonInstalls(): HasMany
+    {
+        return $this->hasMany(AddonInstall::class);
+    }
+
     public function referrals(): HasMany
     {
         return $this->hasMany(Referral::class, 'referrer_id');
@@ -586,9 +601,10 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             ->map(fn ($total) => (int) $total);
     }
 
-    public function hasOpenPayoutRequest(?string $currency = null): bool
+    public function hasOpenPayoutRequest(?string $currency = null, string $source = 'referral'): bool
     {
         return $this->referralPayouts()
+            ->where('source', $source)
             ->where('status', 'requested')
             ->when($currency, fn ($query) => $query->where('currency', $currency))
             ->exists();

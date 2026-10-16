@@ -3,6 +3,7 @@
 namespace App\Support\Seo;
 
 use App\Models\SiteSetting;
+use App\Support\Marketplace\MarketplaceSettings;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -45,6 +46,7 @@ final class PublicPages
             'features.index' => ['label' => 'Features', 'schema' => 'CollectionPage', 'description' => 'Every AffilStack tool. Each tool\'s own page has its SEO fields in Website → Features.'],
             'tutorials.index' => ['label' => 'Learning Centre', 'schema' => 'CollectionPage', 'description' => 'Video tutorials.'],
             'contact.show' => ['label' => 'Contact', 'schema' => 'ContactPage', 'description' => 'Contact form and support details.'],
+            'marketplace.index' => ['label' => 'Add-on Marketplace', 'schema' => 'CollectionPage', 'description' => 'Approved add-ons from developers (only live while the marketplace is switched on).'],
             'affiliate.landing' => ['label' => 'Affiliate program', 'schema' => 'WebPage', 'description' => 'Affiliate program landing page (only live while the program is switched on).'],
         ];
     }
@@ -84,6 +86,10 @@ final class PublicPages
             return false;
         }
 
-        return $routeName !== 'affiliate.landing' || SiteSetting::flag('affiliate_program_enabled');
+        return match ($routeName) {
+            'affiliate.landing' => SiteSetting::flag('affiliate_program_enabled'),
+            'marketplace.index' => MarketplaceSettings::enabled(),
+            default => true,
+        };
     }
 }

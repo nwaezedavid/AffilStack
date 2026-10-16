@@ -13,6 +13,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CreativeTaskPreviewController;
 use App\Http\Controllers\CreditTopupController;
 use App\Http\Controllers\CrmEmailTrackingController;
+use App\Http\Controllers\Dashboard\AddonInstallController;
 use App\Http\Controllers\Dashboard\ApiAccessController;
 use App\Http\Controllers\Dashboard\ApiWalletController;
 use App\Http\Controllers\Dashboard\BlogController;
@@ -34,6 +35,7 @@ use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\LinkedInReplyAssistantController;
 use App\Http\Controllers\Dashboard\LocalizationController;
+use App\Http\Controllers\Dashboard\MarketplaceController;
 use App\Http\Controllers\Dashboard\NetworkProgramsController;
 use App\Http\Controllers\Dashboard\NetworksController;
 use App\Http\Controllers\Dashboard\OfferController;
@@ -48,12 +50,14 @@ use App\Http\Controllers\Dashboard\SupportChatController;
 use App\Http\Controllers\Dashboard\SupportTicketController;
 use App\Http\Controllers\Dashboard\SwipeFileController;
 use App\Http\Controllers\Dashboard\TeamController;
+use App\Http\Controllers\Dashboard\TemplateLibraryController;
 use App\Http\Controllers\Dashboard\TikTokController;
 use App\Http\Controllers\Dashboard\UgcController;
 use App\Http\Controllers\Dashboard\WordPressController;
 use App\Http\Controllers\Dashboard\WordPressSendController;
 use App\Http\Controllers\Dashboard\XController;
 use App\Http\Controllers\Dashboard\YouTubeController;
+use App\Http\Controllers\Developer\AuthController as DeveloperAuthController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FaviconController;
 use App\Http\Controllers\FeaturePageController;
@@ -64,8 +68,10 @@ use App\Http\Controllers\HelpController;
 use App\Http\Controllers\LifecycleEmailPreferenceController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\Marketplace\PublicMarketplaceController;
 use App\Http\Controllers\MobileAppRedirectController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OAuth\AuthorizeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\Partner\PayoutsController as PartnerPayoutsController;
 use App\Http\Controllers\PaymentMethodController;
@@ -225,6 +231,36 @@ SiteDomains::app(function () {
 // under /affiliate on the website when no subdomain is set. Same route
 // names either way. See routes/partner.php.
 require __DIR__.'/partner.php';
+require __DIR__.'/developer.php';
+
+// --- Feature 7: the add-on marketplace -------------------------------------
+// Customers browse and install add-ons, manage their subscriptions and
+// template library, and approve "Connect with AffilStack" requests.
+SiteDomains::app(function () {
+    Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats', 'restrict-affiliate-only'])->group(function () {
+        Route::get('/add-ons', [MarketplaceController::class, 'index'])->name('marketplace.browse');
+        Route::get('/add-ons/installed', [AddonInstallController::class, 'index'])->name('addons.index');
+        Route::get('/add-ons/installed/{install}', [AddonInstallController::class, 'show'])->name('addons.show');
+        Route::post('/add-ons/installed/{install}/cancel', [AddonInstallController::class, 'cancel'])->name('addons.cancel');
+        Route::post('/add-ons/installed/{install}/resume', [AddonInstallController::class, 'resume'])->name('addons.resume');
+        Route::post('/add-ons/installed/{install}/pay', [AddonInstallController::class, 'pay'])->middleware('throttle:10,1,addons.pay')->name('addons.pay');
+        Route::delete('/add-ons/installed/{install}', [AddonInstallController::class, 'destroy'])->name('addons.destroy');
+        Route::get('/add-ons/installed/{install}/blueprint', [AddonInstallController::class, 'blueprint'])->name('addons.blueprint');
+        Route::get('/add-ons/{addon}', [MarketplaceController::class, 'show'])->name('marketplace.addon');
+        Route::post('/add-ons/{addon}/install', [MarketplaceController::class, 'install'])->middleware('throttle:20,1,marketplace.install')->name('marketplace.install');
+        Route::post('/add-ons/{addon}/subscribe', [MarketplaceController::class, 'subscribe'])->middleware('throttle:10,1,marketplace.subscribe')->name('marketplace.subscribe');
+
+        Route::get('/templates', [TemplateLibraryController::class, 'index'])->name('templates.index');
+
+        Route::get('/oauth/authorize', [AuthorizeController::class, 'show'])->name('oauth.authorize');
+        Route::post('/oauth/authorize', [AuthorizeController::class, 'approve'])->middleware('throttle:30,1,oauth.approve')->name('oauth.approve');
+        Route::post('/oauth/deny', [AuthorizeController::class, 'deny'])->name('oauth.deny');
+    });
+
+    // The app vouches for a signed-in customer to the developer portal
+    // on its own host (see Developer\AuthController).
+    Route::middleware(['auth', 'not-suspended', 'restrict-affiliate-only', 'throttle:20,1,developer.sso'])->get('/developer-sso', [DeveloperAuthController::class, 'vouch'])->name('developer.sso');
+});
 
 // "Continue with Google" — one callback for both the login page and the
 // signup form; see GoogleAuthController for how it tells them apart.
@@ -511,6 +547,14 @@ SiteDomains::app(function () {
         Route::post('/email-connections/imap', [EmailConnectionController::class, 'storeImap'])->middleware('throttle:10,1,email-connections.imap.store')->name('email-connections.imap.store');
         Route::delete('/email-connections/imap', [EmailConnectionController::class, 'destroyImap'])->name('email-connections.imap.destroy');
         Route::patch('/email-connections/settings', [EmailConnectionController::class, 'updateSettings'])->name('email-connections.settings');
+    });
+});
+
+// --- Feature 7: the public marketplace ---------------------------------------
+SiteDomains::marketing(function () {
+    Route::middleware('cache-public-page')->group(function () {
+        Route::get('/marketplace', [PublicMarketplaceController::class, 'index'])->name('marketplace.index');
+        Route::get('/marketplace/{addon}', [PublicMarketplaceController::class, 'show'])->name('marketplace.show');
     });
 });
 

@@ -125,6 +125,30 @@ class SiteDomains
      * cookie set on one host (a referral click on the website) is read on
      * another (sign-up on the app). Null keeps a host-only cookie.
      */
+    /**
+     * developer.affilstack.com (feature 7), or null when the developer
+     * portal lives at /developers on the app.
+     */
+    public static function developerHost(): ?string
+    {
+        $host = strtolower(trim((string) config('marketplace.developer_domain')));
+        $host = (string) preg_replace('#^https?://#', '', $host);
+        $host = rtrim(explode('/', $host)[0], '.');
+
+        return $host !== '' && $host !== strtolower(static::marketingHost()) && $host !== static::appHost() ? $host : null;
+    }
+
+    public static function developer(Closure $routes): void
+    {
+        if ($host = static::developerHost()) {
+            Route::domain($host)->group($routes);
+
+            return;
+        }
+
+        static::app(fn () => Route::prefix('developers')->group($routes));
+    }
+
     public static function sharedCookieDomain(): ?string
     {
         if (! static::isSplit() && static::affiliateHost() === null) {

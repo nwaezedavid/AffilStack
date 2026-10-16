@@ -29,6 +29,11 @@ class ReferralPayoutsTable
                     ->label('Affiliate')
                     ->searchable()
                     ->description(fn (ReferralPayout $record) => $record->user->email),
+                TextColumn::make('source')
+                    ->label('For')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state) => $state === 'developer' ? 'Add-on earnings' : 'Referrals')
+                    ->color(fn (string $state) => $state === 'developer' ? 'info' : 'gray'),
                 TextColumn::make('amount_cents')
                     ->label('Amount')
                     ->formatStateUsing(fn ($state, ReferralPayout $record) => ReferralProgram::money((int) $state, $record->currency))

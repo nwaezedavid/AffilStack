@@ -48,7 +48,7 @@ class LocaleController extends Controller
     {
         $previous = url()->previous();
         $parts = parse_url($previous);
-        $ownHosts = array_filter([$request->getHost(), SiteDomains::marketingHost(), SiteDomains::appHost(), SiteDomains::affiliateHost()]);
+        $ownHosts = array_filter([$request->getHost(), SiteDomains::marketingHost(), SiteDomains::appHost(), SiteDomains::affiliateHost(), SiteDomains::developerHost()]);
 
         // Only ever back to one of AffilStack's own sites.
         if (! is_array($parts) || (isset($parts['host']) && ! in_array(strtolower($parts['host']), array_map('strtolower', $ownHosts), true))) {

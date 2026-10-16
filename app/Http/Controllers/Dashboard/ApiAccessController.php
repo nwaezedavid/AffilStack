@@ -89,7 +89,7 @@ class ApiAccessController extends Controller
 
         $webhookEndpoints = $user->isSeat()
             ? collect()
-            : $user->webhookEndpoints()->with(['deliveries' => fn ($query) => $query->latest()->limit(5)])->latest()->get();
+            : $user->webhookEndpoints()->whereNull('addon_install_id')->with(['deliveries' => fn ($query) => $query->latest()->limit(5)])->latest()->get();
 
         // API usage prepay wallet — owner-only, same reasoning as webhooks
         // above: it belongs to whoever funds the account (billableUser()),

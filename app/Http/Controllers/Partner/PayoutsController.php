@@ -30,7 +30,7 @@ class PayoutsController extends Controller
             'user' => $user,
             'balances' => $stats->balances($user),
             'balancesByCurrency' => $user->unpaidApprovedCommissionByCurrency(),
-            'payouts' => $user->referralPayouts()->latest('requested_at')->get(),
+            'payouts' => $user->referralPayouts()->where('source', 'referral')->latest('requested_at')->get(),
             'referrals' => $stats->recentReferrals($user, 100),
             'banks' => $paystack->banks(),
         ]);

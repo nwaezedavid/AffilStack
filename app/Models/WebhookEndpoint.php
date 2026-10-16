@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
  * App\Services\Webhooks\WebhookDispatcher for how an event finds its way
  * here, and WebhookDelivery for the per-attempt audit trail.
  */
-#[Fillable(['user_id', 'url', 'secret', 'events', 'is_active', 'last_triggered_at'])]
+#[Fillable(['user_id', 'addon_install_id', 'url', 'secret', 'events', 'is_active', 'last_triggered_at'])]
 class WebhookEndpoint extends Model
 {
     protected function casts(): array

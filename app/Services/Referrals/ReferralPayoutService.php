@@ -120,6 +120,7 @@ class ReferralPayoutService
             }
 
             $payout->events()->update(['status' => 'paid']);
+            $payout->developerEarnings()->update(['status' => 'paid']);
         });
 
         $payout->refresh();
@@ -150,6 +151,7 @@ class ReferralPayoutService
             }
 
             $payout->events()->update(['referral_payout_id' => null]);
+            $payout->developerEarnings()->update(['referral_payout_id' => null]);
         });
 
         $payout->refresh();
