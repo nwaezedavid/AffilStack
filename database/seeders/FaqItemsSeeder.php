@@ -12,6 +12,40 @@ use Illuminate\Database\Seeder;
  */
 class FaqItemsSeeder extends Seeder
 {
+    /**
+     * Answers for features 4–7, also added to existing sites by the
+     * 2026_10_22_202615 migration.
+     *
+     * @var array<int, array{category: string, question: string, answer: string}>
+     */
+    public const NEW_FEATURE_FAQS = [
+        [
+            'category' => 'features',
+            'question' => 'Can AffilStack publish articles to my WordPress site?',
+            'answer' => 'Yes. Go to WordPress Sites in your dashboard, download the free AffilStack Connector plugin, install it in WordPress and click "Connect to AffilStack". Articles arrive as drafts with images, SEO fields, categories, tags, FAQ schema and tracked links — nothing is published until you press Publish. The number of sites you can connect depends on your plan.',
+        ],
+        [
+            'category' => 'features',
+            'question' => 'Which affiliate networks can I connect?',
+            'answer' => 'Impact, PartnerStack, Awin and CJ connect with their API: AffilStack brings in your programs, makes tracked links and imports your commissions into Earnings every day. ClickBank and Digistore24 have no program API, so you add a product by its ID and AffilStack builds the tracked link. Open Affiliate Networks in your dashboard to connect one. The number of connections depends on your plan.',
+        ],
+        [
+            'category' => 'features',
+            'question' => 'Can I use AffilStack in another language?',
+            'answer' => 'Yes. Pick a language from the menu at the bottom of the dashboard sidebar and the whole app switches — menus, pages and emails. Your products, contacts and generated content are never translated. To rewrite content itself for another market, use Localization.',
+        ],
+        [
+            'category' => 'features',
+            'question' => 'What is the Add-on Marketplace?',
+            'answer' => 'A place to add extra tools to your account: connected apps, template and prompt packs, and automation recipes for Zapier, Make and n8n, made by independent developers and reviewed by AffilStack before they go live. Many are free; paid add-ons are a monthly subscription you can cancel at any time from My add-ons.',
+        ],
+        [
+            'category' => 'features',
+            'question' => 'Can I build and sell add-ons?',
+            'answer' => 'Yes. Open the developer portal (the "Build an add-on" link on the Add-on Marketplace page) and sign in with your AffilStack account. Create a listing, submit it for review, and once it is approved it appears in the marketplace. You keep 70% of every paid subscription, paid out the same way as affiliate commissions.',
+        ],
+    ];
+
     public function run(): void
     {
         $items = [
@@ -53,13 +87,14 @@ class FaqItemsSeeder extends Seeder
             [
                 'category' => 'features',
                 'question' => 'Where is the blog?',
-                'answer' => "Our blog lives on a separate site (look for the \"Blog\" link in the navigation) — it's where we publish guides and updates, separate from the in-app blog article generator you use to create your own content.",
+                'answer' => "Our blog lives on a separate site (look for the \"Blog\" link in the navigation) — it's where we publish guides and updates, separate from the in-app blog article generator you use to create your own content. To send the articles you generate to your own WordPress site, use WordPress Sites in your dashboard.",
             ],
             [
                 'category' => 'general',
                 'question' => 'How do I contact a real human for support?',
                 'answer' => 'Ask our AI assistant here in the chat — if it can\'t resolve your issue, it will offer to open a support ticket with our team, transcript included. You can also open a ticket directly from the Support page.',
             ],
+            ...self::NEW_FEATURE_FAQS,
         ];
 
         foreach ($items as $index => $item) {

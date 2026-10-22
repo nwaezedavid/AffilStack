@@ -30,6 +30,7 @@
         ['icon' => 'video-camera', 'title' => 'UGC video', 'description' => 'Turn a script into a human-avatar video without a camera, an actor, or an editor.'],
         ['icon' => 'user-group', 'title' => 'Built-in CRM & tracking', 'description' => 'Every lead, click, and sale tracked automatically in one place.'],
         ['icon' => 'credit-card', 'title' => 'Payments & payouts', 'description' => 'Multi-gateway checkout for your customers, and a real payout workflow for your own affiliates.'],
+        ['icon' => 'puzzle-piece', 'title' => 'An open platform', 'description' => 'Connections to your affiliate networks and WordPress site, an API, and a marketplace where developers build and sell add-ons.'],
     ];
     $whatWeDo = $decode(\App\Models\SiteSetting::get('about_what_we_do', '[]'));
     $whatWeDo = ! empty($whatWeDo) ? $whatWeDo : $defaultWhatWeDo;

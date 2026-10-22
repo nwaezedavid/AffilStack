@@ -15,6 +15,36 @@ class HomepageFeaturesSeeder extends Seeder
 {
     use WithoutModelEvents;
 
+    /**
+     * Cards for features 4, 5 and 7, also added to existing sites by the
+     * 2026_10_22_202615 migration.
+     *
+     * @var array<int, array{icon: string, title: string, default_image: string, link_url: string, description: string}>
+     */
+    public const NEW_FEATURE_CARDS = [
+        [
+            'icon' => 'arrows-right-left',
+            'title' => 'Your affiliate networks, connected',
+            'default_image' => 'affiliate-networks.webp',
+            'link_url' => '/features/affiliate-networks',
+            'description' => 'Connect Impact, PartnerStack, Awin, CJ, ClickBank or Digistore24 — turn joined programs into products and import your commissions every day.',
+        ],
+        [
+            'icon' => 'globe-alt',
+            'title' => 'Straight to your WordPress site',
+            'default_image' => 'wordpress-publishing.webp',
+            'link_url' => '/features/wordpress-publishing',
+            'description' => 'The free AffilStack Connector plugin delivers every article as a draft, with images, SEO fields, FAQ schema and tracked links in place.',
+        ],
+        [
+            'icon' => 'puzzle-piece',
+            'title' => 'An add-on marketplace',
+            'default_image' => 'add-on-marketplace.webp',
+            'link_url' => '/features/add-on-marketplace',
+            'description' => 'Connected apps, template packs and automation recipes from independent developers, each one reviewed before it goes live.',
+        ],
+    ];
+
     public function run(): void
     {
         if (HomepageFeature::query()->exists()) {
@@ -78,6 +108,7 @@ class HomepageFeaturesSeeder extends Seeder
                 'link_url' => '/features/localization',
                 'description' => 'Regenerate any piece of content for a different country or language in one click — currency, culture, and compliance included.',
             ],
+            ...self::NEW_FEATURE_CARDS,
             [
                 'icon' => 'banknotes',
                 'title' => 'Earn by sharing it, too',

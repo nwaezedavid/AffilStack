@@ -77,6 +77,12 @@ class Catalog
             }
 
             foreach (File::allFiles($directory) as $file) {
+                // Development-only demo data (sample customer names) isn't
+                // AffilStack's own interface text.
+                if (str_contains(str_replace('\\', '/', $file->getPathname()), '/Console/Commands/Dev/')) {
+                    continue;
+                }
+
                 if ($file->getExtension() === 'php') {
                     static::collect((string) file_get_contents($file->getPathname()), $strings);
                 }

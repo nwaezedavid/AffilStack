@@ -57,6 +57,12 @@
                     <li>{{ number_format($plan->credits_per_month) }} AI credits / month</li>
                     <li>{{ $plan->contact_limit === 0 ? 'Unlimited' : number_format($plan->contact_limit) }} CRM contacts</li>
                     <li>{{ $plan->team_seats }} team seat{{ $plan->team_seats > 1 ? 's' : '' }}</li>
+                    @if ((int) $plan->wordpress_sites_limit !== 0)
+                        <li>@if ((int) $plan->wordpress_sites_limit < 0) Unlimited WordPress sites @elseif ((int) $plan->wordpress_sites_limit === 1) 1 WordPress site @else {{ $plan->wordpress_sites_limit }} WordPress sites @endif</li>
+                    @endif
+                    @if ((int) $plan->network_connections_limit !== 0)
+                        <li>@if ((int) $plan->network_connections_limit < 0) Unlimited affiliate network connections @elseif ((int) $plan->network_connections_limit === 1) 1 affiliate network connection @else {{ $plan->network_connections_limit }} affiliate network connections @endif</li>
+                    @endif
                 </ul>
                 <form method="POST" action="{{ route('billing.checkout', $plan) }}" class="space-y-2">
                     @csrf

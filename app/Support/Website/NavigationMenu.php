@@ -69,6 +69,8 @@ class NavigationMenu
             'pricing' => ['label' => 'Pricing', 'description' => 'Plans and prices.', 'icon' => 'currency-dollar'],
             'blog' => ['label' => 'Blog', 'description' => 'Guides and strategies from our blog.', 'icon' => 'newspaper'],
             'faq' => ['label' => 'Frequently Asked Questions', 'description' => 'Quick answers before you start.', 'icon' => 'question-mark-circle'],
+            'marketplace' => ['label' => 'Add-on Marketplace', 'description' => 'Apps, template packs and automation recipes.', 'icon' => 'puzzle-piece'],
+            'developers' => ['label' => 'Developers', 'description' => 'Build and sell add-ons for AffilStack.', 'icon' => 'code-bracket'],
             'affiliate' => ['label' => 'Affiliate Program', 'description' => 'Earn recurring commission by referring us.', 'icon' => 'gift'],
             'help' => ['label' => 'Help Centre', 'description' => 'Support, guides and tutorials.', 'icon' => 'lifebuoy'],
             'learn' => ['label' => 'Learning Centre', 'description' => 'Free video tutorials.', 'icon' => 'academic-cap'],
@@ -110,6 +112,8 @@ class NavigationMenu
             'pricing' => $route('registration.pricing'),
             'blog' => BlogFeed::baseUrl(),
             'faq' => $route('faq.index'),
+            'marketplace' => $route('marketplace.index'),
+            'developers' => $route('developer.home'),
             'affiliate' => SiteSetting::flag('affiliate_program_enabled') ? $route('affiliate.landing') : null,
             'help' => $route('help.index'),
             'learn' => $route('tutorials.index'),
@@ -148,7 +152,7 @@ class NavigationMenu
             'visible' => $visible,
         ];
 
-        return [$item('blog'), $item('faq'), $item('affiliate'), $item('help'), $item('learn', false)];
+        return [$item('blog'), $item('marketplace'), $item('faq'), $item('affiliate'), $item('help'), $item('developers', false), $item('learn', false)];
     }
 
     /**
@@ -201,8 +205,8 @@ class NavigationMenu
         $link = fn (string $key, ?string $label = null): array => ['key' => $key, 'label' => $label ?? static::destinations()[$key]['label'], 'visible' => true];
 
         return [
-            ['heading' => 'Product', 'links' => [$link('features'), $link('how-it-works'), $link('pricing'), $link('mobile-apps')]],
-            ['heading' => 'Resources', 'links' => [$link('learn'), $link('blog', 'Visit our blog'), $link('faq', 'FAQ'), $link('help')]],
+            ['heading' => 'Product', 'links' => [$link('features'), $link('how-it-works'), $link('pricing'), $link('marketplace'), $link('mobile-apps')]],
+            ['heading' => 'Resources', 'links' => [$link('learn'), $link('blog', 'Visit our blog'), $link('faq', 'FAQ'), $link('help'), $link('developers')]],
             ['heading' => 'Company', 'links' => [$link('about'), $link('affiliate'), $link('contact'), $link('login')]],
             ['heading' => 'Legal', 'links' => [$link('terms'), $link('privacy'), $link('refunds'), $link('cookies'), $link('cookie-settings')]],
         ];

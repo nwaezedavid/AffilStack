@@ -63,7 +63,7 @@ class HomepageContent
             'home_how_heading' => 'From product idea to paid commission in *four steps*',
             'home_how_subheading' => $siteName.' follows the real affiliate journey, so you always know what to do next.',
             'home_features_heading' => 'Everything an affiliate marketer needs, in one place',
-            'home_features_subheading' => 'From your first offer to your first payout — research, buyers, campaigns, content and tracking, without stitching together a dozen tools.',
+            'home_features_subheading' => 'From your first offer to your first payout — research, buyers, campaigns, content and tracking, connected to your affiliate networks and your WordPress site, without stitching together a dozen tools.',
             'home_video_heading' => 'See '.$siteName.' in action',
             'home_video_subheading' => 'Watch one product go from research to real buyers, a full campaign and tracked clicks.',
             'home_video_points' => "Product research in minutes\nBuyers from Google Maps & LinkedIn\nCampaigns and content written for you",
@@ -119,8 +119,8 @@ class HomepageContent
         return [
             ['icon' => 'magnifying-glass', 'title' => 'Research a product', 'description' => 'Paste a product name or affiliate link. Get the ideal buyer, their pain points, the best channel and angle — plus Google Maps and LinkedIn keywords to find them — in minutes.', 'default_image' => 'offer-research.webp', 'image_alt' => 'AffilStack research results for a product, showing the ideal buyer and the best channel to promote it', 'link_url' => '/features/offer-research'],
             ['icon' => 'map-pin', 'title' => 'Find buyers on Maps & LinkedIn', 'description' => 'Pull real businesses from Google Maps and decision-makers from LinkedIn straight into a CRM list for that product — in one click with the Chrome extension.', 'default_image' => 'local-leads.webp', 'image_alt' => 'Google Maps business results ready to add to the CRM', 'link_url' => '/features/google-maps-lead-finder'],
-            ['icon' => 'sparkles', 'title' => 'Launch AI campaigns & content', 'description' => 'A personalised email campaign to the whole list, sent from your own inbox — plus blog, LinkedIn, YouTube, UGC video, TikTok, X and Pinterest content written for you.', 'default_image' => 'campaign-results.webp', 'image_alt' => 'An email campaign showing who opened, clicked and replied', 'link_url' => '/features/ai-email-campaigns'],
-            ['icon' => 'banknotes', 'title' => 'Track clicks & earnings', 'description' => 'Every link click and commission in one dashboard, by product and by channel, so you know exactly what is paying.', 'default_image' => 'earnings.webp', 'image_alt' => 'Earnings by product and channel with pending, approved and paid totals', 'link_url' => '/features/earnings-tracker'],
+            ['icon' => 'sparkles', 'title' => 'Launch AI campaigns & content', 'description' => 'A personalised email campaign to the whole list, sent from your own inbox — plus blog, LinkedIn, YouTube, UGC video, TikTok, X and Pinterest content written for you, with articles sent to your WordPress site as drafts.', 'default_image' => 'campaign-results.webp', 'image_alt' => 'An email campaign showing who opened, clicked and replied', 'link_url' => '/features/ai-email-campaigns'],
+            ['icon' => 'banknotes', 'title' => 'Track clicks & earnings', 'description' => 'Every link click and commission in one dashboard, by product and by channel — with commissions imported from Impact, PartnerStack, Awin and CJ — so you know exactly what is paying.', 'default_image' => 'earnings.webp', 'image_alt' => 'Earnings by product and channel with pending, approved and paid totals', 'link_url' => '/features/earnings-tracker'],
         ];
     }
 
