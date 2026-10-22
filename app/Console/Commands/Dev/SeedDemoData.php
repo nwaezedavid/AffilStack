@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands\Dev;
 
+use App\Models\Addon;
+use App\Models\AddonInstall;
 use App\Models\ApiToken;
 use App\Models\CrmCampaign;
 use App\Models\CrmCampaignRecipient;
@@ -9,11 +11,14 @@ use App\Models\CrmContact;
 use App\Models\CrmEmailSend;
 use App\Models\CrmList;
 use App\Models\CrmReply;
+use App\Models\DeveloperProfile;
 use App\Models\Earning;
 use App\Models\EmailConnection;
 use App\Models\Generation;
 use App\Models\LinkClick;
 use App\Models\LinkedinReplyDraft;
+use App\Models\NetworkConnection;
+use App\Models\NetworkProgram;
 use App\Models\Offer;
 use App\Models\Plan;
 use App\Models\Referral;
@@ -22,6 +27,9 @@ use App\Models\Subscription;
 use App\Models\TrackedLink;
 use App\Models\User;
 use App\Models\WebhookEndpoint;
+use App\Models\WordpressDelivery;
+use App\Models\WordpressSite;
+use App\Services\Marketplace\AddonInstaller;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -48,6 +56,9 @@ class SeedDemoData extends Command
     public const EMAIL = 'ada@demo.affilstack.test';
 
     public const PASSWORD = 'demo-password';
+
+    /** The demo add-on developer (feature 7). */
+    protected const DEVELOPER_EMAIL = 'dev@demo-dev.affilstack.test';
 
     public function handle(): int
     {
@@ -80,6 +91,9 @@ class SeedDemoData extends Command
             $this->team($ada, $notion, $hostinger);
             $this->integrations($ada);
             $this->referrals($ada);
+            $this->networks($ada, $notion, $hostinger);
+            $this->wordpress($ada);
+            $this->marketplace($ada);
         });
 
         $this->info('Demo customer ready: '.self::EMAIL.' / '.self::PASSWORD);
@@ -91,6 +105,7 @@ class SeedDemoData extends Command
     {
         $ids = User::withTrashed()->where('email', self::EMAIL)->pluck('id');
         $ids = $ids->merge(User::withTrashed()->whereIn('agency_owner_id', $ids)->pluck('id'))
+            ->merge(User::withTrashed()->where('email', self::DEVELOPER_EMAIL)->pluck('id'))
             ->merge(User::withTrashed()->where('email', 'like', '%@demo-referral.affilstack.test')->pluck('id'));
 
         if ($ids->isEmpty()) {
@@ -112,6 +127,12 @@ class SeedDemoData extends Command
             CrmList::whereIn('user_id', $ids)->delete();
             CrmContact::whereIn('id', $contactIds)->delete();
             Earning::whereIn('user_id', $ids)->delete();
+            AddonInstall::whereIn('user_id', $ids)->delete();
+            Addon::whereIn('developer_profile_id', DeveloperProfile::whereIn('user_id', $ids)->pluck('id'))->each(fn (Addon $addon) => $addon->forceFill(['live_version_id' => null])->save());
+            Addon::whereIn('developer_profile_id', DeveloperProfile::whereIn('user_id', $ids)->pluck('id'))->delete();
+            DeveloperProfile::whereIn('user_id', $ids)->delete();
+            WordpressSite::whereIn('user_id', $ids)->delete();
+            NetworkConnection::whereIn('user_id', $ids)->delete();
             TrackedLink::whereIn('id', $linkIds)->delete();
             LinkedinReplyDraft::whereIn('user_id', $ids)->delete();
             Generation::whereIn('user_id', $ids)->delete();
@@ -804,6 +825,175 @@ class SeedDemoData extends Command
      * @param  array<string, mixed>  $input
      * @param  array<string, mixed>  $extra
      */
+    /**
+     * Feature 5: three connected affiliate networks, their programs, and
+     * commissions imported from them.
+     */
+    protected function networks(User $ada, Offer $notion, Offer $hostinger): void
+    {
+        $connections = [];
+
+        foreach ([['impact', 'IR-4471-AdaOkafor', 'Ada Okafor Media', 2], ['partnerstack', 'ps_ada_okafor', 'Ada Okafor', 5], ['awin', '1189234', 'Okafor Reviews', 9]] as [$network, $accountId, $accountName, $hoursAgo]) {
+            $connections[$network] = NetworkConnection::forceCreate([
+                'user_id' => $ada->id,
+                'network' => $network,
+                'credentials' => ['demo' => true],
+                'account_id' => $accountId,
+                'account_name' => $accountName,
+                'status' => 'connected',
+                'last_synced_at' => now()->subHours($hoursAgo),
+                'programs_synced_at' => now()->subHours($hoursAgo),
+                'last_sync_new' => [3, 2, 1][count($connections)],
+                'last_sync_updated' => [5, 1, 0][count($connections)],
+            ]);
+        }
+
+        $programs = [
+            ['impact', 'Hostinger', 'Hostinger International', 'joined', 'Web hosting', '60% per sale', 'https://www.hostinger.com'],
+            ['impact', 'Canva', 'Canva Pty Ltd', 'joined', 'Design', '$36 per Pro sign-up', 'https://www.canva.com'],
+            ['impact', 'Semrush', 'Semrush Inc.', 'available', 'Marketing software', '$200 per sale', 'https://www.semrush.com'],
+            ['impact', 'Shopify', 'Shopify Inc.', 'pending', 'E-commerce', '$150 per paid store', 'https://www.shopify.com'],
+            ['partnerstack', 'Notion', 'Notion Labs', 'joined', 'Productivity', '50% for 12 months', 'https://www.notion.so'],
+            ['partnerstack', 'Monday.com', 'monday.com', 'joined', 'Project management', '100% first year', 'https://monday.com'],
+            ['partnerstack', 'Webflow', 'Webflow Inc.', 'available', 'Website builder', '50% for 12 months', 'https://webflow.com'],
+            ['awin', 'Jumia', 'Jumia Nigeria', 'joined', 'Retail', '6–11% per order', 'https://www.jumia.com.ng'],
+            ['awin', 'Etsy', 'Etsy UK', 'available', 'Retail', '4% per order', 'https://www.etsy.com'],
+        ];
+
+        foreach ($programs as $i => [$network, $name, $advertiser, $status, $category, $commission, $homepage]) {
+            NetworkProgram::forceCreate([
+                'network_connection_id' => $connections[$network]->id,
+                'external_id' => (string) (10000 + $i),
+                'name' => $name,
+                'advertiser_name' => $advertiser,
+                'status' => $status,
+                'homepage_url' => $homepage,
+                'tracking_url' => $status === 'joined' ? $homepage.'/?ref=ada-'.$network : null,
+                'category' => $category,
+                'currency' => 'USD',
+                'commission' => $commission,
+                'description' => $name.' affiliate program on '.ucfirst($network).'.',
+                'deep_linking' => true,
+                'last_seen_at' => now()->subHours(3),
+            ]);
+        }
+
+        Earning::query()->where('user_id', $ada->id)->where('network', '!=', 'manual')->update(['source' => 'network_sync']);
+    }
+
+    /**
+     * Feature 4: a connected WordPress blog with articles sent as drafts.
+     */
+    protected function wordpress(User $ada): void
+    {
+        $site = WordpressSite::forceCreate([
+            'user_id' => $ada->id,
+            'site_url' => 'https://okaforreviews.com',
+            'rest_url' => 'https://okaforreviews.com/wp-json/',
+            'name' => 'Okafor Reviews',
+            'secret' => Str::random(64),
+            'status' => 'connected',
+            'auto_send' => true,
+            'seo_plugin' => 'rank_math',
+            'wp_version' => '6.8.2',
+            'plugin_version' => '1.0.0',
+            'connected_at' => now()->subDays(9),
+            'last_seen_at' => now()->subMinutes(40),
+        ]);
+
+        Generation::query()->where('user_id', $ada->id)->where('module', 'blog_article')->get()->each(function (Generation $generation, int $i) use ($site, $ada) {
+            WordpressDelivery::forceCreate([
+                'wordpress_site_id' => $site->id,
+                'generation_id' => $generation->id,
+                'requested_by_id' => $ada->id,
+                'status' => 'sent',
+                'wp_post_id' => 412 + $i,
+                'wp_post_status' => $i === 0 ? 'publish' : 'draft',
+                'edit_url' => 'https://okaforreviews.com/wp-admin/post.php?post='.(412 + $i).'&action=edit',
+                'preview_url' => 'https://okaforreviews.com/?p='.(412 + $i).'&preview=true',
+                'automatic' => $i > 0,
+                'sent_at' => now()->subDays(4 - $i),
+            ]);
+        });
+    }
+
+    /**
+     * Feature 7: a developer with three approved add-ons; Ada has added
+     * the template pack and the automation recipe.
+     */
+    protected function marketplace(User $ada): void
+    {
+        $developer = User::forceCreate([
+            'name' => 'Tunde Bakare',
+            'email' => self::DEVELOPER_EMAIL,
+            'password' => Hash::make(Str::random(32)),
+            'email_verified_at' => now(),
+            'credits_balance' => 0,
+        ]);
+
+        $profile = DeveloperProfile::forceCreate([
+            'user_id' => $developer->id,
+            'display_name' => 'Northwind Labs',
+            'slug' => 'northwind-labs',
+            'support_email' => 'help@northwind.example',
+            'status' => 'active',
+            'terms_accepted_at' => now()->subDays(20),
+        ]);
+
+        $listings = [
+            ['app', 'rank-watcher', 'Rank Watcher', 'See where your review articles rank on Google, every morning.', 'analytics', 1500, 48, [
+                'install_url' => 'https://rankwatcher.example/connect', 'privacy_url' => 'https://rankwatcher.example/privacy',
+                'redirect_uris' => ['https://rankwatcher.example/callback'], 'scopes' => ['profile:read', 'offers:read', 'content:read'],
+            ]],
+            ['template_pack', 'hook-vault', 'Hook Vault', '120 scroll-stopping hooks for TikTok, Reels and X.', 'content', 900, 131, ['content' => ['items' => [
+                ['kind' => 'hook', 'title' => 'Curiosity hook', 'body' => 'Nobody tells you this about [PRODUCT]…'],
+                ['kind' => 'hook', 'title' => 'Before and after', 'body' => 'I spent [TIME] doing [TASK] by hand. Then I found [PRODUCT].'],
+                ['kind' => 'email', 'title' => 'Cold email: first touch', 'body' => "Hi [NAME],\n\nI noticed you're comparing tools for [PROBLEM]…"],
+                ['kind' => 'post', 'title' => 'LinkedIn: lesson post', 'body' => 'The one thing I wish I knew before recommending [PRODUCT]:'],
+            ]]]],
+            ['automation', 'typeform-leads-to-crm', 'Typeform Leads to CRM', 'Add every new Typeform lead to your AffilStack CRM automatically.', 'automation', 0, 77, ['content' => [
+                'platform' => 'zapier', 'share_url' => 'https://zapier.com/shared/affilstack-typeform',
+                'steps' => "- Open the Zap template\n- Connect Typeform\n- Paste your AffilStack API key\n- Turn it on",
+            ]]],
+        ];
+
+        foreach ($listings as [$type, $slug, $name, $tagline, $category, $price, $installs, $extra]) {
+            $addon = Addon::forceCreate([
+                'developer_profile_id' => $profile->id,
+                'slug' => $slug,
+                'type' => $type,
+                'status' => 'published',
+                'installs_count' => $installs,
+                'is_featured' => $slug === 'hook-vault',
+                'published_at' => now()->subDays(14),
+            ]);
+
+            $version = $addon->versions()->create(array_merge([
+                'version' => '1.0.0',
+                'status' => 'approved',
+                'name' => $name,
+                'tagline' => $tagline,
+                'description' => $tagline."\n\nBuilt by an affiliate marketer for affiliate marketers.\n\n- Works on every AffilStack plan\n- Set up in under five minutes\n- Cancel any time",
+                'category' => $category,
+                'pricing' => $price > 0 ? 'monthly' : 'free',
+                'price_cents' => $price,
+                'reviewed_at' => now()->subDays(14),
+            ], $extra));
+
+            $addon->forceFill(['live_version_id' => $version->id])->save();
+
+            if ($type === 'app') {
+                $addon->issueClientCredentials();
+            }
+
+            if ($type !== 'app') {
+                $install = app(AddonInstaller::class)->install($ada->fresh(), $addon->fresh(), [], 'active');
+                $install->update(['status' => 'active', 'price_cents' => $price, 'current_period_end' => $price > 0 ? now()->addDays(21) : null]);
+                app(AddonInstaller::class)->provision($install->fresh());
+            }
+        }
+    }
+
     protected function generation(User $ada, Offer $offer, string $module, string $output, array $meta, int $daysAgo, array $input = [], ?string $calendarStatus = null, ?int $scheduledInDays = null, array $extra = []): Generation
     {
         $created = now()->subDays($daysAgo)->subHours(random_int(1, 8));

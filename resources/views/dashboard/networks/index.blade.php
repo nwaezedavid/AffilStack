@@ -77,7 +77,7 @@
                             <dd class="font-medium text-navy-900">{{ $connection->last_synced_at ? $connection->last_synced_at->diffForHumans() : ($connection->status === 'error' ? 'Not yet' : 'Running now…') }}</dd>
                         </div>
                         @if ($connection->last_synced_at && ($connection->last_sync_new || $connection->last_sync_updated))
-                            <div class="col-span-2 text-ink-600">{{ $connection->last_sync_new }} new and {{ $connection->last_sync_updated }} updated {{ \Illuminate\Support\Str::plural('commission', $connection->last_sync_new + $connection->last_sync_updated) }} in that sync.</div>
+                            <div class="col-span-2 text-ink-600">@if ($connection->last_sync_new + $connection->last_sync_updated === 1) {{ $connection->last_sync_new }} new and {{ $connection->last_sync_updated }} updated commission in that sync. @else {{ $connection->last_sync_new }} new and {{ $connection->last_sync_updated }} updated commissions in that sync. @endif</div>
                         @endif
                     </dl>
 
@@ -122,7 +122,7 @@
     <div class="mt-8 grid gap-4 md:grid-cols-3">
         <div class="rounded-2xl border border-line bg-surface p-5">
             <p class="flex items-center gap-2 text-sm font-semibold text-navy-900"><x-heroicon-o-banknotes class="h-4 w-4 text-brand-600" /> Earnings, every day</p>
-            <p class="mt-1.5 text-xs leading-relaxed text-ink-600">Commissions and their status (pending, approved, paid, reversed) sync daily into <a href="{{ route('earnings.index') }}" class="font-medium text-brand-600 hover:text-brand-700">Earnings</a>.{{ $earningsCount ? ' '.number_format($earningsCount).' imported so far.' : '' }}</p>
+            <p class="mt-1.5 text-xs leading-relaxed text-ink-600">Commissions and their status (pending, approved, paid, reversed) sync daily into <a href="{{ route('earnings.index') }}" class="font-medium text-brand-600 hover:text-brand-700">Earnings</a>.@if ($earningsCount) {{ number_format($earningsCount) }} imported so far.@endif</p>
         </div>
         <div class="rounded-2xl border border-line bg-surface p-5">
             <p class="flex items-center gap-2 text-sm font-semibold text-navy-900"><x-heroicon-o-link class="h-4 w-4 text-brand-600" /> Network tracked links</p>

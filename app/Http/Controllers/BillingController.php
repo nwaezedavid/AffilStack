@@ -247,7 +247,7 @@ class BillingController extends Controller
             if ($transaction->type === 'addon_subscription' && $transaction->addonInstall) {
                 $return = $request->session()->pull('addon_return');
 
-                return redirect()->to(is_string($return) && str_starts_with($return, url('/')) ? $return : route('addons.show', $transaction->addonInstall))
+                return redirect()->to(is_string($return) && str_starts_with($return, route('oauth.authorize').'?') ? $return : route('addons.show', $transaction->addonInstall))
                     ->with('success', 'Payment received — your add-on is active.');
             }
 

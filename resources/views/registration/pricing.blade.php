@@ -42,6 +42,12 @@
                                 <x-heroicon-m-check-circle class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
                                 <span>{{ $plan->team_seats }} team seat{{ $plan->team_seats > 1 ? 's' : '' }}@if ($plan->isSharedTeamPlan()) — shared across your whole offer list @endif</span>
                             </li>
+                            @if ((int) $plan->wordpress_sites_limit !== 0)
+                                <li class="flex items-start gap-2"><x-heroicon-m-check-circle class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" /> @if ((int) $plan->wordpress_sites_limit < 0) Unlimited WordPress sites @elseif ((int) $plan->wordpress_sites_limit === 1) 1 WordPress site @else {{ $plan->wordpress_sites_limit }} WordPress sites @endif</li>
+                            @endif
+                            @if ((int) $plan->network_connections_limit !== 0)
+                                <li class="flex items-start gap-2"><x-heroicon-m-check-circle class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" /> @if ((int) $plan->network_connections_limit < 0) Unlimited affiliate network connections @elseif ((int) $plan->network_connections_limit === 1) 1 affiliate network connection @else {{ $plan->network_connections_limit }} affiliate network connections @endif</li>
+                            @endif
                         </ul>
 
                         <a href="{{ route('registration.form', $plan) }}" class="mt-2 w-full rounded-full py-3 text-center text-sm font-semibold transition {{ $plan->is_featured ? 'bg-gold-400 text-navy-950 hover:bg-gold-300' : 'bg-navy-900 text-white hover:bg-navy-800' }}">
@@ -59,6 +65,8 @@
                                     <ul class="space-y-1">
                                         <li class="flex items-start gap-1.5"><span class="text-emerald-500" aria-hidden="true">✓</span> {{ $plan->active_products_limit === 0 ? 'Unlimited active offers' : $plan->active_products_limit.' active offer'.($plan->active_products_limit > 1 ? 's' : '') }}</li>
                                         <li class="flex items-start gap-1.5"><span class="text-emerald-500" aria-hidden="true">✓</span> Built-in referral / affiliate program</li>
+                                        <li class="flex items-start gap-1.5"><span class="text-emerald-500" aria-hidden="true">✓</span> Add-on marketplace access</li>
+                                        <li class="flex items-start gap-1.5"><span class="text-emerald-500" aria-hidden="true">✓</span> AffilStack in your language</li>
                                         <li class="flex items-start gap-1.5"><span class="text-emerald-500" aria-hidden="true">✓</span> Email support</li>
                                     </ul>
 

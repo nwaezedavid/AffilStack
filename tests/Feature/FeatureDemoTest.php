@@ -129,7 +129,7 @@ class FeatureDemoTest extends TestCase
         Livewire::actingAs($admin)
             ->test(FeatureDemoSettings::class)
             ->assertSee('Offer research')
-            ->assertSee('0 of 31 animated demos are installed.')
+            ->assertSee('0 of 37 animated demos are installed.')
             ->fillForm(['choice_offer_research' => FeatureMedia::ANIMATION])
             ->call('save')
             ->assertHasNoFormErrors()
