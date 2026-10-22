@@ -9,6 +9,7 @@ use App\Http\Middleware\EnsurePanelLoginCompleted;
 use App\Models\SiteSetting;
 use App\Services\Seo\FaviconGenerator;
 use App\Support\Brand;
+use App\Support\Security\PhpRuntime;
 use App\Support\SiteDomains;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
@@ -56,6 +57,9 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotifications()
             // Brand Settings: preview the white logo uploads on a dark panel.
             ->renderHook(PanelsRenderHook::STYLES_AFTER, fn (): string => '<style>.affil-dark-preview .filepond--panel-root,.affil-dark-preview .filepond--image-preview{background:#0B1E3D!important}.affil-dark-preview .filepond--drop-label{color:#fff}</style>')
+            // PHP2Shell: a red bar on every admin page while the website's
+            // PHP is below a critical security fix (see PhpRuntime).
+            ->renderHook(PanelsRenderHook::CONTENT_START, fn (): string => PhpRuntime::webIsCriticallyVulnerable() ? view('filament.security.php-runtime-banner', ['web' => PhpRuntime::webRuntime()])->render() : '')
             ->colors([
                 'primary' => Color::hex('#2452D9'), // brand blue
                 'gray' => Color::hex('#0B1E3D'),     // navy-tinted neutrals

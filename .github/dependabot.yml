@@ -10,3 +10,27 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  # PHP and JavaScript libraries: security fixes arrive as pull requests,
+  # which the Tests workflow checks on PHP 8.4 and 8.5 before merging.
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      composer-patches:
+        update-types:
+          - "patch"
+          - "minor"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      npm-patches:
+        update-types:
+          - "patch"
+          - "minor"

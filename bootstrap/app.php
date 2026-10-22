@@ -14,6 +14,8 @@ use App\Http\Middleware\LocalizeResponse;
 use App\Http\Middleware\LogApiRequest;
 use App\Http\Middleware\MarkLocalizedUrl;
 use App\Http\Middleware\MeterApiUsage;
+use App\Http\Middleware\RecordPhpRuntime;
+use App\Http\Middleware\RejectExecutableUploads;
 use App\Http\Middleware\RestrictAffiliateOnlyAccounts;
 use App\Http\Middleware\RestrictAgencySeats;
 use App\Http\Middleware\SecurityHeaders;
@@ -56,6 +58,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // cookie flags, dotfile access) — see SecurityHeaders' own
         // docblock. Global (web + api) since every response needs them.
         $middleware->append(SecurityHeaders::class);
+
+        // PHP2Shell hardening: the website records which PHP it runs on for
+        // Tom's daily check, and no upload may carry server-side code (in
+        // the groups, so a rejected form gets its error back on the page).
+        $middleware->append(RecordPhpRuntime::class);
+        $middleware->appendToGroup('web', RejectExecutableUploads::class);
+        $middleware->appendToGroup('api', RejectExecutableUploads::class);
 
         // Feature 6: /fr/pricing is the French /pricing — the language code
         // comes off the address before routing (see StripLocalePrefix), and

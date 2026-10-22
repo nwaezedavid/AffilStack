@@ -3,7 +3,9 @@ name: Tests
 on:
   push:
     branches:
+      - main
       - master
+      - affilstack-app
       - '*.x'
   pull_request:
   schedule:
@@ -19,7 +21,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.3, 8.4, 8.5]
+        php: [8.4, 8.5]
 
     name: PHP ${{ matrix.php }}
 
@@ -38,6 +40,19 @@ jobs:
 
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
+
+      # Pages load the built CSS/JS (public/build is not committed), so the
+      # tests need the front end built first.
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build front end
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
 
       - name: Copy environment file
         run: cp .env.example .env

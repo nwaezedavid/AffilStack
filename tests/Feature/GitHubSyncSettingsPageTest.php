@@ -158,7 +158,7 @@ class GitHubSyncSettingsPageTest extends TestCase
 
         Livewire::actingAs($this->superAdmin)
             ->test(GitHubSyncSettings::class)
-            ->call('syncNow', app(GitHubSyncService::class));
+            ->call('syncNow');
 
         // The mock never persisted anything itself (it's a mock) — this
         // just confirms the page called through to the service exactly

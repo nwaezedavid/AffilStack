@@ -12,6 +12,33 @@
     </IfModule>
 </FilesMatch>
 
+# Only index.php may ever run as PHP. Anything else that looks like code —
+# a web shell dropped after an attack such as PHP2Shell, or a file someone
+# managed to upload — is refused instead of executed.
+<FilesMatch "\.(php[0-9]?|phtml|pht|phar|phps|pgif|shtml|cgi|pl|py|sh|inc)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+<Files "index.php">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+</Files>
+
+# Requests over 40 MB are refused by the web server before PHP reads them
+# (AffilStack's biggest form is about 25 MB) — keeps oversized multipart
+# bodies, PHP2Shell's memory-exhaustion path, away from PHP.
+LimitRequestBody 41943040
+
 # Static files (built CSS/JS, robots.txt, images) are served by Apache
 # directly and never reach App\Http\Middleware\SecurityHeaders, so the one
 # header HawkScan flagged as missing on them is set here instead.
@@ -40,6 +67,11 @@
     # Handle X-XSRF-Token Header
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Same rule for servers that skip <Files> sections: any address ending
+    # in a code extension, other than /index.php itself, is refused.
+    RewriteCond %{REQUEST_URI} !^/index\.php$ [NC]
+    RewriteRule \.(php[0-9]?|phtml|pht|phar|phps|pgif|shtml|cgi|pl|py|sh|inc)$ - [F,L,NC]
 
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d

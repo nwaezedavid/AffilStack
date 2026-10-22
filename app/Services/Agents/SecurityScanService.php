@@ -4,12 +4,16 @@ namespace App\Services\Agents;
 
 use App\Models\SecurityFinding;
 use App\Models\User;
+use App\Notifications\SecurityAlert;
 use App\Services\AI\AIGenerationException;
 use App\Services\AI\AIProvider;
+use App\Support\Security\ExecutableFileDetector;
+use App\Support\Security\PhpRuntime;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -89,9 +93,157 @@ class SecurityScanService
             ...$this->checkAdminsMissingTwoFactor(),
             ...$this->checkUnencryptedSecretColumns(),
             ...$this->checkAiPromptCredentialInterpolation(),
+            ...$this->checkPhpRuntime(),
+            ...$this->checkExecutableFiles(),
         ]);
 
-        return $rawFindings->map(fn (array $raw) => $this->persist($raw));
+        $this->resolveCleared('php_runtime', $rawFindings);
+        $this->resolveCleared('web_shell', $rawFindings);
+
+        $findings = $rawFindings->map(fn (array $raw) => $this->persist($raw));
+
+        $this->alertAdmins($findings->filter(fn (SecurityFinding $finding) => $finding->wasRecentlyCreated && in_array($finding->severity, ['critical', 'high'], true)));
+
+        return $findings;
+    }
+
+    /**
+     * PHP2Shell and anything like it: the PHP that serves the website (as
+     * recorded by RecordPhpRuntime) and the PHP that runs the scheduler,
+     * checked against known critical fixes and php.net's newest release,
+     * plus the php.ini settings PHP2Shell reaches through. The host has to
+     * update PHP, so there is no automatic fix_action.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function checkPhpRuntime(): array
+    {
+        $runtimes = ['scheduler (command line)' => ['version' => PHP_VERSION, 'sapi' => PHP_SAPI, 'ini' => []]];
+
+        if ($web = PhpRuntime::webRuntime()) {
+            $runtimes = ['website' => $web] + $runtimes;
+        }
+
+        $findings = [];
+        $seen = [];
+
+        foreach ($runtimes as $label => $runtime) {
+            $problems = [...PhpRuntime::problemsFor($runtime['version']), ...PhpRuntime::riskyIniProblems($runtime['ini'] ?? [])];
+
+            foreach ($problems as $problem) {
+                // The same version on both: one finding naming both.
+                if (isset($seen[$problem['title']])) {
+                    $findings[$seen[$problem['title']]]['evidence']['where'][] = $label;
+
+                    continue;
+                }
+
+                $seen[$problem['title']] = count($findings);
+                $findings[] = [
+                    'category' => 'php_runtime',
+                    'title' => $problem['title'],
+                    'severity' => $problem['severity'],
+                    'evidence' => ['where' => [$label], 'php_version' => $runtime['version'], 'php_sapi' => $runtime['sapi'], 'what_to_do' => $problem['detail']],
+                    'fix_action' => null,
+                ];
+            }
+        }
+
+        return $findings;
+    }
+
+    /**
+     * Web shells: PHP (or a server config file that could switch PHP back
+     * on) anywhere in the public folder or the upload folders, where only
+     * public/index.php and public/.htaccess belong, and PHP code hidden in
+     * a publicly served upload.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function checkExecutableFiles(): array
+    {
+        $allowed = (array) config('security.executable_allowlist', []);
+        $suspicious = [];
+
+        foreach ((array) config('security.executable_scan_paths', []) as $relative) {
+            $root = base_path($relative);
+
+            if (! is_dir($root)) {
+                continue;
+            }
+
+            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+
+            foreach ($files as $file) {
+                if (! $file->isFile()) {
+                    continue;
+                }
+
+                $path = str_replace('\\', '/', Str::after($file->getPathname(), base_path().DIRECTORY_SEPARATOR));
+
+                if (in_array($path, $allowed, true) || str_starts_with($path, 'public/build/')) {
+                    continue;
+                }
+
+                if (ExecutableFileDetector::nameIsExecutable($file->getFilename())) {
+                    $suspicious[] = $path;
+                } elseif (str_starts_with($path, 'storage/app/public/') && ExecutableFileDetector::containsPhp($file->getPathname(), 10 * 1024 * 1024)) {
+                    $suspicious[] = $path.' (PHP code inside)';
+                }
+
+                if (count($suspicious) >= 50) {
+                    break 2;
+                }
+            }
+        }
+
+        if ($suspicious === []) {
+            return [];
+        }
+
+        return [[
+            'category' => 'web_shell',
+            'title' => 'Possible web shell: PHP or server config files where none should be',
+            'severity' => 'critical',
+            'evidence' => ['files' => $suspicious, 'what_to_do' => 'AffilStack never puts these files there. Check each one in hPanel → File Manager, delete anything you did not add, change your hosting and admin passwords, and check the server for other changes (new cron jobs, new admin accounts).'],
+            'fix_action' => null,
+        ]];
+    }
+
+    /**
+     * A runtime problem the scan no longer sees (PHP was updated, the
+     * file was removed) is marked fixed instead of lingering as open.
+     *
+     * @param  Collection<int, array<string, mixed>>  $raw
+     */
+    protected function resolveCleared(string $category, Collection $raw): void
+    {
+        $current = $raw->where('category', $category)->map(fn (array $finding) => sha1($finding['category'].'|'.$finding['title']))->all();
+
+        SecurityFinding::query()
+            ->where('category', $category)
+            ->where('status', SecurityFinding::STATUS_OPEN)
+            ->whereNotIn('fingerprint', $current)
+            ->update(['status' => SecurityFinding::STATUS_FIXED]);
+    }
+
+    /**
+     * New critical and high findings are emailed to the admins straight
+     * away rather than waiting for someone to open the Security Center.
+     *
+     * @param  Collection<int, SecurityFinding>  $findings
+     */
+    protected function alertAdmins(Collection $findings): void
+    {
+        if ($findings->isEmpty()) {
+            return;
+        }
+
+        $admins = User::role(['admin', 'super-admin'])->get();
+
+        if ($admins->isNotEmpty()) {
+            Notification::send($admins, new SecurityAlert($findings->values()->all()));
+        }
     }
 
     protected function persist(array $raw): SecurityFinding
