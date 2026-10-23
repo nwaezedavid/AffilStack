@@ -46,6 +46,13 @@
     </IfModule>
 </FilesMatch>
 
+# Feature demo videos: some servers send WebM as plain text, which
+# browsers refuse to play with nosniff on.
+<IfModule mod_mime.c>
+    AddType video/webm .webm
+    AddType video/mp4 .mp4
+</IfModule>
+
 # Requests over 40 MB are refused by the web server before PHP reads them
 # (AffilStack's biggest form is about 25 MB) — keeps oversized multipart
 # bodies, PHP2Shell's memory-exhaustion path, away from PHP.
