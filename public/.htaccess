@@ -34,6 +34,18 @@
     </IfModule>
 </Files>
 
+# Release packages and backups are never downloadable, even for the
+# moment one sits here during a deploy.
+<FilesMatch "\.(zip|tar|tgz|gz|sql|bak|log)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
 # Requests over 40 MB are refused by the web server before PHP reads them
 # (AffilStack's biggest form is about 25 MB) — keeps oversized multipart
 # bodies, PHP2Shell's memory-exhaustion path, away from PHP.
