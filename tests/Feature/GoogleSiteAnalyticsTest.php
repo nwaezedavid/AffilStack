@@ -55,7 +55,7 @@ class GoogleSiteAnalyticsTest extends TestCase
         $this->assertTrue(app(GoogleSiteAnalyticsService::class)->isAvailable());
     }
 
-    public function test_authorization_url_requests_offline_access_and_all_three_scopes(): void
+    public function test_authorization_url_requests_offline_access_and_every_scope(): void
     {
         $this->enableGoogleOauth();
 
@@ -65,6 +65,7 @@ class GoogleSiteAnalyticsTest extends TestCase
         $this->assertStringContainsString('prompt=consent', $url);
         $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/analytics.edit'), $url);
         $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/webmasters'), $url);
+        $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/siteverification.verify_only'), $url);
         $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/tagmanager.edit.containers'), $url);
     }
 
@@ -158,6 +159,22 @@ class GoogleSiteAnalyticsTest extends TestCase
 
         $this->assertFalse($result['success']);
         $this->assertSame('verify-token-123', SiteSetting::get('seo_gsc_verification'));
+    }
+
+    public function test_a_connection_missing_the_verification_scope_is_told_to_reconnect(): void
+    {
+        $this->connectedSettings();
+        Http::fake([
+            'www.googleapis.com/siteVerification/v1/token' => Http::response([
+                'error' => ['code' => 403, 'status' => 'PERMISSION_DENIED', 'details' => [['reason' => 'ACCESS_TOKEN_SCOPE_INSUFFICIENT']]],
+            ], 403),
+        ]);
+
+        $result = app(GoogleSiteAnalyticsService::class)->verifySearchConsole();
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(GoogleSiteAnalyticsService::RECONNECT_MESSAGE, $result['message']);
+        $this->assertNull(SiteSetting::get('seo_gsc_verification'));
     }
 
     public function test_verify_search_console_succeeds_end_to_end_and_submits_the_sitemap(): void

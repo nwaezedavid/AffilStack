@@ -6,6 +6,7 @@ use App\Models\GoogleOauthSetting;
 use App\Models\GoogleSiteAnalyticsSetting;
 use App\Models\SiteSetting;
 use App\Support\SiteDomains;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -56,8 +57,17 @@ class GoogleSiteAnalyticsService
     protected const SCOPE = 'openid email '.
         'https://www.googleapis.com/auth/analytics.edit '.
         'https://www.googleapis.com/auth/webmasters '.
+        // Search Console's "webmasters" scope doesn't cover the separate Site
+        // Verification API, which issues and checks the homepage meta tag.
+        'https://www.googleapis.com/auth/siteverification.verify_only '.
         'https://www.googleapis.com/auth/tagmanager.edit.containers '.
         'https://www.googleapis.com/auth/tagmanager.publish';
+
+    /**
+     * Shown when a connection made before a scope was added to SCOPE is
+     * used for a step that needs the new scope.
+     */
+    public const RECONNECT_MESSAGE = 'Your Google connection is missing a permission AffilStack now needs. Click "Reconnect with Google" at the top of this page, tick every box on Google\'s screen, then try again.';
 
     protected GoogleOauthSetting $oauthSettings;
 
@@ -272,7 +282,9 @@ class GoogleSiteAnalyticsService
         $verificationToken = $tokenResponse->json('token');
 
         if ($tokenResponse->failed() || ! $verificationToken) {
-            return ['success' => false, 'message' => 'Could not get a verification token from Google: '.$tokenResponse->body()];
+            return ['success' => false, 'message' => self::isMissingScope($tokenResponse)
+                ? self::RECONNECT_MESSAGE
+                : 'Could not get a verification token from Google: '.$tokenResponse->body()];
         }
 
         // Renders immediately via the existing <meta name="google-site-
@@ -370,5 +382,14 @@ class GoogleSiteAnalyticsService
             'connected_email' => null,
             'connected_at' => null,
         ]);
+    }
+
+    /**
+     * Google answers 403 ACCESS_TOKEN_SCOPE_INSUFFICIENT when the stored token
+     * was granted before a scope was added; only a reconnect fixes it.
+     */
+    protected static function isMissingScope(Response $response): bool
+    {
+        return $response->status() === 403 && str_contains($response->body(), 'ACCESS_TOKEN_SCOPE_INSUFFICIENT');
     }
 }
