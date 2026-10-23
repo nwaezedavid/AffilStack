@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Cache;
  * bing.com/webmasters, add+choose "meta tag" verification there once, then
  * paste the resulting msvalidate.01 code back here so this app injects it
  * automatically. Once verified, sitemap submission is fully automatic
- * (Bing's SubmitSitemap endpoint is reliable and well documented).
+ * (Bing's SubmitFeed endpoint takes the sitemap URL).
  */
 #[Fillable(['is_enabled', 'credentials', 'verification_code', 'verified_at', 'verification_status', 'verification_message'])]
 class BingWebmasterSetting extends Model

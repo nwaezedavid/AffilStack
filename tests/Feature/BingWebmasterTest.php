@@ -84,9 +84,32 @@ class BingWebmasterTest extends TestCase
     {
         Http::fake(['ssl.bing.com/*' => Http::response(['ok' => true])]);
 
-        $result = (new BingWebmasterClient('valid-key'))->submitSitemap('https://example.com', 'https://example.com/sitemap.xml');
+        $result = (new BingWebmasterClient('valid-key'))->submitSitemap('https://example.com/', 'https://example.com/sitemap.xml');
 
         $this->assertTrue($result['success']);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/json/SubmitFeed?apikey=valid-key')
+            && $request['siteUrl'] === 'https://example.com/'
+            && $request['feedUrl'] === 'https://example.com/sitemap.xml');
+    }
+
+    public function test_a_refused_sitemap_shows_bings_reason(): void
+    {
+        Http::fake(['ssl.bing.com/*' => Http::response(['ErrorCode' => 3, 'Message' => 'ERROR!!! InvalidApiKey'], 400)]);
+
+        $result = (new BingWebmasterClient('bad-key'))->submitSitemap('https://example.com', 'https://example.com/sitemap.xml');
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('InvalidApiKey', $result['message']);
+    }
+
+    public function test_the_sitemap_goes_to_the_site_address_exactly_as_bing_lists_it(): void
+    {
+        Http::fake(['ssl.bing.com/*' => Http::response(['d' => [['Url' => 'https://example.com/']]])]);
+
+        $result = (new BingWebmasterClient('valid-key'))->verifySite('https://example.com');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('https://example.com/', $result['site_url']);
     }
 
     public function test_admin_can_save_the_api_key_and_verification_code(): void

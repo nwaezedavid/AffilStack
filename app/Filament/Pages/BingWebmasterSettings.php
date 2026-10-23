@@ -134,7 +134,7 @@ class BingWebmasterSettings extends Page
 
         if ($result['success']) {
             $sitemap = (new BingWebmasterClient((string) $settings->credential('api_key')))
-                ->submitSitemap(rtrim(SiteDomains::publicUrl(), '/'), rtrim(SiteDomains::publicUrl(), '/').'/sitemap.xml');
+                ->submitSitemap($result['site_url'] ?? rtrim(SiteDomains::publicUrl(), '/'), rtrim(SiteDomains::publicUrl(), '/').'/sitemap.xml');
 
             $result['message'] .= ' '.$sitemap['message'];
         }

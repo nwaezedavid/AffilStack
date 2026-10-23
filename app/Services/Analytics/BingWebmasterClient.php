@@ -51,7 +51,7 @@ class BingWebmasterClient
     }
 
     /**
-     * @return array{success: bool, message: string}
+     * @return array{success: bool, message: string, site_url?: string}
      */
     public function verifySite(string $siteUrl): array
     {
@@ -61,10 +61,10 @@ class BingWebmasterClient
             return $result;
         }
 
-        $normalized = collect($result['sites'])->map(fn ($url) => rtrim((string) $url, '/'));
+        $registered = collect($result['sites'])->first(fn ($url) => rtrim((string) $url, '/') === rtrim($siteUrl, '/'));
 
-        if ($normalized->contains(rtrim($siteUrl, '/'))) {
-            return ['success' => true, 'message' => "{$siteUrl} is verified and registered on Bing Webmaster Tools."];
+        if ($registered !== null) {
+            return ['success' => true, 'message' => "{$siteUrl} is verified and registered on Bing Webmaster Tools.", 'site_url' => (string) $registered];
         }
 
         return [
@@ -74,17 +74,21 @@ class BingWebmasterClient
     }
 
     /**
+     * Bing's method for this is SubmitFeed (sitemaps are "feeds" in its API);
+     * there is no SubmitSitemap. siteUrl should be the address exactly as
+     * Bing lists it (see verifySite()'s site_url).
+     *
      * @return array{success: bool, message: string}
      */
     public function submitSitemap(string $siteUrl, string $sitemapUrl): array
     {
-        $response = Http::asJson()->post(self::BASE.'/SubmitSitemap?apikey='.urlencode($this->apiKey), [
-            'siteUrl' => $siteUrl,
-            'sitemapUrl' => $sitemapUrl,
-        ]);
+        $response = Http::withBody(json_encode(['siteUrl' => $siteUrl, 'feedUrl' => $sitemapUrl]), 'application/json; charset=utf-8')
+            ->post(self::BASE.'/SubmitFeed?apikey='.urlencode($this->apiKey));
 
         if ($response->failed()) {
-            return ['success' => false, 'message' => "Sitemap submission failed: {$response->body()}"];
+            $reason = (string) ($response->json('Message') ?? '');
+
+            return ['success' => false, 'message' => 'Sitemap submission failed'.($reason !== '' ? ": Bing said \"{$reason}\"" : " (Bing answered {$response->status()})").". You can also add {$sitemapUrl} under Sitemaps at bing.com/webmasters."];
         }
 
         return ['success' => true, 'message' => "Sitemap submitted to Bing: {$sitemapUrl}"];
