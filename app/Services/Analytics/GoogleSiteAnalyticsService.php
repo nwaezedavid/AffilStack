@@ -5,6 +5,7 @@ namespace App\Services\Analytics;
 use App\Models\GoogleOauthSetting;
 use App\Models\GoogleSiteAnalyticsSetting;
 use App\Models\SiteSetting;
+use App\Support\Seo\SiteVerificationCode;
 use App\Support\SiteDomains;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -279,7 +280,8 @@ class GoogleSiteAnalyticsService
             'site' => ['type' => 'SITE', 'identifier' => $siteUrl],
         ]);
 
-        $verificationToken = $tokenResponse->json('token');
+        // Google returns the whole <meta> tag here; only its content value is stored.
+        $verificationToken = SiteVerificationCode::normalize($tokenResponse->json('token'));
 
         if ($tokenResponse->failed() || ! $verificationToken) {
             return ['success' => false, 'message' => self::isMissingScope($tokenResponse)
@@ -298,9 +300,11 @@ class GoogleSiteAnalyticsService
         ]);
 
         if ($insert->failed()) {
+            $reason = (string) ($insert->json('error.message') ?? '');
+
             return [
                 'success' => false,
-                'message' => "The verification tag is saved and live on your homepage, but Google couldn't confirm it yet — this usually means the site isn't publicly reachable at {$siteUrl} right now. Once it's deployed and live, click this again.",
+                'message' => "The verification tag is saved on your homepage, but Google couldn't confirm it yet. Wait a minute and click this again; if it still fails, check that {$siteUrl} opens publicly.".($reason !== '' ? " Google said: {$reason}" : ''),
             ];
         }
 

@@ -161,6 +161,22 @@ class GoogleSiteAnalyticsTest extends TestCase
         $this->assertSame('verify-token-123', SiteSetting::get('seo_gsc_verification'));
     }
 
+    public function test_only_the_code_is_stored_when_google_returns_the_whole_meta_tag(): void
+    {
+        $this->connectedSettings();
+        Http::fake([
+            'www.googleapis.com/siteVerification/v1/token' => Http::response([
+                'method' => 'META',
+                'token' => '<meta name="google-site-verification" content="verify-token-123" />',
+            ]),
+            'www.googleapis.com/siteVerification/v1/webResource*' => Http::response(['id' => 'site-id']),
+            'searchconsole.googleapis.com/*' => Http::response(['ok' => true]),
+        ]);
+
+        $this->assertTrue(app(GoogleSiteAnalyticsService::class)->verifySearchConsole()['success']);
+        $this->assertSame('verify-token-123', SiteSetting::get('seo_gsc_verification'));
+    }
+
     public function test_a_connection_missing_the_verification_scope_is_told_to_reconnect(): void
     {
         $this->connectedSettings();

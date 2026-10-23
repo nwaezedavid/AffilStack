@@ -6,6 +6,7 @@ use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\BingWebmasterSetting;
 use App\Services\Analytics\BingWebmasterClient;
+use App\Support\Seo\SiteVerificationCode;
 use App\Support\SiteDomains;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -104,7 +105,7 @@ class BingWebmasterSettings extends Page
 
         $settings->update([
             'is_enabled' => (bool) ($data['is_enabled'] ?? false),
-            'verification_code' => $data['verification_code'] ?? null,
+            'verification_code' => SiteVerificationCode::normalize($data['verification_code'] ?? null),
             'credentials' => $this->mergeMaskedCredentials($settings->credentials ?? [], [
                 'api_key' => $data['api_key'] ?? null,
             ], ['api_key']),

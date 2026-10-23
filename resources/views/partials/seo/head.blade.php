@@ -17,8 +17,8 @@
         'robots' => $sectionText('robots'),
         'body' => $__env->yieldContent('content').$__env->yieldPushContent('head'),
     ]);
-    $gscVerification = \App\Models\SiteSetting::get('seo_gsc_verification');
-    $bingVerification = \App\Models\BingWebmasterSetting::cachedVerificationCode();
+    $gscVerification = \App\Support\Seo\SiteVerificationCode::normalize(\App\Models\SiteSetting::get('seo_gsc_verification'));
+    $bingVerification = \App\Support\Seo\SiteVerificationCode::normalize(\App\Models\BingWebmasterSetting::cachedVerificationCode());
 ?>
 <title>{{ $seo['title'] }}</title>
 @if ($seo['description'])

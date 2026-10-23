@@ -7,6 +7,7 @@ use App\Filament\Support\OriginalImageUpload;
 use App\Models\SiteSetting;
 use App\Services\Seo\SeoHeadBuilder;
 use App\Support\Seo\RobotsTxt;
+use App\Support\Seo\SiteVerificationCode;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
@@ -192,6 +193,8 @@ class SeoSettings extends Page
         if (filled($data['seo_twitter_handle'] ?? null)) {
             $data['seo_twitter_handle'] = ltrim((string) $data['seo_twitter_handle'], '@');
         }
+
+        $data['seo_gsc_verification'] = SiteVerificationCode::normalize($data['seo_gsc_verification'] ?? null);
 
         foreach ($data as $key => $value) {
             SiteSetting::set($key, $value);
