@@ -19,6 +19,14 @@ return [
         '8.5' => '8.5.12',
     ],
 
+    // When each fix above was released. A host that backports the fix
+    // without changing the version number (Hostinger does) ships a build
+    // dated on or after this day, which the check accepts.
+    'php_fix_released' => [
+        '8.4' => '2026-10-21',
+        '8.5' => '2026-10-21',
+    ],
+
     // Branches AffilStack runs on (composer.json requires PHP ^8.4).
     'php_supported_branches' => ['8.4', '8.5'],
 

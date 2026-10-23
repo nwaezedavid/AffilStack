@@ -1,5 +1,5 @@
 @php
-    $problem = collect(\App\Support\Security\PhpRuntime::problemsFor($web['version'], false))->firstWhere('severity', 'critical');
+    $problem = collect(\App\Support\Security\PhpRuntime::problemsFor($web['version'], false, $web['build_date'] ?? null))->firstWhere('severity', 'critical');
 @endphp
 @if ($problem)
     <div role="alert" style="margin-bottom:1rem;border-radius:.75rem;border:1px solid #fecaca;background:#fef2f2;padding:.875rem 1rem;color:#7f1d1d;font-size:.875rem;line-height:1.5">

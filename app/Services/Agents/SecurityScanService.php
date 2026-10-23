@@ -118,7 +118,7 @@ class SecurityScanService
      */
     protected function checkPhpRuntime(): array
     {
-        $runtimes = ['scheduler (command line)' => ['version' => PHP_VERSION, 'sapi' => PHP_SAPI, 'ini' => []]];
+        $runtimes = ['scheduler (command line)' => ['version' => PHP_VERSION, 'sapi' => PHP_SAPI, 'build_date' => PhpRuntime::buildDate(), 'ini' => []]];
 
         if ($web = PhpRuntime::webRuntime()) {
             $runtimes = ['website' => $web] + $runtimes;
@@ -128,7 +128,7 @@ class SecurityScanService
         $seen = [];
 
         foreach ($runtimes as $label => $runtime) {
-            $problems = [...PhpRuntime::problemsFor($runtime['version']), ...PhpRuntime::riskyIniProblems($runtime['ini'] ?? [])];
+            $problems = [...PhpRuntime::problemsFor($runtime['version'], true, $runtime['build_date'] ?? null), ...PhpRuntime::riskyIniProblems($runtime['ini'] ?? [])];
 
             foreach ($problems as $problem) {
                 // The same version on both: one finding naming both.
@@ -143,7 +143,7 @@ class SecurityScanService
                     'category' => 'php_runtime',
                     'title' => $problem['title'],
                     'severity' => $problem['severity'],
-                    'evidence' => ['where' => [$label], 'php_version' => $runtime['version'], 'php_sapi' => $runtime['sapi'], 'what_to_do' => $problem['detail']],
+                    'evidence' => ['where' => [$label], 'php_version' => $runtime['version'], 'php_build_date' => $runtime['build_date'] ?? null, 'php_sapi' => $runtime['sapi'], 'what_to_do' => $problem['detail']],
                     'fix_action' => null,
                 ];
             }

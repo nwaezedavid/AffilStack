@@ -110,6 +110,42 @@ class Php2ShellProtectionTest extends TestCase
         $this->assertStringContainsString('not a supported version', PhpRuntime::problemsFor('8.3.40', false)[0]['title']);
     }
 
+    public function test_a_host_backported_fix_is_accepted_from_the_build_date(): void
+    {
+        // Hostinger: PHP 8.5.11 rebuilt with the fix on the release day.
+        $problems = PhpRuntime::problemsFor('8.5.11', false, '2026-10-21');
+        $this->assertCount(1, $problems);
+        $this->assertSame('low', $problems[0]['severity']);
+        $this->assertStringContainsString('backport', $problems[0]['title']);
+
+        // Built before the fix: still critical.
+        $this->assertSame('critical', PhpRuntime::problemsFor('8.5.11', false, '2026-10-20')[0]['severity']);
+
+        $this->writeWebRuntime('8.5.11', [], '2026-10-21');
+        $this->assertFalse(PhpRuntime::webIsCriticallyVulnerable());
+        $this->artisan('security:check-php')->assertSuccessful();
+
+        $this->writeWebRuntime('8.5.11', [], '2026-09-30');
+        $this->assertTrue(PhpRuntime::webIsCriticallyVulnerable());
+    }
+
+    public function test_the_php_build_date_is_read_from_php_itself(): void
+    {
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', (string) PhpRuntime::buildDate());
+
+        PhpRuntime::recordCurrent();
+        $this->assertSame(PhpRuntime::buildDate(), PhpRuntime::webRuntime()['build_date']);
+    }
+
+    public function test_a_later_php_net_security_release_is_judged_by_build_date_on_backporting_hosts(): void
+    {
+        config(['security.php_release_check' => true]);
+        Http::fake(['www.php.net/*' => Http::response(['version' => '8.5.13', 'tags' => ['security'], 'date' => '01 Dec 2026'])]);
+
+        $this->assertSame('high', collect(PhpRuntime::problemsFor('8.5.11', true, '2026-10-21'))->firstWhere('severity', 'high')['severity']);
+        $this->assertNull(collect(PhpRuntime::problemsFor('8.5.11', true, '2026-12-02'))->firstWhere('severity', 'high'));
+    }
+
     public function test_a_newer_security_release_on_php_net_is_reported_even_without_a_code_update(): void
     {
         config(['security.php_release_check' => true]);
@@ -234,9 +270,9 @@ class Php2ShellProtectionTest extends TestCase
     /**
      * @param  array<string, string>  $ini
      */
-    protected function writeWebRuntime(string $version, array $ini = []): void
+    protected function writeWebRuntime(string $version, array $ini = [], ?string $buildDate = null): void
     {
-        file_put_contents($this->record, json_encode(['version' => $version, 'sapi' => 'litespeed', 'ini' => $ini, 'recorded_at' => time()]));
+        file_put_contents($this->record, json_encode(['version' => $version, 'sapi' => 'litespeed', 'build_date' => $buildDate, 'ini' => $ini, 'recorded_at' => time()]));
     }
 
     protected function prepareScan(): void

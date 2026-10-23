@@ -23,7 +23,7 @@ class PhpRuntime
      * The PHP the website served with most recently, as recorded by
      * RecordPhpRuntime.
      *
-     * @return array{version: string, sapi: string, ini: array<string, string|false>, recorded_at: int}|null
+     * @return array{version: string, sapi: string, build_date: string|null, ini: array<string, string|false>, recorded_at: int}|null
      */
     public static function webRuntime(): ?array
     {
@@ -35,7 +35,7 @@ class PhpRuntime
 
         $data = json_decode((string) @file_get_contents($path), true);
 
-        return is_array($data) && isset($data['version'], $data['sapi']) ? $data + ['ini' => [], 'recorded_at' => 0] : null;
+        return is_array($data) && isset($data['version'], $data['sapi']) ? $data + ['build_date' => null, 'ini' => [], 'recorded_at' => 0] : null;
     }
 
     /**
@@ -65,6 +65,7 @@ class PhpRuntime
         @file_put_contents($path, json_encode([
             'version' => PHP_VERSION,
             'sapi' => PHP_SAPI,
+            'build_date' => static::buildDate(),
             'ini' => $ini,
             'recorded_at' => time(),
         ]), LOCK_EX);
@@ -73,9 +74,15 @@ class PhpRuntime
     /**
      * Everything wrong with a PHP version, worst first.
      *
+     * Managed hosts (Hostinger's CloudLinux PHP among them) often backport a
+     * security fix into the version they already run without changing its
+     * number, so a PHP built on or after a fix's release date is treated as
+     * carrying it — reported as a low note to confirm with the host rather
+     * than as critical.
+     *
      * @return array<int, array{severity: string, title: string, detail: string}>
      */
-    public static function problemsFor(string $version, bool $checkPhpNet = true): array
+    public static function problemsFor(string $version, bool $checkPhpNet = true, ?string $buildDate = null): array
     {
         $branch = static::branch($version);
         $problems = [];
@@ -91,33 +98,84 @@ class PhpRuntime
         }
 
         $minimum = ((array) config('security.php_minimum_patches', []))[$branch] ?? null;
+        $fixedOn = ((array) config('security.php_fix_released', []))[$branch] ?? null;
+        $belowFix = is_string($minimum) && version_compare($version, $minimum, '<');
+        $backported = $belowFix && static::builtOnOrAfter($buildDate, $fixedOn);
 
-        if (is_string($minimum) && version_compare($version, $minimum, '<')) {
+        if ($belowFix && ! $backported) {
             $problems[] = [
                 'severity' => 'critical',
                 'title' => "PHP {$version} is vulnerable to PHP2Shell — {$minimum} or newer is needed",
-                'detail' => "PHP2Shell (CVE-2026-109618 and CVE-2026-109619) lets an attacker run code on the server without logging in, before AffilStack itself runs. PHP {$minimum} fixes it. Ask the host to update PHP {$branch} to {$minimum} or newer (or switch to a PHP version they have already patched), then restart PHP.",
+                'detail' => "PHP2Shell (CVE-2026-109618 and CVE-2026-109619) lets an attacker run code on the server without logging in, before AffilStack itself runs. PHP {$minimum} fixes it. Ask the host to update PHP {$branch} to {$minimum} or newer (or confirm they have backported the fix), then restart PHP.",
+            ];
+        } elseif ($backported) {
+            $problems[] = [
+                'severity' => 'low',
+                'title' => "PHP {$version} was built on {$buildDate}, after the PHP2Shell fix — the host's backport is assumed",
+                'detail' => "The version number is older than {$minimum}, but this build is dated after the fix was released ({$fixedOn}). Hosts such as Hostinger backport the fix without changing the number. If in doubt, ask the host to confirm their PHP {$branch} build includes the PHP2Shell fix (CVE-2026-109618 and CVE-2026-109619).",
             ];
         }
 
-        if ($checkPhpNet && ($latest = static::latestRelease($branch)) && version_compare($version, $latest['version'], '<')) {
+        if ($checkPhpNet && ($latest = static::latestRelease($branch)) && version_compare($version, $latest['version'], '<')
+            && ! static::builtOnOrAfter($buildDate, $latest['date'] ?? null)) {
             $security = in_array('security', $latest['tags'], true);
 
             // Already covered by the PHP2Shell message above.
-            if (! ($problems !== [] && $minimum === $latest['version'])) {
+            if (! ($belowFix && ! $backported && $minimum === $latest['version'])) {
                 $problems[] = [
                     'severity' => $security ? 'high' : 'low',
                     'title' => $security
                         ? "PHP {$latest['version']} is a security release and this server runs {$version}"
                         : "PHP {$latest['version']} is available and this server runs {$version}",
                     'detail' => $security
-                        ? "php.net released PHP {$latest['version']} with security fixes. Ask the host to update PHP {$branch}, then restart PHP."
+                        ? "php.net released PHP {$latest['version']} with security fixes. Ask the host to update PHP {$branch} (or confirm they have backported the fixes), then restart PHP."
                         : "A newer PHP {$branch} release is out. Updating soon keeps the server current.",
                 ];
             }
         }
 
         return $problems;
+    }
+
+    /**
+     * The date this PHP binary was built ("Y-m-d"), from phpinfo(), or null
+     * when it can't be read.
+     */
+    public static function buildDate(): ?string
+    {
+        static $date = false;
+
+        if ($date !== false) {
+            return $date;
+        }
+
+        try {
+            ob_start();
+            phpinfo(INFO_GENERAL);
+            $info = strip_tags((string) ob_get_clean());
+        } catch (Throwable) {
+            return $date = null;
+        }
+
+        if (preg_match('/Build Date\s*(?:=>)?\s*([A-Z][a-z]{2}\s+\d{1,2}\s+\d{4})/', $info, $match) !== 1) {
+            return $date = null;
+        }
+
+        $parsed = \DateTimeImmutable::createFromFormat('!M j Y', (string) preg_replace('/\s+/', ' ', $match[1]));
+
+        return $date = $parsed ? $parsed->format('Y-m-d') : null;
+    }
+
+    protected static function builtOnOrAfter(?string $buildDate, ?string $releaseDate): bool
+    {
+        if ($buildDate === null || $releaseDate === null) {
+            return false;
+        }
+
+        $build = strtotime($buildDate);
+        $release = strtotime($releaseDate);
+
+        return $build !== false && $release !== false && $build >= $release;
     }
 
     /**
@@ -194,7 +252,7 @@ class PhpRuntime
      * The newest release of a branch on php.net, cached for 12 hours.
      * Null when php.net can't be reached or the check is off.
      *
-     * @return array{version: string, tags: array<int, string>}|null
+     * @return array{version: string, tags: array<int, string>, date: string|null}|null
      */
     public static function latestRelease(string $branch): ?array
     {
@@ -213,7 +271,13 @@ class PhpRuntime
                     throw new \RuntimeException('Unexpected answer from php.net.');
                 }
 
-                return ['version' => $version, 'tags' => array_values(array_filter((array) $response->json('tags', []), 'is_string'))];
+                $date = $response->json('date');
+
+                return [
+                    'version' => $version,
+                    'tags' => array_values(array_filter((array) $response->json('tags', []), 'is_string')),
+                    'date' => is_string($date) && strtotime($date) !== false ? date('Y-m-d', (int) strtotime($date)) : null,
+                ];
             });
         } catch (Throwable) {
             return null;
@@ -227,7 +291,7 @@ class PhpRuntime
     {
         $web = static::webRuntime();
 
-        return $web !== null && collect(static::problemsFor($web['version'], false))->contains('severity', 'critical');
+        return $web !== null && collect(static::problemsFor($web['version'], false, $web['build_date']))->contains('severity', 'critical');
     }
 
     public static function branch(string $version): string

@@ -18,12 +18,13 @@ class CheckPhpRuntime extends Command
 {
     public function handle(): int
     {
-        $rows = [['Command line (cron, deploys)', PHP_VERSION]];
-        $problems = PhpRuntime::problemsFor(PHP_VERSION);
+        $buildDate = PhpRuntime::buildDate();
+        $rows = [['Command line (cron, deploys)', PHP_VERSION.($buildDate ? " (built {$buildDate})" : '')]];
+        $problems = PhpRuntime::problemsFor(PHP_VERSION, true, $buildDate);
 
         if ($web = PhpRuntime::webRuntime()) {
-            $rows[] = ['Website', $web['version'].' ('.$web['sapi'].', seen '.date('Y-m-d H:i', (int) $web['recorded_at']).' UTC)'];
-            $problems = [...$problems, ...PhpRuntime::problemsFor($web['version']), ...PhpRuntime::riskyIniProblems($web['ini'] ?? [])];
+            $rows[] = ['Website', $web['version'].' ('.$web['sapi'].($web['build_date'] ? ', built '.$web['build_date'] : '').', seen '.date('Y-m-d H:i', (int) $web['recorded_at']).' UTC)'];
+            $problems = [...$problems, ...PhpRuntime::problemsFor($web['version'], true, $web['build_date']), ...PhpRuntime::riskyIniProblems($web['ini'] ?? [])];
         } else {
             $rows[] = ['Website', 'not seen yet — open any page, then run this again'];
         }
