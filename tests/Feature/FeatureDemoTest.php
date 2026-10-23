@@ -7,6 +7,7 @@ use App\Models\FeaturePage;
 use App\Models\User;
 use App\Support\Features\FeatureMedia;
 use Database\Seeders\RolesSeeder;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -150,23 +151,48 @@ class FeatureDemoTest extends TestCase
         $this->assertSame(FeatureMedia::SCREENSHOT, FeatureMedia::choiceFor('offer-research'));
     }
 
-    public function test_the_admin_can_upload_their_own_video(): void
+    public function test_the_admin_can_upload_and_remove_their_own_video(): void
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
 
         Livewire::actingAs($admin)
             ->test(FeatureDemoSettings::class)
-            ->fillForm([
-                'choice_crm_list' => FeatureMedia::ANIMATION,
-                'video_crm_list' => UploadedFile::fake()->create('demo.mp4', 500, 'video/mp4'),
+            ->callAction(TestAction::make('upload_crm_list')->schemaComponent('actions_crm_list'), [
+                'video' => UploadedFile::fake()->create('demo.mp4', 500, 'video/mp4'),
             ])
-            ->call('save')
-            ->assertHasNoFormErrors();
+            ->assertHasNoActionErrors()
+            ->assertNotified('Video uploaded');
 
         $path = FeatureMedia::uploadedVideos()['crm-list'];
         Storage::disk('public')->assertExists($path);
+
+        FeatureMedia::save(['crm-list' => FeatureMedia::ANIMATION], FeatureMedia::uploadedVideos());
         $this->assertStringEndsWith($path, FeatureMedia::videoFor(asset('images/features/crm-list.webp'))[0]['url']);
+
+        Livewire::actingAs($admin)
+            ->test(FeatureDemoSettings::class)
+            ->callAction(TestAction::make('remove_crm_list')->schemaComponent('actions_crm_list'))
+            ->assertNotified('Video removed');
+
+        $this->assertArrayNotHasKey('crm-list', FeatureMedia::uploadedVideos());
+        $this->assertSame(FeatureMedia::ANIMATION, FeatureMedia::choiceFor('crm-list'));
+        Storage::disk('public')->assertMissing($path);
+    }
+
+    public function test_saving_the_choices_keeps_an_uploaded_video(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        FeatureMedia::save([], ['crm-list' => FeatureMedia::DIRECTORY.'/uploads/mine.mp4']);
+
+        Livewire::actingAs($admin)
+            ->test(FeatureDemoSettings::class)
+            ->fillForm(['choice_crm_list' => FeatureMedia::ANIMATION])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(FeatureMedia::DIRECTORY.'/uploads/mine.mp4', FeatureMedia::uploadedVideos()['crm-list']);
     }
 
     public function test_a_non_video_upload_is_refused(): void
@@ -176,8 +202,22 @@ class FeatureDemoTest extends TestCase
 
         Livewire::actingAs($admin)
             ->test(FeatureDemoSettings::class)
-            ->fillForm(['video_crm_list' => UploadedFile::fake()->create('evil.html', 5, 'text/html')])
-            ->call('save')
-            ->assertHasFormErrors(['video_crm_list']);
+            ->callAction(TestAction::make('upload_crm_list')->schemaComponent('actions_crm_list'), [
+                'video' => UploadedFile::fake()->create('evil.html', 5, 'text/html'),
+            ])
+            ->assertHasActionErrors(['video']);
+
+        $this->assertSame([], FeatureMedia::uploadedVideos());
+    }
+
+    public function test_the_page_has_no_upload_fields_that_load_on_open(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(FeatureDemoSettings::class)
+            ->assertDontSeeHtml('fi-fo-file-upload')
+            ->assertSee('Upload my own video');
     }
 }
