@@ -2,6 +2,10 @@
     "domain": "affilstack.com",
     "username": "u281901129",
     "type": "php",
-    "app_directory": "/home/u281901129/domains/affilstack.com/affilstack",
-    "public_html": "symlink to affilstack/public"
+    "layout": "releases",
+    "releases": "/home/u281901129/domains/affilstack.com/releases/<time>",
+    "current": "/home/u281901129/domains/affilstack.com/current -> latest release",
+    "shared": "/home/u281901129/domains/affilstack.com/shared (.env, storage, backups)",
+    "public_html": "symlink to current/public",
+    "deploy": "/home/u281901129/domains/affilstack.com/deploy/deploy.sh <package.zip> [report-name]; rollback.sh [report-name]"
 }
