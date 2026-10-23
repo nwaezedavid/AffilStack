@@ -208,6 +208,25 @@ class GoogleSiteAnalyticsTest extends TestCase
         $this->assertTrue(GoogleSiteAnalyticsSetting::current()->hasSearchConsole());
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'searchconsole.googleapis.com') && str_contains($request->url(), 'sitemaps'));
+        // Google rejects Laravel's default "[]" body on these PUTs.
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'searchconsole.googleapis.com') && $request->body() !== '{}');
+    }
+
+    public function test_a_refused_sitemap_still_counts_as_verified_and_says_so(): void
+    {
+        $this->connectedSettings();
+        Http::fake([
+            'www.googleapis.com/siteVerification/v1/token' => Http::response(['token' => 'verify-token-123']),
+            'www.googleapis.com/siteVerification/v1/webResource*' => Http::response(['id' => 'site-id']),
+            'searchconsole.googleapis.com/*/sitemaps/*' => Http::response(['error' => ['message' => 'Sitemap could not be read']], 400),
+            'searchconsole.googleapis.com/*' => Http::response([]),
+        ]);
+
+        $result = app(GoogleSiteAnalyticsService::class)->verifySearchConsole();
+
+        $this->assertTrue($result['success']);
+        $this->assertStringContainsString('Sitemap could not be read', $result['message']);
+        $this->assertTrue(GoogleSiteAnalyticsSetting::current()->hasSearchConsole());
     }
 
     public function test_set_up_tag_manager_creates_a_container_and_stores_the_public_id(): void

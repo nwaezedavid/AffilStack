@@ -308,7 +308,11 @@ class GoogleSiteAnalyticsService
             ];
         }
 
-        $addSite = Http::withToken($token)->put(self::SEARCH_CONSOLE_ENDPOINT.'/sites/'.rawurlencode($siteUrl));
+        // These Search Console calls take no request body. Laravel would send
+        // an empty JSON array ("[]"), which Google rejects with "Root element
+        // must be a message", so an empty JSON object is sent instead.
+        $addSite = Http::withToken($token)->withBody('{}', 'application/json')
+            ->put(self::SEARCH_CONSOLE_ENDPOINT.'/sites/'.rawurlencode($siteUrl));
 
         if ($addSite->failed() && $addSite->status() !== 409) {
             // 409 = already added, which is fine — anything else is a real failure.
@@ -316,13 +320,19 @@ class GoogleSiteAnalyticsService
         }
 
         $sitemapUrl = rtrim(SiteDomains::publicUrl(), '/').'/sitemap.xml';
-        Http::withToken($token)->put(
+        $sitemap = Http::withToken($token)->withBody('{}', 'application/json')->put(
             self::SEARCH_CONSOLE_ENDPOINT.'/sites/'.rawurlencode($siteUrl).'/sitemaps/'.rawurlencode($sitemapUrl)
         );
 
         $settings->update([
             'credentials' => [...$settings->credentialsArray(), 'gsc_site_url' => $siteUrl, 'gsc_verified_at' => now()->toIso8601String()],
         ]);
+
+        if ($sitemap->failed()) {
+            $reason = (string) ($sitemap->json('error.message') ?? $sitemap->body());
+
+            return ['success' => true, 'message' => "Search Console verified for {$siteUrl}, but Google didn't accept the sitemap yet ({$reason}). Use Re-submit sitemap later, or add {$sitemapUrl} under Sitemaps in Search Console."];
+        }
 
         return ['success' => true, 'message' => "Search Console verified for {$siteUrl} and the sitemap was submitted."];
     }

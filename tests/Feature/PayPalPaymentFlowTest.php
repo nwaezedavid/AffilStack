@@ -158,6 +158,9 @@ class PayPalPaymentFlowTest extends TestCase
         $transaction->refresh();
         $this->assertSame('successful', $transaction->status);
         $this->assertSame('CAP998877', $transaction->gateway_tx_id);
+
+        Http::assertSent(fn ($request) => str_ends_with($request->url(), '/v2/checkout/orders/ORDER123/capture')
+            && $request->body() === '{}');
     }
 
     public function test_paypal_webhook_requires_a_valid_signature(): void

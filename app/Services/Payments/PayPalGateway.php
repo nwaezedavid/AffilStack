@@ -361,7 +361,9 @@ class PayPalGateway implements PaymentGateway
             return $existing->json();
         }
 
-        $response = $this->client()->post("/v2/checkout/orders/{$orderId}/capture");
+        // Capture takes no body; send "{}" rather than Laravel's default "[]",
+        // which PayPal can reject as malformed JSON.
+        $response = $this->client()->withBody('{}', 'application/json')->post("/v2/checkout/orders/{$orderId}/capture");
 
         if ($response->failed()) {
             throw new RuntimeException('PayPal order capture failed: '.$response->body());
