@@ -63,7 +63,7 @@ class HomepageContent
             'home_how_heading' => 'From product idea to paid commission in *four steps*',
             'home_how_subheading' => $siteName.' follows the real affiliate journey, so you always know what to do next.',
             'home_features_heading' => 'Everything an affiliate marketer needs, in one place',
-            'home_features_subheading' => 'From your first offer to your first payout — research, buyers, campaigns, content and tracking, connected to your affiliate networks and your WordPress site, without stitching together a dozen tools.',
+            'home_features_subheading' => 'From your first offer to your first tracked sale — research, buyers, campaigns, content and tracking, connected to your affiliate networks and your WordPress site, without stitching together a dozen tools.',
             'home_video_heading' => 'See '.$siteName.' in action',
             'home_video_subheading' => 'Watch one product go from research to real buyers, a full campaign and tracked clicks.',
             'home_video_points' => "Product research in minutes\nBuyers from Google Maps & LinkedIn\nCampaigns and content written for you",

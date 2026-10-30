@@ -6,11 +6,15 @@ use App\Models\CreditLedger;
 use App\Models\PaymentGatewaySetting;
 use App\Models\PaymentTransaction;
 use App\Models\Plan;
+use App\Models\Referral;
+use App\Models\ReferralEvent;
 use App\Models\Subscription;
 use App\Models\User;
 use App\Notifications\SubscriptionExpired;
 use App\Notifications\SubscriptionPaymentFailed;
 use App\Notifications\SubscriptionRenewalReminder;
+use App\Services\Referrals\ReferralService;
+use App\Support\ReferralProgram;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -97,6 +101,48 @@ class SubscriptionRenewalTest extends TestCase
 
         $this->assertSame(600, $user->fresh()->credits_balance);
         $this->assertSame(1, CreditLedger::where('user_id', $user->id)->where('reason', 'renewal_grant')->count());
+    }
+
+    public function test_a_stripe_renewal_earns_the_referrer_recurring_commission(): void
+    {
+        $plan = $this->makePlan();
+        $referrer = User::factory()->create();
+        $user = User::factory()->create();
+        $user->assignRole('user');
+        $referral = Referral::create(['referrer_id' => $referrer->id, 'referred_user_id' => $user->id, 'status' => 'converted']);
+        Subscription::create([
+            'user_id' => $user->id, 'plan_id' => $plan->id, 'status' => 'active',
+            'billing_cycle' => 'monthly', 'gateway' => 'stripe',
+            'gateway_customer_id' => 'cus_9', 'gateway_subscription_id' => 'sub_9',
+            'current_period_start' => now()->subMonth(), 'current_period_end' => now()->addDay(),
+        ]);
+
+        $invoice = ['type' => 'invoice.paid', 'data' => ['object' => [
+            'id' => 'in_ref_1', 'subscription' => 'sub_9', 'billing_reason' => 'subscription_cycle', 'amount_paid' => 6700, 'currency' => 'usd',
+        ]]];
+        $this->postStripeWebhook($invoice)->assertStatus(200);
+        $this->postStripeWebhook($invoice)->assertStatus(200);
+
+        $events = ReferralEvent::where('referral_id', $referral->id)->get();
+        $this->assertCount(1, $events);
+        $this->assertSame((int) round(6700 * ReferralProgram::rateFor($referrer)), $events->first()->amount_cents);
+    }
+
+    public function test_a_credit_top_up_never_earns_commission(): void
+    {
+        $plan = $this->makePlan();
+        $referrer = User::factory()->create();
+        $user = User::factory()->create();
+        $referral = Referral::create(['referrer_id' => $referrer->id, 'referred_user_id' => $user->id, 'status' => 'converted']);
+        $subscription = Subscription::create(['user_id' => $user->id, 'plan_id' => $plan->id, 'status' => 'active', 'billing_cycle' => 'monthly', 'gateway' => 'paystack']);
+        $topUp = PaymentTransaction::create([
+            'user_id' => $user->id, 'type' => 'credit_topup', 'gateway' => 'paystack', 'tx_ref' => 'topup_test_1',
+            'amount_cents' => 2000, 'currency' => 'USD', 'status' => 'successful',
+        ]);
+
+        app(ReferralService::class)->recordCommission($subscription, $topUp);
+
+        $this->assertSame(0, ReferralEvent::where('referral_id', $referral->id)->count());
     }
 
     public function test_the_initial_checkout_invoice_is_not_treated_as_a_renewal(): void

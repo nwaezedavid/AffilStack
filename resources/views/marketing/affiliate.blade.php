@@ -27,7 +27,7 @@
                 [
                     '@type' => 'Question',
                     'name' => 'How much commission do affiliates earn?',
-                    'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Affiliates earn '.$commissionRate.'% commission on every payment a referred customer makes, for as long as they stay subscribed — not just the first payment.'],
+                    'acceptedAnswer' => ['@type' => 'Answer', 'text' => 'Affiliates earn '.$commissionRate.'% commission on every monthly or yearly subscription payment a referred customer makes, for as long as they stay subscribed — not just the first payment. Credit top-ups and add-ons don\'t earn commission.'],
                 ],
                 [
                     '@type' => 'Question',
@@ -69,7 +69,7 @@
         <div class="max-w-5xl mx-auto px-6 py-10 grid sm:grid-cols-3 gap-6 text-center">
             <div>
                 <div class="font-display font-semibold text-3xl text-navy-900">{{ $commissionRate }}%</div>
-                <p class="text-sm text-ink-600 mt-1">Commission on every payment your referral makes, for as long as they stay subscribed</p>
+                <p class="text-sm text-ink-600 mt-1">Commission on every monthly or yearly subscription payment your referral makes, for as long as they stay subscribed</p>
             </div>
             <div>
                 <div class="font-display font-semibold text-3xl text-navy-900">{{ $cookieDays }} days</div>
@@ -144,7 +144,8 @@
             </div>
 
             <p class="text-xs text-ink-400 mt-6 text-center max-w-xl mx-auto">
-                Illustrative estimate only. Assumes each referral subscribes at the plan price shown and stays
+                Illustrative estimate only. Commission is paid on subscription payments only (monthly or yearly), not on
+                credit top-ups or add-ons. Assumes each referral subscribes monthly at the plan price shown and stays
                 subscribed for the full period, with no discounts or churn. Actual earnings depend on the plans
                 your referrals choose and how long they stay.
             </p>

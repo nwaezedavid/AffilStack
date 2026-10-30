@@ -22,7 +22,7 @@
         :tone="$user->isAffiliateOnly() ? 'emerald' : 'gold'"
         icon="megaphone"
         eyebrow="Marketing kit"
-        :title="'Earn '.$commissionPercent.'% on every payment you refer'"
+        :title="'Earn '.$commissionPercent.'% on every subscription you refer'"
         :subtitle="'Share AffilStack with ready-made banners, emails and posts. Every link carries your code, a visitor stays yours for '.$cookieDays.' days, and you earn on their first payment and every renewal.'">
         <x-slot:actions>
             <x-ui.copy-button :text="$links['plain']" label="Copy my link" variant="gold" size="md" />

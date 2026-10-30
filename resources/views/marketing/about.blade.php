@@ -6,7 +6,7 @@
 
     $heroEyebrow = \App\Models\SiteSetting::get('about_hero_eyebrow') ?: 'About us';
     $heroHeadline = \App\Models\SiteSetting::get('about_hero_headline') ?: "We started {$siteName} to make affiliate marketing possible for one person, not just an agency.";
-    $heroSubheadline = \App\Models\SiteSetting::get('about_hero_subheadline') ?: 'A single platform for research, content, and payouts — built for creators and marketers finding their next offer, not enterprise teams with a dozen tools already.';
+    $heroSubheadline = \App\Models\SiteSetting::get('about_hero_subheadline') ?: 'A single platform for research, content, and sales tracking — built for creators and marketers finding their next offer, not enterprise teams with a dozen tools already.';
     $heroImage = \App\Models\SiteSetting::get('about_hero_image_path');
 
     $story = \App\Models\SiteSetting::get('about_story') ?: "{$siteName} exists because publishing an offer used to mean stitching together a research tool, a writing tool, a video tool, a CRM, and a separate affiliate network — each with its own login, its own learning curve, and its own bill.\n\nWe built one platform instead: tell it what you're promoting, and it researches the offer, writes the content, and tracks every click and sale from a single dashboard. No agency, no dev team, and no dozen subscriptions required to compete with people who have both.";
@@ -18,7 +18,7 @@
     $defaultGoals = [
         ['icon' => 'cursor-arrow-rays', 'title' => 'Remove the tool sprawl', 'description' => 'Replace the research tool + writing tool + video tool + CRM + affiliate network stack with one platform.'],
         ['icon' => 'rocket-launch', 'title' => 'Make good content achievable solo', 'description' => 'Give one person the output of a small content team, without hiring one.'],
-        ['icon' => 'banknotes', 'title' => 'Pay affiliates on time, every time', 'description' => 'A payout workflow built in from day one, not bolted on as an afterthought.'],
+        ['icon' => 'banknotes', 'title' => 'See exactly what earns', 'description' => 'Track every click and sale across your affiliate networks, so you know which link, product and post made the money.'],
         ['icon' => 'chart-bar', 'title' => 'Keep improving with real usage', 'description' => 'Ship what marketers actually ask for, not what looks good in a demo.'],
     ];
     $goals = $decode(\App\Models\SiteSetting::get('about_goals', '[]'));
@@ -29,7 +29,7 @@
         ['icon' => 'pencil-square', 'title' => 'AI-written content', 'description' => 'Blog posts, LinkedIn campaigns, and email sequences, generated from your offer and ready to publish.'],
         ['icon' => 'video-camera', 'title' => 'UGC video', 'description' => 'Turn a script into a human-avatar video without a camera, an actor, or an editor.'],
         ['icon' => 'user-group', 'title' => 'Built-in CRM & tracking', 'description' => 'Every lead, click, and sale tracked automatically in one place.'],
-        ['icon' => 'credit-card', 'title' => 'Payments & payouts', 'description' => 'Multi-gateway checkout for your customers, and a real payout workflow for your own affiliates.'],
+        ['icon' => 'credit-card', 'title' => 'Sales & earnings tracking', 'description' => 'Your sales and commissions from every affiliate network in one place. The networks pay you directly; AffilStack only pays out its own affiliate program.'],
         ['icon' => 'puzzle-piece', 'title' => 'An open platform', 'description' => 'Connections to your affiliate networks and WordPress site, an API, and a marketplace where developers build and sell add-ons.'],
     ];
     $whatWeDo = $decode(\App\Models\SiteSetting::get('about_what_we_do', '[]'));
@@ -38,7 +38,7 @@
     $defaultHowWeWork = [
         ['title' => 'You tell us what you\'re promoting', 'description' => 'A product name, an affiliate link, or just a niche — that\'s the only input we need to get moving.'],
         ['title' => 'We do the research and the writing', 'description' => 'Offer research, content, and video are generated and queued for your review, not published blind.'],
-        ['title' => 'You publish, track, and get paid', 'description' => 'Every click and sale is tracked automatically, and payouts — yours and your affiliates\' — are handled inside the platform.'],
+        ['title' => 'You publish and track every sale', 'description' => 'Every click and sale is tracked automatically, so you can see how each link performs on each network. Your commissions are paid by the networks themselves.'],
     ];
     $howWeWork = $decode(\App\Models\SiteSetting::get('about_how_we_works', '[]'));
     $howWeWork = ! empty($howWeWork) ? $howWeWork : $defaultHowWeWork;
@@ -69,7 +69,7 @@
     $ctaButtonLabel = \App\Models\SiteSetting::get('about_cta_button_label') ?: 'See plans & pricing';
     $ctaButtonUrl = \App\Models\SiteSetting::get('about_cta_button_url') ?: route('registration.pricing');
 
-    $metaDescriptionDefault = "About {$siteName} — our mission, our founder, and why we built one platform for affiliate research, content, and payouts.";
+    $metaDescriptionDefault = "About {$siteName} — our mission, our founder, and why we built one platform for affiliate research, content, and sales tracking.";
 ?>
 
 @section('title', ($page?->displayTitle() ?: 'About us').' — '.$siteName)
@@ -193,7 +193,7 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
                 <h2 class="font-display text-3xl font-semibold tracking-tight text-navy-900 text-balance sm:text-4xl">What we do</h2>
-                <p class="mt-4 text-base text-ink-600 sm:text-lg">Everything an affiliate marketer needs, from first research to final payout.</p>
+                <p class="mt-4 text-base text-ink-600 sm:text-lg">Everything an affiliate marketer needs, from first research to the first tracked sale.</p>
             </div>
             <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($whatWeDo as $item)
