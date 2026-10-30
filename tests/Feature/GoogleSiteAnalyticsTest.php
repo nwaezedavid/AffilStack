@@ -67,6 +67,40 @@ class GoogleSiteAnalyticsTest extends TestCase
         $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/webmasters'), $url);
         $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/siteverification.verify_only'), $url);
         $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/tagmanager.edit.containers'), $url);
+        // Never published by AffilStack, so never requested (least privilege).
+        $this->assertStringNotContainsString('tagmanager.publish', $url);
+    }
+
+    public function test_a_separate_google_project_is_used_when_set_and_survives_a_disconnect(): void
+    {
+        $this->enableGoogleOauth();
+        $service = app(GoogleSiteAnalyticsService::class);
+
+        $service->saveOwnClient('admin-tools.apps.googleusercontent.com', 'admin-secret');
+
+        $this->assertTrue($service->usesOwnClient());
+        $this->assertStringContainsString('client_id=admin-tools.apps.googleusercontent.com', $service->authorizationUrl('https://app.example/callback', 's'));
+
+        $service->disconnect();
+
+        $this->assertTrue($service->usesOwnClient());
+
+        $service->saveOwnClient(null, null);
+
+        $this->assertFalse($service->usesOwnClient());
+        $this->assertStringNotContainsString('admin-tools', $service->authorizationUrl('https://app.example/callback', 's'));
+    }
+
+    public function test_switching_projects_clears_the_old_tokens_but_keeps_the_setup(): void
+    {
+        $settings = $this->connectedSettings();
+        $settings->update(['credentials' => [...$settings->credentialsArray(), 'ga_measurement_id' => 'G-TEST123']]);
+
+        app(GoogleSiteAnalyticsService::class)->saveOwnClient('admin-tools.apps.googleusercontent.com', 'admin-secret');
+
+        $settings = GoogleSiteAnalyticsSetting::current();
+        $this->assertFalse($settings->isConnected());
+        $this->assertSame('G-TEST123', $settings->credential('ga_measurement_id'));
     }
 
     public function test_handle_callback_stores_tokens_and_the_connected_email(): void

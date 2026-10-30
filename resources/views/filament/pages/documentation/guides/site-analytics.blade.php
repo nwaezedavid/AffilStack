@@ -26,7 +26,7 @@
             </ul>
         </x-docs.step>
         <x-docs.step title="Add the scopes to Data Access">
-            <p><x-docs.ui>Google Auth Platform</x-docs.ui> → <x-docs.ui>Data Access</x-docs.ui> → <x-docs.ui>Add or remove scopes</x-docs.ui> → add <code>.../auth/analytics.edit</code>, <code>.../auth/webmasters</code>, <code>.../auth/siteverification.verify_only</code>, <code>.../auth/tagmanager.edit.containers</code>, <code>.../auth/tagmanager.publish</code> → <x-docs.ui>Update</x-docs.ui> → <x-docs.ui>Save</x-docs.ui>.</p>
+            <p><x-docs.ui>Google Auth Platform</x-docs.ui> → <x-docs.ui>Data Access</x-docs.ui> → <x-docs.ui>Add or remove scopes</x-docs.ui> → add <code>.../auth/analytics.edit</code>, <code>.../auth/webmasters</code>, <code>.../auth/siteverification.verify_only</code>, <code>.../auth/tagmanager.edit.containers</code> → <x-docs.ui>Update</x-docs.ui> → <x-docs.ui>Save</x-docs.ui>.</p>
             <x-docs.callout type="info" title="Only you use this connection">
                 These are "sensitive" scopes, but only the admin connects them, once. Until Google verifies them (you'll do that anyway for Gmail/YouTube), Google shows "Google hasn't verified this app" — click <x-docs.ui>Advanced</x-docs.ui> → <x-docs.ui>Go to AffilStack (unsafe)</x-docs.ui>. It's your own app, so that's safe.
             </x-docs.callout>

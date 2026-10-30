@@ -54,7 +54,10 @@ class YouTubePublishingService implements SocialPublishProvider, VerifiesConnect
 
     public function isApprovedForPublishing(): bool
     {
-        return $this->settings->isYoutubeApprovedForPublishing();
+        // Review test accounts publish for real so Google's reviewers (and
+        // the demo video) can see the upload land on the channel.
+        return $this->settings->isYoutubeApprovedForPublishing()
+            || $this->settings->isReviewTester(auth()->user());
     }
 
     protected function clientId(): string
@@ -160,7 +163,7 @@ class YouTubePublishingService implements SocialPublishProvider, VerifiesConnect
 
     public function publish(SocialConnection $connection, Generation $generation, string $title, string $caption): array
     {
-        if (! $this->isApprovedForPublishing()) {
+        if (! $this->settings->isYoutubeApprovedForPublishing() && ! $this->settings->isReviewTester($connection->user)) {
             throw new RuntimeException("YouTube hasn't approved this app for uploads yet — download the video and post it manually.");
         }
 

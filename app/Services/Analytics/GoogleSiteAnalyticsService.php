@@ -61,8 +61,10 @@ class GoogleSiteAnalyticsService
         // Search Console's "webmasters" scope doesn't cover the separate Site
         // Verification API, which issues and checks the homepage meta tag.
         'https://www.googleapis.com/auth/siteverification.verify_only '.
-        'https://www.googleapis.com/auth/tagmanager.edit.containers '.
-        'https://www.googleapis.com/auth/tagmanager.publish';
+        // Creating a container needs edit.containers only; AffilStack never
+        // publishes container versions, so tagmanager.publish isn't asked for
+        // (Google's least-privilege review rejects unused scopes).
+        'https://www.googleapis.com/auth/tagmanager.edit.containers';
 
     /**
      * Shown when a connection made before a scope was added to SCOPE is
@@ -82,14 +84,48 @@ class GoogleSiteAnalyticsService
         return filled($this->clientId()) && filled($this->clientSecret());
     }
 
+    /**
+     * A separate Google Cloud project's client, when the admin set one on the
+     * Site Analytics page, keeps these owner-only scopes off the customer
+     * app's OAuth verification. Falls back to the Site > Google Login client.
+     */
     protected function clientId(): string
     {
-        return (string) $this->oauthSettings->credential('client_id');
+        return (string) (GoogleSiteAnalyticsSetting::current()->credential('own_client_id') ?: $this->oauthSettings->credential('client_id'));
     }
 
     protected function clientSecret(): string
     {
-        return (string) $this->oauthSettings->credential('client_secret');
+        return (string) (GoogleSiteAnalyticsSetting::current()->credential('own_client_secret') ?: $this->oauthSettings->credential('client_secret'));
+    }
+
+    public function usesOwnClient(): bool
+    {
+        return filled(GoogleSiteAnalyticsSetting::current()->credential('own_client_id'));
+    }
+
+    /**
+     * Saves (or, with blanks, removes) the separate project's client. Tokens
+     * from the old client stop working with a new one, so the connection is
+     * cleared; property, Search Console and container details are kept.
+     */
+    public function saveOwnClient(?string $clientId, ?string $clientSecret): void
+    {
+        $settings = GoogleSiteAnalyticsSetting::current();
+        $credentials = collect($settings->credentialsArray())
+            ->except(['own_client_id', 'own_client_secret', 'access_token', 'refresh_token', 'expires_at'])
+            ->all();
+
+        if (filled($clientId) && filled($clientSecret)) {
+            $credentials['own_client_id'] = trim((string) $clientId);
+            $credentials['own_client_secret'] = trim((string) $clientSecret);
+        }
+
+        $settings->update([
+            'credentials' => $credentials,
+            'connected_email' => null,
+            'connected_at' => null,
+        ]);
     }
 
     public function authorizationUrl(string $redirectUri, string $state): string
@@ -390,9 +426,12 @@ class GoogleSiteAnalyticsService
 
     public function disconnect(): void
     {
-        GoogleSiteAnalyticsSetting::current()->update([
+        $settings = GoogleSiteAnalyticsSetting::current();
+
+        $settings->update([
             'is_enabled' => false,
-            'credentials' => [],
+            // The separate project's client is configuration, not a connection.
+            'credentials' => collect($settings->credentialsArray())->only(['own_client_id', 'own_client_secret'])->all(),
             'connected_email' => null,
             'connected_at' => null,
         ]);
