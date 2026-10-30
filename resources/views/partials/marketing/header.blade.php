@@ -13,7 +13,6 @@
      * partials/seo/head.
      */
     $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
-    $logo = \App\Models\SiteSetting::get('logo_rectangular_path');
     $announcement = trim((string) \App\Models\SiteSetting::get('header_announcement', ''));
     $announcementLabel = trim((string) \App\Models\SiteSetting::get('header_announcement_link_label', ''));
     $announcementUrl = trim((string) \App\Models\SiteSetting::get('header_announcement_link_url', ''));
@@ -74,12 +73,7 @@
 <header class="sticky top-0 z-50 border-b border-line/70 bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/80" data-site-header>
     <div class="relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-8">
         <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2.5 justify-self-start rounded-md font-display text-lg font-semibold text-navy-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" aria-label="{{ $siteName }} home">
-            @if ($logo)
-                <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($logo) }}" alt="{{ $siteName }}" class="h-8 w-auto">
-            @else
-                <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-navy-900 to-brand-600 text-sm text-gold-300 shadow-sm" aria-hidden="true">{{ strtoupper(substr($siteName, 0, 2)) }}</span>
-                <span>{{ $siteName }}</span>
-            @endif
+            <x-ui.brand-mark :label="$siteName" />
         </a>
 
         {{-- Desktop: centre menu --}}
@@ -222,8 +216,7 @@
     <div class="absolute inset-y-0 right-0 flex w-full max-w-sm translate-x-full flex-col bg-white shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none" data-mobile-drawer>
         <div class="flex h-16 shrink-0 items-center justify-between border-b border-line px-4">
             <a href="{{ route('home') }}" class="flex items-center gap-2.5 font-display text-lg font-semibold text-navy-900">
-                <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-navy-900 to-brand-600 text-sm text-gold-300" aria-hidden="true">{{ strtoupper(substr($siteName, 0, 2)) }}</span>
-                {{ $siteName }}
+                <x-ui.brand-mark :label="$siteName" />
             </a>
             <button type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full text-navy-900 hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" data-mobile-menu-close>
                 <span class="sr-only">Close menu</span>

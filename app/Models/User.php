@@ -12,6 +12,7 @@ use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthenticationRecover
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
 use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -27,16 +28,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 #[Fillable(['name', 'email', 'google_id', 'password', 'company_name', 'country', 'avatar_path', 'birth_date', 'phone', 'gender', 'religion', 'business_website', 'business_industry', 'city', 'state_region', 'timezone', 'credits_balance', 'is_suspended', 'notify_email_on_completion', 'referral_code', 'payout_method', 'payout_details', 'agency_owner_id', 'seat_offer_id', 'seat_role', 'refund_policy_accepted_at', 'is_affiliate_only', 'api_wallet_balance_cents', 'api_wallet_auto_recharge_enabled', 'api_wallet_auto_recharge_threshold_cents', 'api_wallet_auto_recharge_amount_cents', 'api_wallet_payment_method_id', 'show_on_partner_leaderboard', 'partner_news_seen_at', 'earnings_currency', 'locale'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'app_authentication_secret', 'app_authentication_recovery_codes', 'payout_details'])]
-class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasLocalePreference
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasAvatar, HasLocalePreference
 {
     /**
      * The language they chose for the dashboard and their emails (null:
@@ -180,6 +184,14 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
      * Public URL of the profile photo, or null when none has been uploaded
      * (callers fall back to initials — see <x-ui.avatar>).
      */
+    /**
+     * The admin panel's top-bar avatar (instead of generated initials).
+     */
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->avatarUrl();
+    }
+
     public function avatarUrl(): ?string
     {
         return $this->avatar_path ? Storage::disk('public')->url($this->avatar_path) : null;
@@ -489,7 +501,19 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
      */
     public function sendPasswordResetNotification($token): void
     {
-        $this->notify($this->isAffiliateOnly() ? new PartnerResetPassword($token) : new ResetPassword($token));
+        try {
+            $this->notify($this->isAffiliateOnly() ? new PartnerResetPassword($token) : new ResetPassword($token));
+        } catch (TransportExceptionInterface $e) {
+            // A mail server problem (wrong mailbox password, server down) shows
+            // as a clear message on the form instead of a 500 error page.
+            Log::error('Password reset email could not be sent: '.$e->getMessage(), ['user_id' => $this->id]);
+
+            $support = (string) SiteSetting::get('support_email', '');
+
+            throw ValidationException::withMessages([
+                'email' => "We couldn't send the reset email just now. Please try again in a few minutes".($support !== '' ? " or contact {$support}." : '.'),
+            ]);
+        }
     }
 
     /**

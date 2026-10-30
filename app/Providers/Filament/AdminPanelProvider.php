@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\AdminLogin;
+use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Widgets\RevenueOverview;
 use App\Filament\Widgets\SupportInboxWidget;
 use App\Http\Middleware\EnsurePanelLoginCompleted;
@@ -51,6 +52,7 @@ class AdminPanelProvider extends PanelProvider
             // from a stable URL, rebuilt whenever the square logo changes.
             ->favicon(fn () => app(FaviconGenerator::class)->url('favicon-96x96.png'))
             ->login(AdminLogin::class)
+            ->profile(EditProfile::class, isSimple: false)
             ->multiFactorAuthentication([
                 AppAuthentication::make()->recoverable(),
             ], isRequired: true)

@@ -18,16 +18,7 @@
         <div class="grid gap-10 lg:grid-cols-12">
             <div class="lg:col-span-4">
                 <a href="{{ route('home') }}" class="inline-flex items-center gap-2.5 font-display text-lg font-semibold text-white">
-                    @if ($whiteLogo = \App\Support\Brand::whiteLogoUrl())
-                        <img src="{{ $whiteLogo }}" alt="{{ $siteName }}" class="h-9 w-auto" loading="lazy">
-                    @else
-                        @if ($whiteIcon = \App\Support\Brand::whiteIconUrl())
-                            <img src="{{ $whiteIcon }}" alt="" class="h-9 w-9 object-contain" loading="lazy" aria-hidden="true">
-                        @else
-                            <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-navy-800 text-sm text-gold-300 ring-1 ring-white/15" aria-hidden="true">{{ strtoupper(substr($siteName, 0, 2)) }}</span>
-                        @endif
-                        {{ $siteName }}
-                    @endif
+                    <x-ui.brand-mark variant="dark" :label="$siteName" />
                 </a>
                 <p class="mt-4 max-w-sm text-sm leading-relaxed text-white/60">{{ \App\Support\Website\NavigationMenu::label('footer_tagline') }}</p>
                 <x-social-links variant="inverted" class="mt-6" />

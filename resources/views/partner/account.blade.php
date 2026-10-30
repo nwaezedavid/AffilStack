@@ -11,6 +11,26 @@
 @section('content')
     <div class="grid gap-6 lg:grid-cols-2">
         <x-ui.card id="leaderboard" title="Profile" description="How you appear to the AffilStack team." icon="user-circle">
+            <div class="mb-5 flex items-center gap-4">
+                <x-ui.avatar :user="$user" class="h-16 w-16 text-base" />
+                <div class="flex flex-wrap items-center gap-2">
+                    <form method="POST" action="{{ route('partner.account.photo') }}" enctype="multipart/form-data" class="flex items-center gap-2">
+                        @csrf
+                        <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-navy-900 ring-1 ring-line transition hover:bg-surface-muted">
+                            <x-heroicon-m-arrow-up-tray class="h-4 w-4" /> {{ $user->avatar_path ? 'Change photo' : 'Upload photo' }}
+                            <input type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/gif" class="sr-only" onchange="this.form.submit()">
+                        </label>
+                    </form>
+                    @if ($user->avatar_path)
+                        <form method="POST" action="{{ route('partner.account.photo.destroy') }}">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-xs font-medium text-red-700 hover:underline">Remove</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+            @error('photo')<p class="-mt-3 mb-4 text-xs text-red-700">{{ $message }}</p>@enderror
             <form method="POST" action="{{ route('partner.account.profile') }}" class="space-y-4">
                 @csrf
                 @method('PUT')

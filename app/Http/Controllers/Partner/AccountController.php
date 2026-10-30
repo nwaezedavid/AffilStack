@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Partner;
 
 use App\Actions\Fortify\PasswordValidationRules;
 use App\Http\Controllers\Controller;
+use App\Services\Media\AvatarProcessor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +15,7 @@ use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
 use Laravel\Fortify\Actions\EnableTwoFactorAuthentication;
 use Laravel\Fortify\Actions\GenerateNewRecoveryCodes;
 use Laravel\Fortify\Fortify;
+use RuntimeException;
 
 /**
  * Account & security for partners: name, password, leaderboard
@@ -55,6 +57,39 @@ class AccountController extends Controller
         ]);
 
         return back()->with('success', 'Profile saved.');
+    }
+
+    public function updatePhoto(Request $request, AvatarProcessor $avatars): RedirectResponse
+    {
+        $request->validate([
+            'photo' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120', 'dimensions:min_width=64,min_height=64'],
+        ], [
+            'photo.dimensions' => 'Please choose a photo at least 64×64 pixels.',
+            'photo.max' => 'Please choose a photo under 5 MB.',
+        ]);
+
+        $user = $request->user();
+
+        try {
+            $path = $avatars->store($request->file('photo'), $user->id);
+        } catch (RuntimeException $e) {
+            throw ValidationException::withMessages(['photo' => $e->getMessage()]);
+        }
+
+        $previous = $user->avatar_path;
+        $user->forceFill(['avatar_path' => $path])->save();
+        $avatars->delete($previous);
+
+        return back()->with('success', 'Profile photo saved.');
+    }
+
+    public function destroyPhoto(Request $request, AvatarProcessor $avatars): RedirectResponse
+    {
+        $user = $request->user();
+        $avatars->delete($user->avatar_path);
+        $user->forceFill(['avatar_path' => null])->save();
+
+        return back()->with('success', 'Profile photo removed.');
     }
 
     public function updatePassword(Request $request): RedirectResponse

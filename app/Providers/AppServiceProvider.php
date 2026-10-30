@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\AiEngineSetting;
 use App\Models\ApiToken;
+use App\Models\PlatformMailSetting;
 use App\Models\User;
 use App\Services\AI\AIProvider;
 use App\Services\AI\OpenAIProvider;
@@ -24,13 +26,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(OpenAIProvider::class, fn () => new OpenAIProvider(
-            apiKey: (string) config('ai.openai.api_key'),
-            baseUrl: (string) config('ai.openai.base_url'),
-            textModel: (string) config('ai.openai.text_model'),
-            imageModel: (string) config('ai.openai.image_model'),
-            timeout: (int) config('ai.openai.timeout'),
-        ));
+        // The OpenAI key and models come from Admin → AI Agents → AI Engine,
+        // falling back to the server .env.
+        $this->app->singleton(OpenAIProvider::class, function () {
+            $settings = AiEngineSetting::currentOrDefault();
+
+            return new OpenAIProvider(
+                apiKey: $settings->openaiApiKey(),
+                baseUrl: (string) config('ai.openai.base_url'),
+                textModel: $settings->openaiTextModel(),
+                imageModel: $settings->openaiImageModel(),
+                timeout: (int) config('ai.openai.timeout'),
+            );
+        });
 
         // Text goes to the engine picked in Admin → AI Agents → AI Engine
         // (OpenAI or Claude, with automatic fallback); images use OpenAI.
@@ -42,6 +50,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Admin → Site → Platform Email overrides the .env MAIL_* values.
+        PlatformMailSetting::applyToConfig();
+
         // The customer app on its own subdomain (APP_DOMAIN): tell the public
         // website a visitor is signed in, and let passkeys created on the
         // app host verify there. See SiteDomains.

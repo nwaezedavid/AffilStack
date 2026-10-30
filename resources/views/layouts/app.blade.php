@@ -2,8 +2,6 @@
     $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
     // The sidebar is dark navy, so the white logo (Brand Settings) wins
     // when one has been uploaded; otherwise the normal logo as before.
-    $logoUrl = \App\Support\Brand::whiteLogoUrl() ?? \App\Support\Brand::logoUrl();
-    $whiteIconUrl = \App\Support\Brand::whiteIconUrl();
 
     // "I believe they will need a separate dashboard, different from the
     // users who are actual paid members of the platform" — an
@@ -63,11 +61,8 @@
                       md:sticky md:top-0 md:h-screen md:translate-x-0">
             <div class="px-5 py-5 border-b {{ $sidebarBorder }}">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-display font-semibold text-lg">
-                    @if ($logoUrl && ! $isAffiliatePortal)
-                        <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-8 w-auto">
-                    @elseif ($whiteIconUrl && ! $isAffiliatePortal)
-                        <img src="{{ $whiteIconUrl }}" alt="" class="h-8 w-8 object-contain" aria-hidden="true">
-                        {{ $portalTitle }}
+                    @if (! $isAffiliatePortal)
+                        <x-ui.brand-mark variant="dark" size="sm" :label="$siteName" />
                     @else
                         <span class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-white/10 text-gold-400 text-sm">{{ $isAffiliatePortal ? '🤝' : \Illuminate\Support\Str::of($siteName)->explode(' ')->map(fn ($w) => mb_substr($w, 0, 1))->implode('') }}</span>
                         {{ $portalTitle }}

@@ -6,7 +6,11 @@
     <div class="flex items-center justify-center gap-3">
         @include('partials.marketplace.addon-icon', ['version' => $version, 'size' => 'h-14 w-14 text-base'])
         <x-heroicon-o-arrows-right-left class="h-5 w-5 text-ink-400" aria-hidden="true" />
-        <span class="inline-flex h-14 w-14 items-center justify-center rounded-xl bg-navy-900 font-display text-base font-semibold text-gold-400" aria-hidden="true">AS</span>
+        @if ($brandIcon = \App\Support\Brand::iconUrl())
+            <img src="{{ $brandIcon }}" alt="{{ \App\Support\Brand::name() }}" class="h-14 w-14 rounded-xl object-contain">
+        @else
+            <span class="inline-flex h-14 w-14 items-center justify-center rounded-xl bg-navy-900 font-display text-base font-semibold text-gold-400" aria-hidden="true">{{ mb_strtoupper(mb_substr(\App\Support\Brand::name(), 0, 2)) }}</span>
+        @endif
     </div>
 
     <h1 class="mt-5 text-center font-display text-xl font-semibold text-navy-900">Connect {{ $version->name }} to your AffilStack account</h1>

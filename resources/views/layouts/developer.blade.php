@@ -1,6 +1,5 @@
 <?php
     $siteName = \App\Support\Brand::name();
-    $whiteLogo = \App\Support\Brand::whiteLogoUrl();
     $user = auth()->user();
     $developer = $user?->developerProfile;
     $portalNav = [
@@ -26,11 +25,7 @@
     <header class="bg-navy-950 text-white">
         <div class="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
             <a href="{{ route('developer.home') }}" class="flex items-center gap-2.5 font-display text-lg font-semibold">
-                @if ($whiteLogo)
-                    <img src="{{ $whiteLogo }}" alt="{{ $siteName }}" class="h-7 w-auto">
-                @else
-                    {{ $siteName }}
-                @endif
+                <x-ui.brand-mark variant="dark" size="sm" :label="$siteName" />
                 <span class="rounded-md bg-white/10 px-2 py-0.5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-gold-300 ring-1 ring-white/15">Developers</span>
             </a>
             <nav class="ml-auto flex items-center gap-1 text-sm" aria-label="Developer portal">
