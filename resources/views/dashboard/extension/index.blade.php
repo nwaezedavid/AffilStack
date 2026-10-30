@@ -154,7 +154,7 @@
 
         @if (auth()->user()->isSuperAdmin())
             <div class="mt-5 flex flex-col gap-3 rounded-xl border border-gold-300/60 bg-gold-300/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <p class="text-sm text-ink-600"><strong class="text-ink-900">Owner only:</strong> the package to upload to the Chrome Web Store — manifest at the zip root, your uploaded site icon (Admin → SEO → Site icon) as the extension icon, and the store's default address https://affilstack.com/api.</p>
+                <p class="text-sm text-ink-600"><strong class="text-ink-900">Owner only:</strong> the package to upload to the Chrome Web Store — manifest at the zip root, your uploaded site icon (Admin → SEO → Site icon) as the extension icon, and the store's default address https://app.affilstack.com/api.</p>
                 <x-ui.button variant="gold" :href="route('extension.store-package')" icon="arrow-down-tray" class="shrink-0">Chrome Web Store package</x-ui.button>
             </div>
         @endif

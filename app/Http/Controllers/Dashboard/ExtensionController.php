@@ -26,9 +26,11 @@ class ExtensionController extends Controller
 {
     /**
      * The API address baked into resources/browser-extension/config.js —
-     * the Chrome Web Store build uses it as-is.
+     * the Chrome Web Store build uses it as-is. The app subdomain, since the
+     * extension also opens dashboard pages (/extension, /offers/create)
+     * from this address, and those live on app.affilstack.com.
      */
-    public const STORE_BUILD_API_BASE_URL = 'https://affilstack.com/api';
+    public const STORE_BUILD_API_BASE_URL = 'https://app.affilstack.com/api';
 
     /**
      * This site's API address, from APP_URL rather than the request host,

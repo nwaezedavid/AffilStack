@@ -10,7 +10,7 @@ const AffilStackApi = (() => {
     return { apiBaseUrl, apiToken: stored.apiToken || '' };
   }
 
-  /** The AffilStack site itself ("https://affilstack.com/api" → "https://affilstack.com"). */
+  /** The AffilStack site itself ("https://app.affilstack.com/api" → "https://app.affilstack.com"). */
   function siteUrl(apiBaseUrl) {
     return String(apiBaseUrl || AFFILSTACK_DEFAULT_API_BASE_URL).replace(/\/+$/, '').replace(/\/api$/, '');
   }

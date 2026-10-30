@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AffilStack \u2014 Leads & LinkedIn Assistant",
   "short_name": "AffilStack",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Add Google Maps businesses to your AffilStack CRM, write personalised LinkedIn messages and get AI replies that close.",
   "homepage_url": "https://affilstack.com",
   "action": {
