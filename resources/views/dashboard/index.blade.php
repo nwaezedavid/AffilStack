@@ -49,6 +49,8 @@
         <x-ui.stat label="Prospects in CRM" :value="number_format($contactCount)" icon="users" tone="emerald" />
     </div>
 
+    @include('dashboard.partials.progress')
+
     @unless ($subscription)
         <div class="mb-6 flex flex-col gap-3 rounded-2xl border border-gold-300/60 bg-gold-300/10 p-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-sm text-ink-900"><strong>You don't have an active plan yet.</strong> Pick one to unlock the content tools and your monthly credits.</p>

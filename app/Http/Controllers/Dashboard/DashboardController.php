@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Services\Credits\CreditManager;
+use App\Services\Dashboard\ProgressCounter;
 use App\Support\OfferHubData;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(CreditManager $credits): View|RedirectResponse
+    public function index(CreditManager $credits, ProgressCounter $progressCounter): View|RedirectResponse
     {
         $user = auth()->user();
 
@@ -40,9 +41,10 @@ class DashboardController extends Controller
         $subscription = $user->activeSubscription()->with('plan')->first();
         $contactCount = $user->crmContacts()->count();
         $productCount = $user->visibleOffers()->count();
+        $progress = $progressCounter->for($user);
 
         return view('dashboard.index', array_merge(
-            compact('offers', 'latestOffer', 'balance', 'subscription', 'contactCount', 'productCount'),
+            compact('offers', 'latestOffer', 'balance', 'subscription', 'contactCount', 'productCount', 'progress'),
             $latestOffer ? OfferHubData::for($user, $latestOffer) : [],
         ));
     }
