@@ -245,6 +245,13 @@ class WordPressPublisher
         }
 
         $message = is_array($json) ? strip_tags((string) ($json['message'] ?? '')) : '';
+        $code = is_array($json) ? (string) ($json['code'] ?? '') : '';
+
+        // WordPress ignores the login entirely ("not logged in") when application
+        // passwords are switched off, e.g. by the Hostinger plugin's security setting.
+        if (in_array($code, ['rest_not_logged_in', 'application_passwords_disabled'], true)) {
+            throw new RuntimeException('WordPress ignored the login, which means application passwords are switched off on the blog. In WordPress go to Hostinger → Tools (or Security) and turn off "Disable application passwords", then create the application password again and paste it here.');
+        }
 
         throw new RuntimeException(match ($response->status()) {
             401, 403 => 'WordPress refused the login'.($message !== '' ? ': '.$message : '.').' Check the username and application password.',
