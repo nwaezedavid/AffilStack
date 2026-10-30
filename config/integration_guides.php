@@ -158,7 +158,7 @@ return [
             'cost' => 'Pay-as-you-go API credit. OpenAI and Anthropic both bill per token; images are billed per image.',
             'cost_source' => 'https://openai.com/api/pricing/',
             'time' => '15 minutes',
-            'admin' => ['route' => 'filament.admin.pages.ai-engine-settings', 'label' => 'AI Agents → AI Engine (OpenAI / Claude)', 'env' => ['OPENAI_API_KEY', 'OPENAI_TEXT_MODEL', 'OPENAI_IMAGE_MODEL']],
+            'admin' => ['route' => 'filament.admin.pages.ai-engine-settings', 'label' => 'AI Agents → AI Engine (OpenAI / Claude / Gemini)', 'env' => ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY']],
             'status' => ['resolver' => 'ai'],
             'docs' => [
                 ['OpenAI: API keys', 'https://platform.openai.com/api-keys'],

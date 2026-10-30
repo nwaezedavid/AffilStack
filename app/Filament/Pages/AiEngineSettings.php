@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Filament\Concerns\ScopedToDepartment;
 use App\Filament\Concerns\WritesMaskedCredentials;
 use App\Models\AiEngineSetting;
+use App\Services\AI\OpenAIProvider;
 use App\Services\AI\RoutingAIProvider;
 use BackedEnum;
 use Filament\Forms\Components\Placeholder;
@@ -15,6 +16,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Http;
@@ -43,7 +45,7 @@ class AiEngineSettings extends Page
 
     protected static string|\UnitEnum|null $navigationGroup = 'AI Agents';
 
-    protected static ?string $navigationLabel = 'AI Engine (OpenAI / Claude)';
+    protected static ?string $navigationLabel = 'AI Engine (OpenAI / Claude / Gemini)';
 
     protected static ?int $navigationSort = -10;
 
@@ -67,15 +69,34 @@ class AiEngineSettings extends Page
         'claude-haiku-5-5' => 'Claude Haiku 5.5 — fastest and cheapest, simpler writing',
     ];
 
+    public const GEMINI_MODELS = [
+        'gemini-3.8-flash' => 'Gemini 3.8 Flash — fast, low cost, strong writing (recommended)',
+        'gemini-4-argon' => 'Gemini 4 Argon — Google\'s most capable model, higher cost',
+        'gemini-3.6-flash' => 'Gemini 3.6 Flash — previous Flash generation',
+        'gemini-3.5-flash-lite' => 'Gemini 3.5 Flash-Lite — cheapest, simpler writing',
+    ];
+
+    public const ENGINE_LABELS = [
+        AiEngineSetting::ENGINE_OPENAI => 'OpenAI (ChatGPT models)',
+        AiEngineSetting::ENGINE_ANTHROPIC => 'Claude by Anthropic',
+        AiEngineSetting::ENGINE_GEMINI => 'Gemini by Google',
+    ];
+
     public function mount(): void
     {
         $settings = AiEngineSetting::current();
 
         $this->form->fill([
             'text_engine' => $settings->text_engine,
+            'second_engine' => $settings->second_engine,
             'fallback_enabled' => $settings->fallback_enabled,
             'anthropic_api_key' => null,
             'anthropic_model' => $settings->credential('anthropic_model') ?: config('ai.anthropic.model'),
+            'openai_api_key' => null,
+            'openai_text_model' => $settings->openaiTextModel(),
+            'openai_image_model' => $settings->openaiImageModel(),
+            'gemini_api_key' => null,
+            'gemini_model' => $settings->credential('gemini_model') ?: config('ai.gemini.model'),
         ]);
     }
 
@@ -87,18 +108,23 @@ class AiEngineSettings extends Page
             ->statePath('data')
             ->components([
                 Section::make('Which AI writes your customers\' content?')
-                    ->description('Research, campaign emails, articles, scripts, replies and every other text feature use this engine. Image generation always uses OpenAI, because Claude does not create images.')
+                    ->description('Research, campaign emails, articles, scripts, replies and every other text feature use these engines. If the main one fails (an outage, an empty account, a rejected key), AffilStack moves on to the next one, and then the last, so customers\' work keeps going. Images always use OpenAI.')
+                    ->columns(2)
                     ->components([
                         Radio::make('text_engine')
                             ->label('Main AI engine')
-                            ->options([
-                                AiEngineSetting::ENGINE_OPENAI => 'OpenAI (ChatGPT models) — key set in the server .env file (OPENAI_API_KEY)',
-                                AiEngineSetting::ENGINE_ANTHROPIC => 'Claude by Anthropic — uses the Claude API key below',
-                            ])
+                            ->options(self::ENGINE_LABELS)
+                            ->live()
                             ->required(),
+                        Select::make('second_engine')
+                            ->label('If it fails, try this one next')
+                            ->options(fn (Get $get): array => collect(self::ENGINE_LABELS)->except($get('text_engine'))->all())
+                            ->placeholder('Automatic')
+                            ->helperText('The remaining engine is tried last. Engines without an API key are skipped.'),
                         Toggle::make('fallback_enabled')
-                            ->label('If the main engine fails, automatically try the other one')
-                            ->helperText('Keeps customers\' generations working during an outage or when one account runs out of credit. Only used when both engines are set up.'),
+                            ->label('Switch to the next engine automatically when one fails')
+                            ->helperText('Off: only the main engine is used.')
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Claude (Anthropic API)')
@@ -122,12 +148,37 @@ class AiEngineSettings extends Page
 
                 Section::make('OpenAI')
                     ->description($this->status('openai'))
+                    ->columns(2)
                     ->components([
-                        Placeholder::make('openai_note')
-                            ->label('')
-                            ->content(filled(config('ai.openai.api_key'))
-                                ? 'An OpenAI key is set in the server .env file. Text model: '.config('ai.openai.text_model').' · image model: '.config('ai.openai.image_model').'.'
-                                : 'No OpenAI key is set yet. Add OPENAI_API_KEY to the server .env file (needed for images even when Claude writes the text).'),
+                        TextInput::make('openai_api_key')
+                            ->label('OpenAI API key')
+                            ->password()->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('openai_api_key')) || filled(config('ai.openai.api_key'))))
+                            ->helperText('Create it at platform.openai.com → API keys (starts with "sk-"). Needed for images even when another engine writes the text. Leave empty to keep the current key (saved here, or OPENAI_API_KEY in the server .env).')
+                            ->columnSpanFull(),
+                        TextInput::make('openai_text_model')
+                            ->label('Text model')
+                            ->helperText('For example gpt-4o-mini.')
+                            ->required(),
+                        TextInput::make('openai_image_model')
+                            ->label('Image model')
+                            ->helperText('For example gpt-image-2.')
+                            ->required(),
+                    ]),
+
+                Section::make('Gemini (Google)')
+                    ->description($this->status('gemini'))
+                    ->columns(2)
+                    ->components([
+                        TextInput::make('gemini_api_key')
+                            ->label('Gemini API key')
+                            ->password()->revealable()
+                            ->placeholder($this->maskedPlaceholder(filled($settings->credential('gemini_api_key')) || filled(config('ai.gemini.api_key'))))
+                            ->helperText('Create it at aistudio.google.com → Get API key. Leave empty to keep the saved key.'),
+                        Select::make('gemini_model')
+                            ->label('Gemini model')
+                            ->options(self::GEMINI_MODELS)
+                            ->required(),
                     ]),
             ]);
     }
@@ -157,17 +208,31 @@ class AiEngineSettings extends Page
         $credentials = $this->mergeMaskedCredentials($existing, [
             'anthropic_api_key' => $data['anthropic_api_key'] ?? null,
             'anthropic_model' => $data['anthropic_model'] ?? null,
-        ], ['anthropic_api_key']);
+            'openai_api_key' => $data['openai_api_key'] ?? null,
+            'openai_text_model' => trim((string) ($data['openai_text_model'] ?? '')) ?: null,
+            'openai_image_model' => trim((string) ($data['openai_image_model'] ?? '')) ?: null,
+            'gemini_api_key' => $data['gemini_api_key'] ?? null,
+            'gemini_model' => $data['gemini_model'] ?? null,
+        ], ['anthropic_api_key', 'openai_api_key', 'gemini_api_key']);
+
+        $main = in_array($data['text_engine'] ?? null, AiEngineSetting::ENGINES, true) ? $data['text_engine'] : AiEngineSetting::ENGINE_OPENAI;
+        $second = in_array($data['second_engine'] ?? null, AiEngineSetting::ENGINES, true) && $data['second_engine'] !== $main ? $data['second_engine'] : null;
 
         $updates = [
-            'text_engine' => $data['text_engine'] === AiEngineSetting::ENGINE_ANTHROPIC ? AiEngineSetting::ENGINE_ANTHROPIC : AiEngineSetting::ENGINE_OPENAI,
+            'text_engine' => $main,
+            'second_engine' => $second,
             'fallback_enabled' => (bool) ($data['fallback_enabled'] ?? false),
             'credentials' => $credentials,
         ];
 
-        if (($credentials['anthropic_api_key'] ?? null) !== ($existing['anthropic_api_key'] ?? null)) {
-            $updates += ['anthropic_verified_at' => null, 'anthropic_verification_status' => null, 'anthropic_verification_message' => null];
+        foreach (['anthropic', 'openai', 'gemini'] as $engine) {
+            if (($credentials[$engine.'_api_key'] ?? null) !== ($existing[$engine.'_api_key'] ?? null)) {
+                $updates += [$engine.'_verified_at' => null, $engine.'_verification_status' => null, $engine.'_verification_message' => null];
+            }
         }
+
+        // The OpenAI client is built once per request; rebuild it with the new key.
+        app()->forgetInstance(OpenAIProvider::class);
 
         $settings->update($updates);
     }
@@ -179,8 +244,8 @@ class AiEngineSettings extends Page
 
         $settings = AiEngineSetting::current();
 
-        if ($settings->text_engine === AiEngineSetting::ENGINE_ANTHROPIC && ! $settings->hasAnthropic()) {
-            Notification::make()->title('Saved — but Claude has no API key yet')->body('Add a Claude API key, otherwise OpenAI keeps writing the content.')->warning()->send();
+        if (! $settings->hasEngine($settings->text_engine)) {
+            Notification::make()->title('Saved — but '.self::ENGINE_LABELS[$settings->text_engine].' has no API key yet')->body('Add its API key, otherwise the next engine that has one writes the content.')->warning()->send();
 
             return;
         }
@@ -208,18 +273,19 @@ class AiEngineSettings extends Page
 
     public function testOpenAi(): void
     {
+        $this->persist($this->form->getState());
         $settings = AiEngineSetting::current();
 
         if (! $settings->hasOpenAi()) {
-            $result = ['success' => false, 'message' => 'OPENAI_API_KEY is not set in the server .env file.'];
+            $result = ['success' => false, 'message' => 'No OpenAI API key is saved yet.'];
         } else {
             try {
-                $response = Http::withToken((string) config('ai.openai.api_key'))
+                $response = Http::withToken($settings->openaiApiKey())
                     ->baseUrl((string) config('ai.openai.base_url'))
                     ->timeout(20)->acceptJson()->get('/models');
                 $result = $response->successful()
-                    ? ['success' => true, 'message' => 'OpenAI key works.']
-                    : ['success' => false, 'message' => $response->status() === 401 ? 'OpenAI rejected the key in .env.' : 'OpenAI returned an error ('.$response->status().').'];
+                    ? ['success' => true, 'message' => 'OpenAI key works. Text model: '.$settings->openaiTextModel().' · image model: '.$settings->openaiImageModel().'.']
+                    : ['success' => false, 'message' => $response->status() === 401 ? 'OpenAI rejected this API key. Create a new one at platform.openai.com → API keys.' : 'OpenAI returned an error ('.$response->status().').'];
             } catch (Throwable $e) {
                 $result = ['success' => false, 'message' => 'Could not reach OpenAI: '.$e->getMessage()];
             }
@@ -232,6 +298,24 @@ class AiEngineSettings extends Page
         ]);
 
         $this->notifyResult('OpenAI', $result);
+    }
+
+    public function testGemini(): void
+    {
+        $this->persist($this->form->getState());
+        $settings = AiEngineSetting::current();
+
+        $result = $settings->hasGemini()
+            ? RoutingAIProvider::geminiFor($settings)->verify()
+            : ['success' => false, 'message' => 'No Gemini API key is saved yet.'];
+
+        $settings->update([
+            'gemini_verified_at' => now(),
+            'gemini_verification_status' => $result['success'] ? 'success' : 'failed',
+            'gemini_verification_message' => $result['message'],
+        ]);
+
+        $this->notifyResult('Gemini', $result);
     }
 
     /**
