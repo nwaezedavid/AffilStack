@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\CrmContact;
 use App\Models\CrmReply;
+use App\Services\Agents\Customer\ReplyCopilot;
 use App\Services\AI\AIGenerationException;
 use App\Services\Credits\CreditManager;
 use App\Services\Credits\InsufficientCreditsException;
@@ -68,7 +69,8 @@ class CrmInboxController extends Controller
             'offer' => $this->replier->offerFor($latest),
             'campaign' => $latest->campaign,
             'replySubject' => str_starts_with(strtolower($subject), 're:') ? $subject : 'Re: '.$subject,
-            'draft' => session('ai_draft'),
+            'draft' => session('ai_draft') ?? (in_array($latest->copilot_status, ['drafted', 'auto_queued'], true) ? app(ReplyCopilot::class)->draftForEditing($latest) : null),
+            'copilot' => in_array($latest->copilot_status, ['drafted', 'auto_queued'], true) ? $latest : null,
             'cost' => (int) config('crm.credits.reply_draft'),
             'balance' => $credits->balance(auth()->user()),
             'connection' => auth()->user()->emailConnection,
@@ -112,6 +114,19 @@ class CrmInboxController extends Controller
     /**
      * "Check for replies now" — polls just this user's mailbox.
      */
+    /**
+     * Reply Copilot: dismiss its draft, or stop autopilot sending it.
+     */
+    public function dismissCopilot(CrmReply $reply): RedirectResponse
+    {
+        abort_unless($reply->user_id === auth()->id(), 403);
+
+        $wasQueued = $reply->copilot_status === 'auto_queued';
+        $reply->update(['copilot_status' => $wasQueued ? 'drafted' : 'dismissed', 'copilot_send_at' => null]);
+
+        return back()->with('success', $wasQueued ? 'Autopilot won\'t send it — the draft is still here for you to edit.' : 'Draft dismissed.');
+    }
+
     public function check(ReplyPollingService $polling): RedirectResponse
     {
         $connection = auth()->user()->emailConnection;

@@ -62,6 +62,9 @@
                                 @if ($unread)
                                     <span class="rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-semibold text-white">{{ $reply->unread_count }} new</span>
                                 @endif
+                                @if (in_array($reply->copilot_status, ['drafted', 'auto_queued'], true))
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700"><x-heroicon-m-sparkles class="h-3 w-3" /> {{ $reply->copilot_status === 'auto_queued' ? 'Autopilot sending' : 'Reply drafted' }} · {{ \App\Services\Agents\Customer\ReplyCopilot::INTENTS[$reply->copilot_intent] ?? 'Reply' }}</span>
+                                @endif
                                 @if ($reply->campaign)
                                     <span class="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700"><x-heroicon-m-megaphone class="h-3 w-3" /> {{ \Illuminate\Support\Str::limit($reply->campaign->name, 40) }}</span>
                                 @endif

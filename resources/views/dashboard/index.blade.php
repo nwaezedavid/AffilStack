@@ -51,6 +51,20 @@
 
     @include('dashboard.partials.progress')
 
+    @if (! empty($nearLimits))
+        @php($limit = $nearLimits[0])
+        <div class="mb-6 flex flex-col gap-3 rounded-2xl border border-gold-300 bg-gold-300/15 p-4 sm:flex-row sm:items-center sm:justify-between" data-upgrade-nudge>
+            <div class="flex items-start gap-3">
+                <x-heroicon-o-arrow-trending-up class="mt-0.5 h-6 w-6 shrink-0 text-gold-600" />
+                <div>
+                    <p class="font-semibold text-navy-900">You've used {{ $limit['percent'] }}% of your {{ $limit['label'] }} this month</p>
+                    <p class="text-sm text-ink-600">AffilStack has already done {{ number_format($progress['total']) }} things for your business. Move up a plan to keep it going without pausing.</p>
+                </div>
+            </div>
+            <x-ui.button variant="brand" :href="route('billing.index')" icon="arrow-up-circle">See plans</x-ui.button>
+        </div>
+    @endif
+
     @unless ($subscription)
         <div class="mb-6 flex flex-col gap-3 rounded-2xl border border-gold-300/60 bg-gold-300/10 p-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-sm text-ink-900"><strong>You don't have an active plan yet.</strong> Pick one to unlock the content tools and your monthly credits.</p>

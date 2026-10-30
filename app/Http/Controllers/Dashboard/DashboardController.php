@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Services\Agents\Revenue\UpgradeNudge;
 use App\Services\Credits\CreditManager;
 use App\Services\Dashboard\ProgressCounter;
 use App\Support\OfferHubData;
@@ -11,7 +12,7 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(CreditManager $credits, ProgressCounter $progressCounter): View|RedirectResponse
+    public function index(CreditManager $credits, ProgressCounter $progressCounter, UpgradeNudge $nudge): View|RedirectResponse
     {
         $user = auth()->user();
 
@@ -42,9 +43,10 @@ class DashboardController extends Controller
         $contactCount = $user->crmContacts()->count();
         $productCount = $user->visibleOffers()->count();
         $progress = $progressCounter->for($user);
+        $nearLimits = $nudge->nearLimits($user);
 
         return view('dashboard.index', array_merge(
-            compact('offers', 'latestOffer', 'balance', 'subscription', 'contactCount', 'productCount', 'progress'),
+            compact('offers', 'latestOffer', 'balance', 'subscription', 'contactCount', 'productCount', 'progress', 'nearLimits'),
             $latestOffer ? OfferHubData::for($user, $latestOffer) : [],
         ));
     }

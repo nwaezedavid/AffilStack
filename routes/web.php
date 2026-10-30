@@ -14,6 +14,7 @@ use App\Http\Controllers\CreativeTaskPreviewController;
 use App\Http\Controllers\CreditTopupController;
 use App\Http\Controllers\CrmEmailTrackingController;
 use App\Http\Controllers\Dashboard\AddonInstallController;
+use App\Http\Controllers\Dashboard\AgentsController;
 use App\Http\Controllers\Dashboard\ApiAccessController;
 use App\Http\Controllers\Dashboard\ApiWalletController;
 use App\Http\Controllers\Dashboard\BlogController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Dashboard\EmailNurtureController;
 use App\Http\Controllers\Dashboard\ExtensionController;
 use App\Http\Controllers\Dashboard\IntelligenceCentreController;
 use App\Http\Controllers\Dashboard\LeadFinderController;
+use App\Http\Controllers\Dashboard\LeadRunController;
 use App\Http\Controllers\Dashboard\LinkController as DashboardLinkController;
 use App\Http\Controllers\Dashboard\LinkedInController;
 use App\Http\Controllers\Dashboard\LinkedInReplyAssistantController;
@@ -406,6 +408,12 @@ SiteDomains::app(function () {
         Route::get('/leads', [LeadFinderController::class, 'index'])->middleware('throttle:paid-lookups')->name('leads.index');
         Route::post('/leads/search', [LeadFinderController::class, 'search'])->middleware('throttle:paid-lookups')->name('leads.search');
         Route::post('/leads/import', [LeadFinderController::class, 'import'])->middleware('throttle:paid-lookups')->name('leads.import');
+        Route::get('/agents', [AgentsController::class, 'index'])->name('agents.index');
+        Route::put('/agents', [AgentsController::class, 'update'])->name('agents.update');
+        Route::post('/agents/activities/{activity}/approve', [AgentsController::class, 'approve'])->middleware('throttle:20,1,agents.approve')->name('agents.activities.approve');
+        Route::post('/agents/activities/{activity}/dismiss', [AgentsController::class, 'dismiss'])->name('agents.activities.dismiss');
+        Route::post('/offers/{offer}/leads', [LeadRunController::class, 'store'])->middleware('throttle:10,1,offers.leads')->name('offers.leads.store');
+        Route::get('/offers/{offer}/leads/status', [LeadRunController::class, 'status'])->name('offers.leads.status');
 
         Route::get('/links', [DashboardLinkController::class, 'index'])->name('links.index');
         Route::get('/links/{trackedLink}', [DashboardLinkController::class, 'show'])->name('links.show');
@@ -541,6 +549,7 @@ SiteDomains::app(function () {
         Route::post('/crm/inbox/check', [CrmInboxController::class, 'check'])->middleware('throttle:6,1,crm.inbox.check')->name('crm.inbox.check');
         Route::get('/crm/inbox/{contact}', [CrmInboxController::class, 'show'])->name('crm.inbox.show');
         Route::post('/crm/inbox/replies/{reply}/draft', [CrmInboxController::class, 'draft'])->middleware('throttle:paid-lookups')->name('crm.inbox.draft');
+        Route::post('/crm/inbox/replies/{reply}/copilot/dismiss', [CrmInboxController::class, 'dismissCopilot'])->name('crm.inbox.copilot.dismiss');
         Route::post('/crm/inbox/replies/{reply}/send', [CrmInboxController::class, 'send'])->middleware('throttle:30,1,crm.inbox.send')->name('crm.inbox.send');
 
         Route::post('/email-connections/test', [EmailConnectionController::class, 'test'])->middleware('throttle:10,1,email-connections.test')->name('email-connections.test');
