@@ -56,6 +56,7 @@ class PlansSeeder extends Seeder
             [
                 'name' => 'Starter',
                 'slug' => 'starter',
+                'monthly_lead_allowance' => 100,
                 'wordpress_sites_limit' => 1,
                 'network_connections_limit' => 1,
                 'description' => 'For beginners testing their first offer.',
@@ -71,6 +72,7 @@ class PlansSeeder extends Seeder
             [
                 'name' => 'Growth',
                 'slug' => 'growth',
+                'monthly_lead_allowance' => 500,
                 'wordpress_sites_limit' => 3,
                 'network_connections_limit' => 3,
                 'description' => 'For affiliates running multiple offers across every channel.',
@@ -86,6 +88,7 @@ class PlansSeeder extends Seeder
             [
                 'name' => 'Pro',
                 'slug' => 'pro',
+                'monthly_lead_allowance' => 1000,
                 'wordpress_sites_limit' => 10,
                 'network_connections_limit' => -1,
                 'description' => 'For full-time affiliates and small teams.',
@@ -101,6 +104,7 @@ class PlansSeeder extends Seeder
             [
                 'name' => 'Business',
                 'slug' => 'business',
+                'monthly_lead_allowance' => 5000,
                 'wordpress_sites_limit' => 10,
                 'network_connections_limit' => -1,
                 'description' => 'For an in-house team collaborating on one brand — every seat shares the whole offer list.',
@@ -117,6 +121,7 @@ class PlansSeeder extends Seeder
             [
                 'name' => 'Agency',
                 'slug' => 'agency',
+                'monthly_lead_allowance' => 10000,
                 'wordpress_sites_limit' => -1,
                 'network_connections_limit' => -1,
                 'description' => 'For agencies managing client affiliate accounts.',

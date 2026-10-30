@@ -56,6 +56,16 @@
                                         <div class="font-medium text-ink-900">{{ $contact->name ?: '—' }}</div>
                                         <div class="text-xs text-ink-600 truncate max-w-[9.5rem]">{{ collect([$contact->title, $contact->company !== $contact->name ? $contact->company : null])->filter()->implode(' · ') ?: $contact->location }}</div>
                                         <div class="mt-0.5 text-[11px] text-ink-400 capitalize">via {{ str_replace('_', ' ', $contact->source) }}</div>
+                                        @if ($contact->lead_score !== null || $contact->tags)
+                                            <div class="mt-1 flex max-w-[14rem] flex-wrap gap-1">
+                                                @if ($contact->lead_score !== null)
+                                                    <span title="{{ $contact->raw_data['score_reason'] ?? 'Lead fit score' }}" class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold {{ $contact->lead_score >= 80 ? 'bg-emerald-50 text-emerald-700' : ($contact->lead_score >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-surface-muted text-ink-600') }}">Fit {{ $contact->lead_score }}</span>
+                                                @endif
+                                                @foreach (array_slice($contact->tags ?? [], 1, 3) as $tag)
+                                                    <span class="inline-flex max-w-[9rem] truncate rounded-full bg-sky-50 px-2 py-0.5 text-[11px] text-sky-700">{{ $tag }}</span>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </td>

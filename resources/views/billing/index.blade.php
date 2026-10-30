@@ -63,6 +63,12 @@
                     @if ((int) $plan->network_connections_limit !== 0)
                         <li>@if ((int) $plan->network_connections_limit < 0) Unlimited affiliate network connections @elseif ((int) $plan->network_connections_limit === 1) 1 affiliate network connection @else {{ $plan->network_connections_limit }} affiliate network connections @endif</li>
                     @endif
+                    @if ((int) $plan->monthly_lead_allowance !== 0)
+                        <li>@if ((int) $plan->monthly_lead_allowance < 0) Unlimited B2B leads @else {{ number_format($plan->monthly_lead_allowance) }} B2B leads found for you each month @endif</li>
+                    @endif
+                    @if ($plan->agents_included)
+                        <li>AI Agents{{ $plan->agent_autopilot ? ' with autopilot' : '' }}</li>
+                    @endif
                 </ul>
                 <form method="POST" action="{{ route('billing.checkout', $plan) }}" class="space-y-2">
                     @csrf

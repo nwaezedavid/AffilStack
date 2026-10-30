@@ -4,6 +4,8 @@ namespace App\Jobs;
 
 use App\Models\Offer;
 use App\Notifications\GenerationCompleted;
+use App\Services\Leads\LeadFinder;
+use App\Services\Leads\LeadFinderException;
 use App\Services\Modules\OfferResearchService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -43,5 +45,14 @@ class RunOfferResearch implements ShouldQueue
             url: route('offers.show', $this->offer),
             errorMessage: $this->offer->generations()->where('module', 'research')->latest()->value('error_message'),
         ));
+
+        // "Also find buyers" was ticked: the research is the buyer profile the lead search needs.
+        if ($this->offer->status === 'ready' && $this->offer->find_leads) {
+            try {
+                app(LeadFinder::class)->queue($this->offer->user, $this->offer, (int) config('leads.default_run_size'), 'research');
+            } catch (LeadFinderException) {
+                // No allowance, credits or source right now — the product page offers a "Find leads" button.
+            }
+        }
     }
 }

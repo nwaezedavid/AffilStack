@@ -396,6 +396,27 @@ return [
             'volatile' => 'Google Maps Platform pricing was restructured in March 2025 and may change again.',
         ],
 
+        'lead-sources' => [
+            'title' => 'Apollo & Hunter for B2B lead finding',
+            'short' => 'Lead sources',
+            'phase' => 'features',
+            'priority' => 'optional',
+            'icon' => 'heroicon-o-user-plus',
+            'brand' => null,
+            'enables' => 'B2B lead finding beyond Google Maps: decision-makers by job title with business emails (Apollo), and email finding + verification for any company website (Hunter).',
+            'cost' => 'Apollo: paid plans include monthly email credits (one per email found). Hunter: free tier of 25 searches/month, paid plans from about US$34/month.',
+            'cost_source' => 'https://www.apollo.io/pricing',
+            'time' => '10 minutes each',
+            'admin' => ['route' => 'filament.admin.pages.lead-source-settings', 'label' => 'Site → Lead sources'],
+            'status' => ['resolver' => 'lead_sources'],
+            'docs' => [
+                ['Apollo API: people search', 'https://docs.apollo.io/reference/people-api-search'],
+                ['Apollo API: people enrichment', 'https://docs.apollo.io/reference/people-enrichment'],
+                ['Hunter API', 'https://help.hunter.io/en/articles/1970956-hunter-api'],
+            ],
+            'volatile' => 'Provider prices and credit rules change often — check the pricing pages before setting your lead credit price.',
+        ],
+
         'youtube' => [
             'title' => 'YouTube publishing (Data API v3)',
             'short' => 'YouTube',

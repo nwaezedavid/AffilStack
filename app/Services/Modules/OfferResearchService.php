@@ -29,7 +29,7 @@ class OfferResearchService
         protected CreditManager $credits,
     ) {}
 
-    public function queue(User $user, string $productName, string $productUrl, string $affiliateNetwork, ?string $affiliateLink = null): Offer
+    public function queue(User $user, string $productName, string $productUrl, string $affiliateNetwork, ?string $affiliateLink = null, bool $findLeads = false): Offer
     {
         $cost = (int) config('credits.costs.research');
 
@@ -51,6 +51,7 @@ class OfferResearchService
             'product_url' => $productUrl,
             'affiliate_network' => $affiliateNetwork,
             'affiliate_link' => $affiliateLink,
+            'find_leads' => $findLeads,
             'status' => 'queued',
         ]);
 

@@ -92,6 +92,7 @@ class GenerationCompleted extends Notification
             'pinterest_pin' => 'Pinterest pin pack',
             'email_nurture' => 'email nurture sequence',
             'competitor_angles' => 'competitor angle scan',
+            'lead_finder' => 'lead search',
             default => 'generation',
         };
     }

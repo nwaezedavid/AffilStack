@@ -48,6 +48,12 @@
                             @if ((int) $plan->network_connections_limit !== 0)
                                 <li class="flex items-start gap-2"><x-heroicon-m-check-circle class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" /> @if ((int) $plan->network_connections_limit < 0) Unlimited affiliate network connections @elseif ((int) $plan->network_connections_limit === 1) 1 affiliate network connection @else {{ $plan->network_connections_limit }} affiliate network connections @endif</li>
                             @endif
+                            @if ((int) $plan->monthly_lead_allowance !== 0)
+                                <li class="flex items-start gap-2"><x-heroicon-m-check-circle class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" /> @if ((int) $plan->monthly_lead_allowance < 0) Unlimited B2B leads @else {{ number_format($plan->monthly_lead_allowance) }} B2B leads found for you each month @endif</li>
+                            @endif
+                            @if ($plan->agents_included)
+                                <li class="flex items-start gap-2"><x-heroicon-m-check-circle class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" /> AI Agents{{ $plan->agent_autopilot ? ' with autopilot' : '' }} (Reply Copilot, Lead Hunter and more)</li>
+                            @endif
                         </ul>
 
                         <a href="{{ route('registration.form', $plan) }}" class="mt-2 w-full rounded-full py-3 text-center text-sm font-semibold transition {{ $plan->is_featured ? 'bg-gold-400 text-navy-950 hover:bg-gold-300' : 'bg-navy-900 text-white hover:bg-navy-800' }}">

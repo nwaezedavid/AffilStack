@@ -5,6 +5,7 @@ namespace App\Support\Docs;
 use App\Filament\Pages\Documentation\IntegrationGuide;
 use App\Models\AiEngineSetting;
 use App\Models\GoogleOauthSetting;
+use App\Models\LeadSourceSetting;
 use App\Models\SiteSetting;
 use App\Services\Blog\BlogFeed;
 use App\Services\Settings\SettingsHealthChecker;
@@ -218,6 +219,14 @@ class IntegrationGuideRegistry
             'places' => filled(config('services.google_places.api_key'))
                 ? $this->make('configured', 'GOOGLE_PLACES_API_KEY is set. Run a Local Leads search to confirm.')
                 : $this->make('not_set', 'Add GOOGLE_PLACES_API_KEY to the server .env file.'),
+            'lead_sources' => (function () {
+                $settings = LeadSourceSetting::current();
+                $on = array_keys(array_filter(['Apollo' => $settings->apolloReady(), 'Hunter' => $settings->hunterReady()]));
+
+                return $on === []
+                    ? $this->make('not_set', 'Optional. Lead finding works with Google Maps alone; add Apollo or Hunter for more leads with emails.')
+                    : $this->make('configured', implode(' and ', $on).' switched on. Use the Test buttons on the Lead sources page to confirm.');
+            })(),
             'chrome_store' => filled(config('extension.store_url'))
                 ? $this->make('working', 'Store link set — the Browser Extension page shows "Add to Chrome".')
                 : $this->make('not_set', 'Customers install from the zip until CHROME_EXTENSION_STORE_URL is set.'),

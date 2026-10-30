@@ -55,7 +55,7 @@ class NotificationController extends Controller
                 'ticket_status_changed' => 'Your ticket was '.(($data['status'] ?? 'resolved') === 'closed' ? 'closed' : 'marked resolved').': '.($data['subject'] ?? ''),
                 'referral_payout_processed' => 'Your referral payout of $'.number_format(($data['amount_cents'] ?? 0) / 100, 2).' was sent',
                 'referral_payout_rejected' => 'Your referral payout request needs attention',
-                'security_alert', 'funding_alert' => (string) ($data['title'] ?? 'Update from AffilStack'),
+                'security_alert', 'funding_alert', 'agent_update' => (string) ($data['title'] ?? 'Update from AffilStack'),
                 default => $data['reason'] ?? 'Update from AffilStack',
             };
         }
@@ -78,6 +78,7 @@ class NotificationController extends Controller
             'pinterest_pin' => 'Pinterest pin pack',
             'email_nurture' => 'email nurture sequence',
             'competitor_angles' => 'competitor angle scan',
+            'lead_finder' => 'lead search',
             default => 'generation',
         };
 

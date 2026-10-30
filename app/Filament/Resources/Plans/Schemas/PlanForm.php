@@ -100,6 +100,19 @@ class PlanForm
                             ->default(0)
                             ->required()
                             ->selectablePlaceholder(false),
+                        TextInput::make('monthly_lead_allowance')
+                            ->label('B2B leads included per month')
+                            ->helperText('Leads AffilStack finds for free each month. After that each lead costs credits. 0 = none included (credits only), -1 = unlimited.')
+                            ->numeric()
+                            ->minValue(-1)
+                            ->default(0)
+                            ->required(),
+                        Toggle::make('agents_included')
+                            ->label('AI Agents included')
+                            ->helperText('Reply Copilot, Lead Hunter, Commission Watchdog, Content Autopilot, Offer Scout and the Weekly briefing.'),
+                        Toggle::make('agent_autopilot')
+                            ->label('Agent autopilot')
+                            ->helperText('Lets Reply Copilot send safe replies by itself when the customer turns it on.'),
                         Select::make('network_connections_limit')
                             ->label('Affiliate network connections')
                             ->helperText('How many affiliate networks (Impact, PartnerStack, Awin, CJ, ClickBank, Digistore24) a customer can connect to import commissions and programs.')

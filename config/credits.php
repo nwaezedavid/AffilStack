@@ -49,5 +49,10 @@ return [
         // (POST /api/linkedin/reply). Priced like linkedin_reply_draft.
         'extension_reply_suggestion' => 3,
         // --- Agent 09: Chrome extension v1.2 (end) -----------------------
+
+        // B2B lead finding: charged only for leads past the plan's monthly
+        // allowance — one per lead saved, one more when its email checks out.
+        'lead_found' => 1,
+        'lead_email_checked' => 1,
     ],
 ];

@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 
 #[Fillable([
     'user_id', 'is_sandbox', 'name', 'company', 'title', 'email', 'phone', 'website',
-    'source', 'location', 'notes', 'status', 'raw_data',
+    'source', 'location', 'notes', 'status', 'tags', 'lead_score', 'raw_data',
     'unsubscribe_token', 'unsubscribed_at', 'replied_at',
 ])]
 class CrmContact extends Model
@@ -22,6 +22,8 @@ class CrmContact extends Model
         return [
             'is_sandbox' => 'boolean',
             'raw_data' => 'array',
+            'tags' => 'array',
+            'lead_score' => 'integer',
             'unsubscribed_at' => 'datetime',
             'replied_at' => 'datetime',
         ];

@@ -66,6 +66,7 @@ class OfferController extends Controller
             'affiliate_network' => 'required|string|max:255',
             'affiliate_network_other' => 'nullable|string|max:255|required_if:affiliate_network,'.$otherValue,
             'affiliate_link' => 'nullable|url|max:2048',
+            'find_leads' => 'nullable|boolean',
             'clip_id' => 'nullable|integer',
         ], [
             'affiliate_network_other.required_if' => 'Type the name of the affiliate platform you chose "Other" for.',
@@ -82,6 +83,8 @@ class OfferController extends Controller
                 $validated['product_url'],
                 $network,
                 $validated['affiliate_link'] ?? null,
+                // Lead finding files leads into the CRM, which team seats can't reach.
+                (bool) ($validated['find_leads'] ?? false) && ! auth()->user()->isSeat(),
             );
         } catch (InsufficientCreditsException $e) {
             $message = 'Not enough credits for offer research. Upgrade your plan or buy a credit top-up.';
