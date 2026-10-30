@@ -386,7 +386,9 @@ class SecurityScanService
      */
     protected function checkSecureCookiesInProduction(): array
     {
-        if (config('app.env') !== 'production' || config('session.secure_cookie')) {
+        // Laravel's key is session.secure (session.secure_cookie doesn't exist,
+        // which made this report a problem even with SESSION_SECURE_COOKIE=true).
+        if (config('app.env') !== 'production' || config('session.secure')) {
             return [];
         }
 
@@ -394,7 +396,7 @@ class SecurityScanService
             'category' => 'config',
             'title' => 'Session cookies are not marked secure in production',
             'severity' => 'high',
-            'evidence' => ['APP_ENV' => config('app.env'), 'SESSION_SECURE_COOKIE' => config('session.secure_cookie')],
+            'evidence' => ['APP_ENV' => config('app.env'), 'SESSION_SECURE_COOKIE' => config('session.secure')],
             'fix_action' => ['type' => 'env_set', 'params' => ['key' => 'SESSION_SECURE_COOKIE', 'value' => 'true']],
         ]];
     }

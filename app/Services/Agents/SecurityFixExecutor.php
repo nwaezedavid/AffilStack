@@ -4,9 +4,11 @@ namespace App\Services\Agents;
 
 use App\Models\AgentTask;
 use App\Models\SecurityFinding;
+use App\Support\SiteDomains;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use RuntimeException;
@@ -58,7 +60,11 @@ class SecurityFixExecutor
                 'result' => 'Fix applied and the platform passed its post-fix health check.',
             ]);
             $finding->update(['status' => SecurityFinding::STATUS_FIXED]);
-            $this->notifier->notifyCompleted($task);
+
+            // Users hear about it only if the admin chose to announce it.
+            if (($task->payload['notify_users'] ?? true) === true) {
+                $this->notifier->notifyCompleted($task);
+            }
         } catch (\Throwable $e) {
             Log::error('Tom: fix execution failed, rolling back.', ['task_id' => $task->id, 'error' => $e->getMessage()]);
 
@@ -116,7 +122,16 @@ class SecurityFixExecutor
             Process::path(base_path())->run('composer install --no-interaction --no-scripts');
         }
 
-        Artisan::call('config:clear');
+        $this->refreshConfigCache();
+    }
+
+    /**
+     * Production keeps a config cache; rebuild it rather than leaving the
+     * site running without one (or on the old values).
+     */
+    protected function refreshConfigCache(): void
+    {
+        Artisan::call(app()->configurationIsCached() ? 'config:cache' : 'config:clear');
     }
 
     /**
@@ -136,7 +151,7 @@ class SecurityFixExecutor
             : rtrim($contents)."\n{$key}={$value}\n";
 
         File::put($path, $contents);
-        Artisan::call('config:clear');
+        $this->refreshConfigCache();
     }
 
     /**
@@ -154,9 +169,11 @@ class SecurityFixExecutor
     }
 
     /**
-     * The bar for "everything is running smoothly": the app still boots and
-     * the database is still reachable. Deliberately lightweight — this runs
-     * unattended in production, not the full test suite.
+     * The bar for "everything is running smoothly": the app still boots, the
+     * database is still reachable, customer data is still readable, and the
+     * live website and sign-in page still answer. Deliberately lightweight —
+     * this runs unattended in production, not the full test suite. Any
+     * failure restores the backup.
      */
     protected function assertHealthy(): void
     {
@@ -165,5 +182,46 @@ class SecurityFixExecutor
         }
 
         DB::connection()->getPdo();
+        DB::table('users')->limit(1)->count();
+
+        $this->assertWebsiteAnswers();
+    }
+
+    protected function pause(int $seconds): void
+    {
+        sleep($seconds);
+    }
+
+    /**
+     * The public homepage and the sign-in page must answer 200, retried for
+     * up to about 30 seconds while the web server picks up the change.
+     */
+    protected function assertWebsiteAnswers(): void
+    {
+        $urls = array_values(array_unique([SiteDomains::publicUrl('/'), route('login')]));
+
+        foreach ($urls as $url) {
+            $status = 0;
+
+            for ($attempt = 1; $attempt <= 6; $attempt++) {
+                try {
+                    $status = Http::timeout(15)->withoutRedirecting()->get($url, ['healthcheck' => now()->timestamp])->status();
+                } catch (\Throwable) {
+                    $status = 0;
+                }
+
+                if ($status === 200) {
+                    break;
+                }
+
+                if ($attempt < 6) {
+                    $this->pause(5);
+                }
+            }
+
+            if ($status !== 200) {
+                throw new RuntimeException("The website stopped answering after the fix ({$url} returned {$status}).");
+            }
+        }
     }
 }
