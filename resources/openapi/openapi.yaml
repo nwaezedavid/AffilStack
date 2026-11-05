@@ -560,6 +560,280 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationError'
 
+  /v1/mobile/offers:
+    get:
+      operationId: listMobileOffers
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Products (search with q)"
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/offers/{offer}:
+    get:
+      operationId: getMobileOffer
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "A product with its research, content and what can be created"
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/offers/{offer}/content:
+    post:
+      operationId: createMobileContent
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Create AI content (blog_article, linkedin_post, linkedin_article, x_thread, youtube_script)"
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/offers/{offer}/videos:
+    post:
+      operationId: createMobileVideo
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Create a one-click video (style, optional product_image upload and script)"
+      parameters:
+        - name: offer
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/generations/{generation}:
+    get:
+      operationId: getMobileGeneration
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "One piece of content or video (poll while it is being made)"
+      parameters:
+        - name: generation
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/videos:
+    get:
+      operationId: listMobileVideos
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Your videos"
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/videos/styles:
+    get:
+      operationId: listMobileVideoStyles
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "The video styles, prices and availability"
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/agents:
+    get:
+      operationId: getMobileAgents
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "AI agent approvals, activity and this week's counts"
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/agents/activities/{activity}/approve:
+    post:
+      operationId: approveMobileAgentActivity
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Approve a suggestion"
+      parameters:
+        - name: activity
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/agents/activities/{activity}/dismiss:
+    post:
+      operationId: dismissMobileAgentActivity
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Dismiss a suggestion"
+      parameters:
+        - name: activity
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/inbox:
+    get:
+      operationId: listMobileInbox
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Conversations with contacts who replied"
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/inbox/{contact}:
+    get:
+      operationId: getMobileConversation
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "A conversation, with Reply Copilot's suggestion"
+      parameters:
+        - name: contact
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/inbox/replies/{reply}/draft:
+    post:
+      operationId: draftMobileReply
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Draft an answer with AI (costs credits)"
+      parameters:
+        - name: reply
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/inbox/replies/{reply}/send:
+    post:
+      operationId: sendMobileReply
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Send an answer from your own mailbox"
+      parameters:
+        - name: reply
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/inbox/replies/{reply}/suggestion/dismiss:
+    post:
+      operationId: dismissMobileReplySuggestion
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Dismiss Reply Copilot's suggestion"
+      parameters:
+        - name: reply
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/contacts:
+    get:
+      operationId: listMobileContacts
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "CRM contacts (q, status, tag)"
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/mobile/contacts/{contact}:
+    get:
+      operationId: getMobileContact
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "A contact"
+      parameters:
+        - name: contact
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      operationId: updateMobileContact
+      tags: [Mobile app]
+      x-first-party: true
+      summary: "Update status, tags and notes"
+      parameters:
+        - name: contact
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 components:
   securitySchemes:
     bearerAuth:

@@ -10,10 +10,16 @@ use App\Http\Controllers\Api\V1\CrmContactsController;
 use App\Http\Controllers\Api\V1\GenerationsController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\Mobile\AccountController as MobileAccountController;
+use App\Http\Controllers\Api\V1\Mobile\AgentsController as MobileAgentsController;
 use App\Http\Controllers\Api\V1\Mobile\ConfigController as MobileConfigController;
+use App\Http\Controllers\Api\V1\Mobile\ContactsController as MobileContactsController;
 use App\Http\Controllers\Api\V1\Mobile\DevicesController as MobileDevicesController;
+use App\Http\Controllers\Api\V1\Mobile\GenerationsController as MobileGenerationsController;
 use App\Http\Controllers\Api\V1\Mobile\HomeController as MobileHomeController;
+use App\Http\Controllers\Api\V1\Mobile\InboxController as MobileInboxController;
+use App\Http\Controllers\Api\V1\Mobile\OffersController as MobileOffersController;
 use App\Http\Controllers\Api\V1\Mobile\SessionController as MobileSessionController;
+use App\Http\Controllers\Api\V1\Mobile\VideosController as MobileVideosController;
 use App\Http\Controllers\Api\V1\OffersController;
 use App\Http\Controllers\Api\V1\OpenApiSpecController;
 use App\Http\Controllers\Api\V1\ReferralsController;
@@ -80,6 +86,28 @@ Route::prefix('v1/mobile')->middleware(['api-token-auth', 'mobile-token', 'throt
     Route::post('/logout', [MobileSessionController::class, 'logout'])->name('api.v1.mobile.logout');
     Route::post('/logout-everywhere', [MobileSessionController::class, 'logoutEverywhere'])->name('api.v1.mobile.logout-everywhere');
     Route::delete('/account', [MobileAccountController::class, 'destroy'])->middleware('throttle:5,1,mobile.account.destroy')->name('api.v1.mobile.account.destroy');
+
+    // Core screens (phase 4): products and AI content, one-click videos,
+    // AI agent approvals, inbox replies and CRM contacts — same services,
+    // credit prices and team-seat rules as the dashboard.
+    Route::get('/offers', [MobileOffersController::class, 'index'])->name('api.v1.mobile.offers.index');
+    Route::get('/offers/{offer}', [MobileOffersController::class, 'show'])->name('api.v1.mobile.offers.show');
+    Route::post('/offers/{offer}/content', [MobileOffersController::class, 'createContent'])->middleware('throttle:20,1,mobile.content')->name('api.v1.mobile.offers.content');
+    Route::post('/offers/{offer}/videos', [MobileVideosController::class, 'store'])->middleware('throttle:10,1,mobile.videos')->name('api.v1.mobile.offers.videos');
+    Route::get('/generations/{generation}', [MobileGenerationsController::class, 'show'])->name('api.v1.mobile.generations.show');
+    Route::get('/videos', [MobileVideosController::class, 'index'])->name('api.v1.mobile.videos.index');
+    Route::get('/videos/styles', [MobileVideosController::class, 'styles'])->name('api.v1.mobile.videos.styles');
+    Route::get('/agents', [MobileAgentsController::class, 'index'])->name('api.v1.mobile.agents.index');
+    Route::post('/agents/activities/{activity}/approve', [MobileAgentsController::class, 'approve'])->middleware('throttle:20,1,mobile.agents.approve')->name('api.v1.mobile.agents.approve');
+    Route::post('/agents/activities/{activity}/dismiss', [MobileAgentsController::class, 'dismiss'])->name('api.v1.mobile.agents.dismiss');
+    Route::get('/inbox', [MobileInboxController::class, 'index'])->name('api.v1.mobile.inbox.index');
+    Route::get('/inbox/{contact}', [MobileInboxController::class, 'show'])->name('api.v1.mobile.inbox.show');
+    Route::post('/inbox/replies/{reply}/draft', [MobileInboxController::class, 'draft'])->middleware('throttle:paid-lookups')->name('api.v1.mobile.inbox.draft');
+    Route::post('/inbox/replies/{reply}/send', [MobileInboxController::class, 'send'])->middleware('throttle:30,1,mobile.inbox.send')->name('api.v1.mobile.inbox.send');
+    Route::post('/inbox/replies/{reply}/suggestion/dismiss', [MobileInboxController::class, 'dismissSuggestion'])->name('api.v1.mobile.inbox.suggestion.dismiss');
+    Route::get('/contacts', [MobileContactsController::class, 'index'])->name('api.v1.mobile.contacts.index');
+    Route::get('/contacts/{contact}', [MobileContactsController::class, 'show'])->name('api.v1.mobile.contacts.show');
+    Route::patch('/contacts/{contact}', [MobileContactsController::class, 'update'])->name('api.v1.mobile.contacts.update');
 });
 
 // The general-purpose API (task #6) — one bearer token (dashboard: "API
