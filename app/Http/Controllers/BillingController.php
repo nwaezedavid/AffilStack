@@ -2,23 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomerWallet;
 use App\Models\PaymentTransaction;
 use App\Models\Plan;
+use App\Services\CustomerWallet\CustomerWalletManager;
+use App\Services\CustomerWallet\InsufficientCustomerWalletBalanceException;
 use App\Services\Payments\CheckoutCountryResolver;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Payments\PaymentProcessor;
 use App\Services\Payments\PlanChangeService;
 use App\Services\Payments\RefundEligibilityService;
 use App\Services\Payments\RefundExecutionService;
+use App\Services\Trials\TrialInviteService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use InvalidArgumentException;
 
 class BillingController extends Controller
 {
-    public function index(Request $request, PaymentGatewayManager $gateways, CheckoutCountryResolver $countries, RefundEligibilityService $refundEligibility): View
+    public function index(Request $request, PaymentGatewayManager $gateways, CheckoutCountryResolver $countries, RefundEligibilityService $refundEligibility, CustomerWalletManager $wallets): View
     {
         // Audit item #7 (caching/performance) — see Plan::activePublicList().
         $plans = Plan::activePublicList();
@@ -47,7 +52,9 @@ class BillingController extends Controller
         $refundableTransaction = $refundEligibility->eligibleTransaction(auth()->user());
         $refundHoursRemaining = $refundableTransaction ? $refundEligibility->hoursRemaining($refundableTransaction) : null;
 
-        return view('billing.index', compact('plans', 'subscription', 'enabledGateways', 'transactions', 'isNigeria', 'paymentMethods', 'refundableTransaction', 'refundHoursRemaining'));
+        $wallet = $wallets->walletFor(auth()->user());
+
+        return view('billing.index', compact('plans', 'subscription', 'enabledGateways', 'transactions', 'isNigeria', 'paymentMethods', 'refundableTransaction', 'refundHoursRemaining', 'wallet'));
     }
 
     /**
@@ -71,6 +78,12 @@ class BillingController extends Controller
 
         $subscription = auth()->user()->activeSubscription;
 
+        // Paying during a free trial is a fresh, full-price purchase: the
+        // trial is replaced by the paid plan (see PaymentProcessor).
+        if ($subscription?->isTrialing()) {
+            $subscription = null;
+        }
+
         // Same plan and cycle as the active subscription = a renewal: full
         // price, and the new period starts where the current one ends (see
         // PaymentProcessor::activateSubscription). It must never go through
@@ -80,7 +93,7 @@ class BillingController extends Controller
             && $subscription->plan_id === $plan->id
             && $subscription->billing_cycle === $validated['billing_cycle'];
 
-        if ($isRenewal && $subscription->gateway === 'stripe') {
+        if ($isRenewal && $subscription->renewsThroughStripe()) {
             return redirect()->route('billing.index')->with('success', 'Your plan renews automatically — there is nothing to pay right now.');
         }
 
@@ -99,6 +112,10 @@ class BillingController extends Controller
             $when = $subscription->current_period_end?->format('M j, Y') ?? 'your next renewal';
 
             return redirect()->route('billing.index')->with('success', "You're scheduled to move to the {$plan->name} plan on {$when}. You'll keep your current plan's features until then.");
+        }
+
+        if ($request->boolean('pay_from_wallet')) {
+            return $this->payFromWallet($plan, $validated['billing_cycle'], (bool) $subscription && ! $isRenewal);
         }
 
         $enabledGateways = $gateways->enabledForCountry($countries->isNigeria($request) ? 'NG' : 'US');
@@ -167,6 +184,85 @@ class BillingController extends Controller
     }
 
     /**
+     * "Pay from wallet" for a new plan or a renewal at full price. The wallet
+     * debit and the activation (PaymentProcessor, exactly as for a card
+     * payment) happen in one database transaction, so either both happen or
+     * neither does.
+     */
+    protected function payFromWallet(Plan $plan, string $billingCycle, bool $isUpgrade): RedirectResponse
+    {
+        if ($isUpgrade) {
+            return redirect()->route('billing.index')->with('error', 'Pay from wallet works for new plans and renewals. To upgrade, pay by card.');
+        }
+
+        $user = auth()->user();
+        $wallets = app(CustomerWalletManager::class);
+        $amount = $billingCycle === 'yearly' ? $plan->price_yearly_cents : $plan->price_monthly_cents;
+        $currency = strtoupper((string) $plan->currency);
+
+        if (! $wallets->canPay($user, $amount, $currency)) {
+            return redirect()->route('billing.index')->with('error', 'Your wallet balance doesn\'t cover this plan. Top up your wallet or pay by card.');
+        }
+
+        try {
+            DB::transaction(function () use ($user, $wallets, $plan, $billingCycle, $amount, $currency) {
+                $transaction = PaymentTransaction::create([
+                    'user_id' => $user->id,
+                    'type' => 'subscription',
+                    'gateway' => 'wallet',
+                    'tx_ref' => 'affilstack_wallet_'.Str::uuid(),
+                    'plan_id' => $plan->id,
+                    'billing_cycle' => $billingCycle,
+                    'amount_cents' => $amount,
+                    'currency' => $currency,
+                    'status' => 'pending',
+                ]);
+
+                $wallets->debit($user, $amount, 'subscription', "{$plan->name} plan (".($billingCycle === 'yearly' ? 'annual' : 'monthly').')', $transaction);
+
+                $processed = app(PaymentProcessor::class)->process('wallet', [
+                    'tx_ref' => $transaction->tx_ref,
+                    'remote_id' => $transaction->tx_ref,
+                    'status' => 'successful',
+                    'amount' => $amount / 100,
+                    'currency' => $currency,
+                    'meta' => [],
+                    'raw' => ['source' => 'customer_wallet'],
+                ]);
+
+                if ($processed?->status !== 'successful') {
+                    throw new \RuntimeException('Wallet plan payment could not be activated.');
+                }
+            });
+        } catch (InsufficientCustomerWalletBalanceException) {
+            return redirect()->route('billing.index')->with('error', 'Your wallet balance doesn\'t cover this plan. Top up your wallet or pay by card.');
+        } catch (\RuntimeException $e) {
+            report($e);
+
+            return redirect()->route('billing.index')->with('error', 'We could not take this payment from your wallet. Nothing was charged.');
+        }
+
+        return redirect()->route('billing.index')->with('success', "Paid from your wallet — your {$plan->name} plan is active.");
+    }
+
+    /**
+     * Cancels an invite-only free trial: nothing is charged and access ends
+     * when the trial ends.
+     */
+    public function cancelTrial(TrialInviteService $trials): RedirectResponse
+    {
+        $subscription = auth()->user()->activeSubscription;
+
+        if (! $subscription?->isTrialing()) {
+            return redirect()->route('billing.index')->with('error', 'You don\'t have a free trial to cancel.');
+        }
+
+        $trials->cancel($subscription);
+
+        return redirect()->route('billing.index')->with('success', 'Your free trial is cancelled. You won\'t be charged, and you can keep using AffilStack until '.$subscription->trial_ends_at?->format('M j, Y').'.');
+    }
+
+    /**
      * Backs out of a scheduled downgrade (audit item #2) — the current
      * plan simply keeps renewing as normal.
      */
@@ -231,6 +327,18 @@ class BillingController extends Controller
                 return redirect()->route('billing.index')->with('success', $credits
                     ? number_format($credits).' credits have been added to your account.'
                     : 'Your credit top-up has been added to your account.');
+            }
+
+            if ($transaction->type === 'customer_wallet_topup') {
+                $amount = CustomerWallet::format((int) $transaction->credited_amount_cents, app(CustomerWalletManager::class)->walletFor($transaction->user)->currency);
+
+                return redirect()->route('wallet.index')->with('success', "{$amount} has been added to your wallet.");
+            }
+
+            if ($transaction->type === 'trial_card_check') {
+                return $transaction->subscription_id
+                    ? redirect()->route('billing.index')->with('success', 'Your card is saved and your 7-day free trial has started. The card check amount is in your wallet and goes toward your first payment.')
+                    : redirect()->route('billing.index')->with('error', 'We couldn\'t save that card for later payments, so the trial hasn\'t started. The amount you paid is in your wallet. Open your invite link again and use a debit or credit card.');
             }
 
             // API wallet top-up (ApiWalletController::checkout()) — falling

@@ -79,6 +79,7 @@ class DashboardNavigation
                 ['name' => 'referrals.index', 'match' => 'referrals.index', 'label' => 'Refer & Earn', 'icon' => 'gift'],
                 ['name' => 'team.index', 'match' => 'team.*', 'label' => 'Team', 'icon' => 'user-group'],
                 ['name' => 'billing.index', 'match' => 'billing.*', 'label' => 'Billing & Plan', 'icon' => 'credit-card'],
+                ['name' => 'wallet.index', 'match' => 'wallet.*', 'label' => 'Wallet', 'icon' => 'wallet'],
                 ['name' => 'credit-topups.index', 'match' => 'credit-topups.*', 'label' => 'Buy Credits', 'icon' => 'bolt'],
                 ['name' => 'support.index', 'match' => 'support.*', 'label' => 'Support', 'icon' => 'chat-bubble-left-right'],
                 ['name' => 'testimonial.edit', 'match' => 'testimonial.*', 'label' => 'Share a Review', 'icon' => 'star'],

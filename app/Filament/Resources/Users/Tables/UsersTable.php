@@ -66,6 +66,11 @@ class UsersTable
                     ->label('Credits')
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('customerWallet.balance_minor')
+                    ->label('Wallet')
+                    ->formatStateUsing(fn ($state, User $record) => $record->customerWallet?->formattedBalance() ?? '—')
+                    ->default(0)
+                    ->visible(fn () => auth()->user()?->canAccessDepartment('billing') ?? false),
                 TextColumn::make('crm_contacts_count')
                     ->label('Contacts')
                     ->counts('crmContacts')

@@ -5,12 +5,15 @@ namespace App\Services\Payments;
 use App\Models\PaymentTransaction;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Models\TrialInvite;
 use App\Models\User;
 use App\Services\Agents\SamAgentService;
 use App\Services\ApiWallet\ApiWalletManager;
 use App\Services\Credits\CreditManager;
+use App\Services\CustomerWallet\CustomerWalletManager;
 use App\Services\Marketplace\AddonBilling;
 use App\Services\Referrals\ReferralService;
+use App\Services\Trials\TrialInviteService;
 use Carbon\Carbon;
 use Filament\Notifications\Notification;
 use Illuminate\Database\QueryException;
@@ -142,6 +145,15 @@ class PaymentProcessor
             $this->grantApiWalletTopup($transaction, $gateway, $result);
         }
 
+        if ($transaction->type === 'customer_wallet_topup') {
+            $this->grantCustomerWalletTopup($transaction, $gateway, $result);
+        }
+
+        // The small card check that starts an invite-only free trial.
+        if ($transaction->type === 'trial_card_check') {
+            app(TrialInviteService::class)->startTrialFromCardCheck($transaction, $gateway, $result);
+        }
+
         // A month of a paid marketplace add-on (feature 7).
         if ($transaction->type === AddonBilling::TYPE && $transaction->user) {
             app(AddonBilling::class)->activate($transaction, $this->paymentMethods->record($transaction->user, $gateway, $result));
@@ -189,6 +201,35 @@ class PaymentProcessor
             $creditCents,
             'api_wallet_topup_purchase',
             $transaction
+        );
+    }
+
+    /**
+     * Customer wallet top-up (WalletController::topUp()). Credited once per
+     * payment: the processing claim above already stops a second caller,
+     * and the idempotency key on the wallet row backs that up. The wallet
+     * gets credited_amount_cents — its own currency — not amount_cents,
+     * which is what the gateway charged (naira kobo on Paystack).
+     *
+     * @param  array<string, mixed>  $result
+     */
+    protected function grantCustomerWalletTopup(PaymentTransaction $transaction, string $gateway, array $result): void
+    {
+        if (! $transaction->user || ! $transaction->credited_amount_cents) {
+            Log::error('Customer wallet top-up paid but user or amount could not be resolved', ['gateway' => $gateway, 'tx_ref' => $transaction->tx_ref]);
+
+            return;
+        }
+
+        $this->paymentMethods->record($transaction->user, $gateway, $result);
+
+        app(CustomerWalletManager::class)->credit(
+            $transaction->user,
+            $transaction->credited_amount_cents,
+            'topup',
+            'Wallet top-up',
+            $transaction,
+            idempotencyKey: 'payment_transaction:'.$transaction->id,
         );
     }
 
@@ -352,8 +393,26 @@ class PaymentProcessor
                 'current_period_end' => $periodEnd,
                 'cancel_at_period_end' => false,
                 'renewal_reminder_sent_at' => null,
+                'renewal_attempted_at' => null,
+                'assigned_by_admin' => false,
             ]
         );
+
+        // A running free trial, or one whose day-8 charge failed (past due),
+        // is replaced by this paid subscription — never charged again or
+        // left to "expire" on top of it.
+        $replaced = Subscription::where('user_id', $transaction->user_id)
+            ->whereIn('status', ['trialing', 'past_due'])
+            ->where(fn ($query) => $query->where('gateway', '!=', 'stripe')->orWhereNull('gateway_subscription_id'))
+            ->whereKeyNot($subscription->id)
+            ->get();
+
+        foreach ($replaced as $old) {
+            $old->update(['status' => 'canceled', 'canceled_at' => now()]);
+            TrialInvite::where('subscription_id', $old->id)
+                ->whereIn('status', [TrialInvite::STATUS_ACCEPTED, TrialInvite::STATUS_CANCELLED])
+                ->update(['status' => TrialInvite::STATUS_CONVERTED, 'converted_at' => now()]);
+        }
 
         $transaction->update(['subscription_id' => $subscription->id]);
 

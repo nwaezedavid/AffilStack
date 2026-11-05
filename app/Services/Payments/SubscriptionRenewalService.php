@@ -47,6 +47,7 @@ class SubscriptionRenewalService
         protected PlanChangeService $planChanges,
         protected StripeGateway $stripe,
         protected ReferralService $referrals,
+        protected SubscriptionRenewalCharger $charger,
     ) {}
 
     /**
@@ -177,16 +178,18 @@ class SubscriptionRenewalService
     }
 
     /**
-     * Reminder sweep for every gateway that doesn't actually auto-renew —
-     * Flutterwave, Paystack, and PayPal are all one-time Standard/Orders
-     * checkouts here, not real subscriptions. Stripe doesn't need this: it
-     * renews itself and tells us via webhook.
+     * Reminder sweep for every subscription AffilStack renews itself — the
+     * one-time-checkout gateways (Flutterwave, Paystack, PayPal), admin-
+     * assigned complimentary months, wallet payments and converted trials.
+     * Stripe Checkout subscriptions don't need this: Stripe renews them and
+     * tells us via webhook.
      */
     public function sendRenewalReminders(int $daysBefore = 3): int
     {
         $subscriptions = Subscription::query()
-            ->whereIn('gateway', ['flutterwave', 'paystack', 'paypal'])
+            ->where(fn ($query) => $query->where('gateway', '!=', 'stripe')->orWhereNull('gateway_subscription_id'))
             ->where('status', 'active')
+            ->where('cancel_at_period_end', false)
             ->whereNull('renewal_reminder_sent_at')
             ->whereNotNull('current_period_end')
             ->whereBetween('current_period_end', [now(), now()->addDays($daysBefore)])
@@ -206,6 +209,86 @@ class SubscriptionRenewalService
     }
 
     /**
+     * Renews, a day before they end, the subscriptions AffilStack renews
+     * itself: customer wallet first, then the saved card for the rest (see
+     * SubscriptionRenewalCharger). Nothing to pay with means nothing
+     * happens — the reminder email has already asked the customer to pay,
+     * and expireLapsed() ends the subscription if they don't. A declined
+     * card is retried at most once a day.
+     *
+     * @return array{renewed: int, failed: int}
+     */
+    public function chargeDueRenewals(): array
+    {
+        $stats = ['renewed' => 0, 'failed' => 0];
+
+        Subscription::query()
+            ->where(fn ($query) => $query->where('gateway', '!=', 'stripe')->orWhereNull('gateway_subscription_id'))
+            ->where('status', 'active')
+            ->where('cancel_at_period_end', false)
+            ->whereNull('pending_plan_id')
+            ->whereNotNull('current_period_end')
+            ->where('current_period_end', '<=', now()->addDay())
+            ->where(fn ($query) => $query->whereNull('renewal_attempted_at')->orWhere('renewal_attempted_at', '<', now()->subHours(20)))
+            ->with(['plan', 'user', 'paymentMethod'])
+            ->each(function (Subscription $subscription) use (&$stats) {
+                if (! $subscription->plan || ! $subscription->user || $subscription->user->is_suspended) {
+                    return;
+                }
+
+                $plan = $this->charger->plan($subscription);
+
+                // Only try when the wallet covers it all or there is a card
+                // for the rest — never a half-payment.
+                if ($plan['price_minor'] <= 0 || ($plan['card_minor'] > 0 && ! $plan['method'])) {
+                    return;
+                }
+
+                $subscription->update(['renewal_attempted_at' => now()]);
+
+                $result = $this->charger->charge($subscription, 'renewal', 'renewal', ($subscription->plan->name).' plan renewal');
+
+                if (! $result['success']) {
+                    Log::warning('Automatic renewal charge failed', ['subscription_id' => $subscription->id, 'message' => $result['message']]);
+                    $stats['failed']++;
+
+                    return;
+                }
+
+                $this->extendAfterPayment($subscription, $result['transaction'], 'renewal_grant');
+                $stats['renewed']++;
+            });
+
+        return $stats;
+    }
+
+    /**
+     * One more paid period: starts where the current one ends (or now, if
+     * it already ended), grants the plan's credits and records commission.
+     */
+    public function extendAfterPayment(Subscription $subscription, PaymentTransaction $transaction, string $creditReason): void
+    {
+        $start = $subscription->current_period_end?->isFuture() ? $subscription->current_period_end->copy() : now();
+        $end = $subscription->billing_cycle === 'yearly' ? $start->copy()->addYear() : $start->copy()->addMonth();
+
+        $subscription->update([
+            'status' => 'active',
+            'current_period_start' => $start,
+            'current_period_end' => $end,
+            'renewal_reminder_sent_at' => null,
+            'renewal_attempted_at' => null,
+            'assigned_by_admin' => false,
+        ]);
+
+        $this->referrals->recordCommission($subscription, $transaction);
+
+        if ($subscription->plan && $subscription->user) {
+            $this->credits->grant($subscription->user, $subscription->plan->credits_per_month, $creditReason, $subscription);
+            $subscription->update(['last_credit_grant_at' => now()]);
+        }
+    }
+
+    /**
      * Revokes access from any subscription whose period has actually ended
      * without being renewed. See class docblock for why this is needed at
      * all rather than just relying on `status`.
@@ -213,7 +296,10 @@ class SubscriptionRenewalService
     public function expireLapsed(): int
     {
         $subscriptions = Subscription::query()
-            ->whereIn('status', ['active', 'past_due'])
+            // A cancelled trial ends with its trial; a running one is
+            // converted (or marked past due) by TrialInviteService instead.
+            ->where(fn ($query) => $query->whereIn('status', ['active', 'past_due'])
+                ->orWhere(fn ($query) => $query->where('status', 'trialing')->where('cancel_at_period_end', true)))
             ->whereNotNull('current_period_end')
             ->where('current_period_end', '<', now())
             ->with('user')

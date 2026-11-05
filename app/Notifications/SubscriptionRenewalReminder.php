@@ -34,11 +34,20 @@ class SubscriptionRenewalReminder extends Notification
         $planName = $this->subscription->plan?->name ?? 'your plan';
         $date = $this->subscription->current_period_end?->format('M j, Y') ?? 'soon';
 
+        if ($this->subscription->assigned_by_admin) {
+            return (new MailMessage)
+                ->subject("Your complimentary AffilStack {$planName} month ends on {$date}")
+                ->line("The free month of the {$planName} plan we gave you ends on {$date}.")
+                ->line('To keep it, pay for the plan from your Billing page before then — or choose another plan.')
+                ->action('Keep my plan', route('billing.index'))
+                ->line('If you don\'t, your subscription will expire and paid features will pause until you subscribe.');
+        }
+
         return (new MailMessage)
             ->subject("Your AffilStack {$planName} plan renews on {$date}")
             ->line("Your {$planName} plan is set to end on {$date}.")
-            ->line('Flutterwave subscriptions on AffilStack are not charged automatically — renew manually before that date to keep your access, credits, and data uninterrupted.')
+            ->line('We\'ll try to renew it automatically from your AffilStack wallet balance and saved card. If neither can cover it, renew from your Billing page before that date to keep your access, credits, and data uninterrupted.')
             ->action('Renew my plan', route('billing.index'))
-            ->line('If you don\'t renew in time, your subscription will expire and paid features will pause until you resubscribe.');
+            ->line('If it isn\'t renewed in time, your subscription will expire and paid features will pause until you resubscribe.');
     }
 }

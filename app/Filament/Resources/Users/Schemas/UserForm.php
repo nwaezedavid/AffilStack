@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Models\CustomerWallet;
+use App\Models\Plan;
 use App\Models\User;
 use App\Support\Countries;
 use App\Support\Lifecycle\LifecycleAudience;
@@ -73,6 +75,50 @@ class UserForm
                         Placeholder::make('industry')
                             ->label('Industry')
                             ->content(fn (?User $record) => $record?->business_industry ?: 'Not set'),
+                    ]),
+
+                Section::make('Subscription plan')
+                    ->description('Give this customer one complimentary month on a plan. It starts now, is marked "Assigned by admin" and nothing is charged. When the month ends they pay to keep it or choose another plan — renewal reminders go out first, and it expires if unpaid.')
+                    ->columns(2)
+                    ->visible(fn () => auth()->user()?->canAccessDepartment('billing') ?? false)
+                    ->components([
+                        Placeholder::make('current_subscription')
+                            ->label('Current plan')
+                            ->hiddenOn('create')
+                            ->columnSpanFull()
+                            ->content(function (?User $record): string {
+                                $subscription = $record?->activeSubscription;
+
+                                if (! $subscription) {
+                                    return 'No active plan';
+                                }
+
+                                $label = $subscription->plan?->name.' · '.($subscription->billing_cycle === 'yearly' ? 'Annual' : 'Monthly').' · '.$subscription->status;
+
+                                return $label.($subscription->assigned_by_admin ? ' · Assigned by admin' : '').' · until '.$subscription->current_period_end?->format('M j, Y');
+                            }),
+                        Select::make('assign_plan_id')
+                            ->label('Subscription plan')
+                            ->placeholder('Don\'t change')
+                            ->options(fn (): array => Plan::query()->orderBy('sort_order')->get()->mapWithKeys(fn (Plan $plan) => [$plan->id => $plan->name.($plan->is_active ? '' : ' (hidden from pricing)')])->all())
+                            ->dehydrated(false),
+                        Select::make('assign_billing_cycle')
+                            ->label('Billing')
+                            ->options(['monthly' => 'Monthly', 'yearly' => 'Annual'])
+                            ->default('monthly')
+                            ->selectablePlaceholder(false)
+                            ->dehydrated(false)
+                            ->helperText('What they\'ll pay when the complimentary month ends.'),
+                    ]),
+
+                Section::make('Wallet')
+                    ->hiddenOn('create')
+                    ->visible(fn () => auth()->user()?->canAccessDepartment('billing') ?? false)
+                    ->components([
+                        Placeholder::make('wallet_balance')
+                            ->label('Wallet balance')
+                            ->content(fn (?User $record): string => $record?->customerWallet?->formattedBalance() ?? CustomerWallet::format(0, (string) config('customer_wallet.default_currency', 'USD')))
+                            ->helperText('Customer wallet (top-ups for credit packs and renewals). Use "Adjust wallet" above to add a credit or refund; every change is kept in the wallet history below.'),
                     ]),
 
                 Section::make('Access & credits')
