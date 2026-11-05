@@ -72,6 +72,12 @@ class ApiIntegrationsHubTest extends TestCase
 
         foreach ($spec['paths'] as $path => $methods) {
             foreach (array_keys($methods) as $method) {
+                // App-only endpoints are deliberately not in the customer
+                // reference (see OpenApiReference::endpoints()).
+                if (! empty($methods[$method]['x-first-party'])) {
+                    continue;
+                }
+
                 $operations++;
                 $endpoint = $endpoints->first(fn ($e) => $e['spec_path'] === $path && $e['method'] === strtoupper($method));
 
@@ -244,5 +250,16 @@ class ApiIntegrationsHubTest extends TestCase
             ->assertDontSee('Auto-recharge');
 
         $this->actingAs($seat)->get(route('api-access.sdk', 'js'))->assertOk();
+    }
+
+    public function test_the_phone_app_only_endpoints_stay_off_the_customer_reference(): void
+    {
+        $endpoints = collect(app(OpenApiReference::class)->endpoints());
+
+        $this->assertNull($endpoints->first(fn ($e) => str_starts_with($e['spec_path'], '/v1/mobile/')));
+
+        $this->actingAs($this->user)->get(route('api-access.index', ['tab' => 'reference']))
+            ->assertOk()
+            ->assertDontSee('/mobile/home');
     }
 }

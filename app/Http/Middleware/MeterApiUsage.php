@@ -53,7 +53,11 @@ class MeterApiUsage
         // (paid) research pipeline entirely for one, so there is nothing
         // here to charge for in the first place.
         $token = $request->attributes->get('apiToken');
-        if ($token?->is_sandbox) {
+
+        // The official phone app is the dashboard in your pocket: its
+        // calls are never billed to the API wallet (the work itself still
+        // spends credits exactly as it does on the website).
+        if ($token?->is_sandbox || $token?->isMobileToken()) {
             return $next($request);
         }
 

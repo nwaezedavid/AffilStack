@@ -73,6 +73,7 @@ use App\Http\Controllers\LifecycleEmailPreferenceController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\Marketplace\PublicMarketplaceController;
+use App\Http\Controllers\Mobile\MobileAuthorizeController;
 use App\Http\Controllers\MobileAppRedirectController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OAuth\AuthorizeController;
@@ -266,6 +267,17 @@ SiteDomains::app(function () {
     // The app vouches for a signed-in customer to the developer portal
     // on its own host (see Developer\AuthController).
     Route::middleware(['auth', 'not-suspended', 'restrict-affiliate-only', 'throttle:20,1,developer.sso'])->get('/developer-sso', [DeveloperAuthController::class, 'vouch'])->name('developer.sso');
+
+    // The official AffilStack phone apps sign in here (in the phone's
+    // secure browser) and get a one-time code back. Outside the seat and
+    // partner allowlists on purpose: team seats may use the app too, and
+    // MobileAuthServer::denialReason() turns suspended and partner-only
+    // accounts away with a friendly message instead of a redirect.
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::get('/mobile/authorize', [MobileAuthorizeController::class, 'show'])->name('mobile.authorize');
+        Route::post('/mobile/authorize', [MobileAuthorizeController::class, 'approve'])->middleware('throttle:30,1,mobile.authorize')->name('mobile.authorize.approve');
+        Route::post('/mobile/authorize/deny', [MobileAuthorizeController::class, 'deny'])->name('mobile.authorize.deny');
+    });
 });
 
 // "Continue with Google" — one callback for both the login page and the

@@ -39,7 +39,7 @@ use Illuminate\Support\Str;
  * only its SHA-256 hash ever persisted. See App\Http\Middleware\ApiTokenAuth
  * for the other half.
  */
-#[Fillable(['user_id', 'addon_install_id', 'type', 'scope', 'scopes', 'is_sandbox', 'name', 'token_hash', 'last_used_at', 'expires_at'])]
+#[Fillable(['user_id', 'addon_install_id', 'mobile_device_id', 'type', 'scope', 'scopes', 'is_sandbox', 'name', 'token_hash', 'last_used_at', 'expires_at'])]
 #[Hidden(['token_hash'])]
 class ApiToken extends Model
 {
@@ -111,6 +111,21 @@ class ApiToken extends Model
     public function install(): BelongsTo
     {
         return $this->belongsTo(AddonInstall::class, 'addon_install_id');
+    }
+
+    /**
+     * A token the official AffilStack phone app got by signing in (see
+     * MobileAuthServer). It acts with the customer's own dashboard
+     * permissions, like a signed-in browser session.
+     */
+    public function isMobileToken(): bool
+    {
+        return $this->type === 'mobile';
+    }
+
+    public function mobileDevice(): BelongsTo
+    {
+        return $this->belongsTo(MobileDevice::class);
     }
 
     public function hasExpired(): bool

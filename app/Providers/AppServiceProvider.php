@@ -116,7 +116,19 @@ class AppServiceProvider extends ServiceProvider
             $limits = config('api_billing.rate_limits', []);
             $perMinute = (int) ($limits[$planSlug] ?? $limits['default'] ?? 60);
 
+            // The phone app loads several things per screen, like a
+            // dashboard page does.
+            if ($token?->isMobileToken()) {
+                $perMinute = max($perMinute, (int) config('mobile.rate_limit_per_minute'));
+            }
+
             return Limit::perMinute($perMinute)->by($token?->id ?? $request->ip());
+        });
+
+        RateLimiter::for('mobile', function (Request $request) {
+            $token = $request->attributes->get('apiToken');
+
+            return Limit::perMinute((int) config('mobile.rate_limit_per_minute'))->by($token?->mobile_device_id ? 'mobile-device:'.$token->mobile_device_id : 'mobile-ip:'.$request->ip());
         });
     }
 }

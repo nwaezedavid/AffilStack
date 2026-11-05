@@ -172,7 +172,9 @@ class GoogleAuthController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect()->route('dashboard')->with('success', $message);
+            // Back to where sign-in was asked for (e.g. the phone app's
+            // sign-in page), or the dashboard as before.
+            return redirect()->intended(route('dashboard'))->with('success', $message);
         }
 
         if (($intent['type'] ?? null) !== 'signup') {

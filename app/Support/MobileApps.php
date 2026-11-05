@@ -122,4 +122,54 @@ class MobileApps
 
         return in_array($host, $allowedHosts, true) ? $url : null;
     }
+
+    /**
+     * The oldest app version allowed to keep working on $platform ("ios"
+     * or "android"). Older apps are asked to update before they go on —
+     * set in admin when an old version must stop (e.g. after an API
+     * change). Defaults to config('mobile.default_min_version').
+     */
+    public static function minSupportedVersion(string $platform): string
+    {
+        $value = $platform === 'ios' || $platform === 'android' ? SiteSetting::get("mobile_app_min_version_{$platform}") : null;
+
+        return static::validVersion($value) ?? (string) config('mobile.default_min_version');
+    }
+
+    /**
+     * The newest released version, so the app can offer (not force) an
+     * update. Null when admin hasn't set one.
+     */
+    public static function latestVersion(): ?string
+    {
+        return static::validVersion(SiteSetting::get('mobile_app_latest_version'));
+    }
+
+    /**
+     * The banner shown at the top of the app, or null when switched off.
+     *
+     * @return array{message: string, level: string, url: string|null}|null
+     */
+    public static function announcement(): ?array
+    {
+        $message = trim((string) SiteSetting::get('mobile_app_announcement_message'));
+
+        if (! SiteSetting::flag('mobile_app_announcement_enabled', false) || $message === '') {
+            return null;
+        }
+
+        $level = (string) SiteSetting::get('mobile_app_announcement_level', 'info');
+        $url = SiteSetting::get('mobile_app_announcement_url');
+
+        return [
+            'message' => $message,
+            'level' => in_array($level, ['info', 'warning', 'critical'], true) ? $level : 'info',
+            'url' => is_string($url) && str_starts_with($url, 'https://') ? $url : null,
+        ];
+    }
+
+    protected static function validVersion(mixed $value): ?string
+    {
+        return is_string($value) && preg_match('/^\d{1,3}(\.\d{1,3}){0,2}$/', trim($value)) ? trim($value) : null;
+    }
 }
