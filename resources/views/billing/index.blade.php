@@ -3,16 +3,56 @@
 @section('title', 'Billing & Plan')
 
 @section('content')
+    @php
+        $cycleLabel = fn (string $cycle) => $cycle === 'yearly' ? 'Annual' : 'Monthly';
+        $selfRenewing = $subscription && ! $subscription->renewsThroughStripe();
+    @endphp
+
+    <div class="bg-surface border border-line rounded-lg p-4 mb-6 flex items-center justify-between gap-3">
+        <div class="text-sm text-ink-600">
+            Wallet balance <span class="font-mono font-semibold text-navy-900 ml-1" data-billing-wallet-balance>{{ $wallet->formattedBalance() }}</span>
+            @if ($wallet->use_for_renewals)
+                <span class="text-xs text-ink-400 ml-2">Used first for renewals</span>
+            @endif
+        </div>
+        <a href="{{ route('wallet.index') }}" class="text-sm font-medium text-brand-600 hover:text-brand-700 whitespace-nowrap">Top up</a>
+    </div>
+
     @if ($subscription)
-        <div class="bg-surface border border-line rounded-lg p-5 mb-8 flex items-center justify-between">
+        <div class="bg-surface border border-line rounded-lg p-5 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <div class="text-xs uppercase tracking-wide text-ink-400 font-mono mb-1">Current plan</div>
-                <div class="font-display font-semibold text-lg text-navy-900">{{ $subscription->plan->name }} · {{ ucfirst($subscription->billing_cycle) }}</div>
+                <div class="font-display font-semibold text-lg text-navy-900">
+                    {{ $subscription->plan->name }} · {{ $cycleLabel($subscription->billing_cycle) }}
+                    @if ($subscription->assigned_by_admin)
+                        <span class="align-middle text-xs font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-700">Assigned by admin</span>
+                    @endif
+                </div>
             </div>
-            <div class="text-sm text-ink-600 text-right">
-                Renews {{ $subscription->current_period_end?->format('M j, Y') }}
+            <div class="text-sm text-ink-600 sm:text-right">
+                @if ($subscription->isTrialing())
+                    @if ($subscription->cancel_at_period_end)
+                        Trial cancelled — access ends on {{ $subscription->trial_ends_at?->format('M j, Y') }}. You won't be charged.
+                    @else
+                        Free trial ends on {{ $subscription->trial_ends_at?->format('M j, Y') }}, then {{ \App\Models\CustomerWallet::format($subscription->renewalPriceCents(), strtoupper($subscription->plan->currency)) }}/{{ $subscription->billing_cycle === 'yearly' ? 'year' : 'month' }}
+                    @endif
+                @elseif ($subscription->assigned_by_admin)
+                    Complimentary month ends {{ $subscription->current_period_end?->format('M j, Y') }} — pay to keep this plan or choose another.
+                @else
+                    Renews {{ $subscription->current_period_end?->format('M j, Y') }}
+                @endif
             </div>
         </div>
+
+        @if ($subscription->isTrialing() && ! $subscription->cancel_at_period_end)
+            <div class="bg-surface border border-line rounded-lg p-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p class="text-sm text-ink-600">On {{ $subscription->trial_ends_at?->format('M j, Y') }} we'll charge your plan — wallet balance first, then your saved card. Cancel before then and nothing is charged.</p>
+                <form method="POST" action="{{ route('billing.cancel-trial') }}" onsubmit="return confirm('Cancel your free trial? You can keep using AffilStack until it ends, and nothing will be charged.');">
+                    @csrf
+                    <button class="whitespace-nowrap rounded-md border border-red-200 text-red-700 text-sm font-medium px-4 py-2 hover:bg-red-50 transition">Cancel trial</button>
+                </form>
+            </div>
+        @endif
 
         {{-- Self-service downgrade (audit item #2) — scheduled, not immediate. --}}
         @if ($subscription->pending_plan_id && $subscription->pendingPlan)
@@ -70,19 +110,26 @@
                         <li>AI Agents{{ $plan->agent_autopilot ? ' with autopilot' : '' }}</li>
                     @endif
                 </ul>
+                @php
+                    $isCurrent = $subscription?->plan_id === $plan->id;
+                    $canRenewCurrent = $isCurrent && $selfRenewing && $subscription->status === 'active';
+                    $walletCanPay = $wallet->currency === strtoupper($plan->currency) && $wallet->balance_minor >= $plan->price_monthly_cents && (! $subscription || $canRenewCurrent);
+                @endphp
                 <form method="POST" action="{{ route('billing.checkout', $plan) }}" class="space-y-2">
                     @csrf
                     <select name="billing_cycle" class="w-full rounded-md border border-line px-2 py-1.5 text-xs">
-                        <option value="monthly">Monthly — ${{ number_format($plan->priceMonthly()) }}/mo</option>
-                        <option value="yearly">Yearly — ${{ number_format($plan->priceYearly(), 2) }}/yr (15% off)</option>
+                        <option value="monthly" @selected($isCurrent && $subscription->billing_cycle === 'monthly')>Monthly — ${{ number_format($plan->priceMonthly()) }}/mo</option>
+                        <option value="yearly" @selected($isCurrent && $subscription->billing_cycle === 'yearly')>Annual — ${{ number_format($plan->priceYearly(), 2) }}/yr (15% off)</option>
                     </select>
                     <x-checkout.gateway-select :gateways="$enabledGateways" compact />
                     <button @class([
                         'w-full rounded-md text-white text-sm py-2 transition',
-                        'bg-line text-ink-400 cursor-not-allowed' => $subscription?->plan_id === $plan->id,
-                        'bg-navy-900 hover:bg-navy-800' => $subscription?->plan_id !== $plan->id,
-                    ]) @disabled($subscription?->plan_id === $plan->id)>
-                        @if ($subscription?->plan_id === $plan->id)
+                        'bg-line text-ink-400 cursor-not-allowed' => $isCurrent && ! $canRenewCurrent,
+                        'bg-navy-900 hover:bg-navy-800' => ! $isCurrent || $canRenewCurrent,
+                    ]) @disabled($isCurrent && ! $canRenewCurrent)>
+                        @if ($canRenewCurrent)
+                            {{ $subscription->assigned_by_admin ? 'Pay to keep this plan' : 'Renew now' }}
+                        @elseif ($isCurrent)
                             Current plan
                         @elseif ($subscription && $plan->price_monthly_cents < $subscription->plan->price_monthly_cents)
                             Downgrade
@@ -92,6 +139,11 @@
                             Choose plan
                         @endif
                     </button>
+                    @if ($walletCanPay)
+                        <button type="submit" name="pay_from_wallet" value="1" class="w-full rounded-md border border-line text-sm py-2 text-navy-900 hover:bg-surface-muted transition">
+                            Pay from wallet
+                        </button>
+                    @endif
                 </form>
             </div>
         @endforeach

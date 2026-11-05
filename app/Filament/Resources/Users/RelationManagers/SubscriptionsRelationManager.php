@@ -38,7 +38,9 @@ class SubscriptionsRelationManager extends RelationManager
             ->columns([
                 TextColumn::make('plan.name')->label('Plan'),
                 TextColumn::make('status')->badge(),
-                TextColumn::make('billing_cycle'),
+                TextColumn::make('billing_cycle')->formatStateUsing(fn (string $state) => $state === 'yearly' ? 'Annual' : 'Monthly'),
+                TextColumn::make('gateway')->formatStateUsing(fn (?string $state, $record) => $record->assigned_by_admin ? 'Assigned by admin' : $state),
+                TextColumn::make('trial_ends_at')->label('Trial ends')->dateTime('M j, Y')->placeholder('—'),
                 TextColumn::make('current_period_end')->label('Renews')->dateTime('M j, Y'),
                 TextColumn::make('created_at')->dateTime('M j, Y')->sortable(),
             ])

@@ -75,6 +75,9 @@ class RefundEligibilityService
         return PaymentTransaction::where('user_id', $user->id)
             ->where('status', 'successful')
             ->where('type', 'subscription')
+            // Paid from the customer wallet: there is no gateway charge to
+            // refund automatically.
+            ->where('gateway', '!=', 'wallet')
             ->latest('processed_at')
             ->first();
     }

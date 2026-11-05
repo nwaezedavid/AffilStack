@@ -7,6 +7,7 @@ use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\RelationManagers\CrmContactsRelationManager;
+use App\Filament\Resources\Users\RelationManagers\CustomerWalletTransactionsRelationManager;
 use App\Filament\Resources\Users\RelationManagers\SubscriptionsRelationManager;
 use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Tables\UsersTable;
@@ -65,6 +66,7 @@ class UserResource extends Resource
     {
         return [
             SubscriptionsRelationManager::class,
+            CustomerWalletTransactionsRelationManager::class,
             CrmContactsRelationManager::class,
         ];
     }

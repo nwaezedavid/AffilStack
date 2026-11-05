@@ -61,6 +61,12 @@ class PlanChangeService
             return 0;
         }
 
+        // Nobody paid for a complimentary month, a review account's free
+        // plan or a free trial, so its unused time is worth nothing.
+        if ($subscription->assigned_by_admin || $subscription->gateway === 'manual' || $subscription->isTrialing()) {
+            return 0;
+        }
+
         if (! $subscription->plan || ! $subscription->current_period_start || ! $subscription->current_period_end) {
             return 0;
         }

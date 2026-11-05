@@ -3,9 +3,13 @@
 @section('title', 'Buy Credits')
 
 @section('content')
-    <p class="text-sm text-ink-600 max-w-lg mb-6">
+    <p class="text-sm text-ink-600 max-w-lg mb-2">
         Ran out of credits before your next renewal? Buy a top-up pack any time — it's added to your balance
         instantly and never expires.
+    </p>
+    <p class="text-xs text-ink-400 mb-6">
+        Wallet balance: <span class="font-mono text-ink-900">{{ $wallet->formattedBalance() }}</span> ·
+        <a href="{{ route('wallet.index') }}" class="text-brand-600 underline">Top up your wallet</a>
     </p>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl">
@@ -29,6 +33,15 @@
                         Buy now
                     </button>
                 </form>
+
+                @if ($wallet->currency === strtoupper($package->currency) && $wallet->balance_minor >= $package->price_cents)
+                    <form method="POST" action="{{ route('credit-topups.wallet', $package) }}">
+                        @csrf
+                        <button class="w-full rounded-md border border-line text-sm py-2 text-navy-900 hover:bg-surface-muted transition">
+                            Pay from wallet ({{ $wallet->formattedBalance() }})
+                        </button>
+                    </form>
+                @endif
             </div>
         @endforeach
     </div>

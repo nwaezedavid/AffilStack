@@ -55,6 +55,7 @@ use App\Http\Controllers\Dashboard\TeamController;
 use App\Http\Controllers\Dashboard\TemplateLibraryController;
 use App\Http\Controllers\Dashboard\TikTokController;
 use App\Http\Controllers\Dashboard\UgcController;
+use App\Http\Controllers\Dashboard\WalletController;
 use App\Http\Controllers\Dashboard\WordPressController;
 use App\Http\Controllers\Dashboard\WordPressSendController;
 use App\Http\Controllers\Dashboard\XController;
@@ -87,6 +88,7 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\TrialInviteController;
 use App\Http\Controllers\TutorialController;
 use App\Http\Middleware\EnsurePanelLoginCompleted;
 use App\Http\Middleware\RejectCrossSiteBeacon;
@@ -287,6 +289,12 @@ SiteDomains::app(function () {
         Route::get('/admin/google-site-analytics/callback', [GoogleSiteAnalyticsController::class, 'callback'])->name('google-site-analytics.callback');
     });
 
+    // Admin-only free trial invites: the signed link in the invite email is
+    // the only way in — never linked from the public site or pricing page.
+    Route::get('/trial/{invite}', [TrialInviteController::class, 'show'])->middleware('signed')->name('trial-invites.show');
+    Route::post('/trial/{invite}/register', [TrialInviteController::class, 'register'])->middleware(['guest', 'throttle:10,1,trial-invites.register'])->name('trial-invites.register');
+    Route::post('/trial/{invite}/start', [TrialInviteController::class, 'start'])->middleware(['auth', 'throttle:10,1,trial-invites.start'])->name('trial-invites.start');
+
     Route::middleware(['auth', 'verified', 'not-suspended', 'restrict-agency-seats', 'restrict-affiliate-only'])->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -304,6 +312,14 @@ SiteDomains::app(function () {
         // checkout-initiation step needed a new route/controller.
         Route::get('/credits/top-up', [CreditTopupController::class, 'index'])->name('credit-topups.index');
         Route::post('/credits/top-up/{package}/checkout', [CreditTopupController::class, 'checkout'])->name('credit-topups.checkout');
+        Route::post('/credits/top-up/{package}/wallet', [CreditTopupController::class, 'payWithWallet'])->middleware('throttle:10,1,credit-topups.wallet')->name('credit-topups.wallet');
+
+        // Customer wallet: top up through checkout, spend on credit packs and
+        // plan renewals. Not the affiliate payout wallet or the API wallet.
+        Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
+        Route::post('/wallet/top-up', [WalletController::class, 'topUp'])->middleware('throttle:10,1,wallet.top-up')->name('wallet.top-up');
+        Route::patch('/wallet/settings', [WalletController::class, 'updateSettings'])->name('wallet.settings');
+        Route::post('/billing/trial/cancel', [BillingController::class, 'cancelTrial'])->name('billing.cancel-trial');
 
         // "I want users to be able to submit their review from their dashboard"
         // — one testimonial per account; see TestimonialController for why a

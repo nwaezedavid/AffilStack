@@ -152,7 +152,7 @@ class ReferralService
      * renewals) earn commission; credit top-ups, API wallet top-ups and
      * add-ons never do.
      */
-    public const COMMISSIONABLE_TYPES = ['signup', 'subscription', 'renewal'];
+    public const COMMISSIONABLE_TYPES = ['signup', 'subscription', 'renewal', 'trial_conversion'];
 
     public function recordCommission(Subscription $subscription, PaymentTransaction $transaction): void
     {

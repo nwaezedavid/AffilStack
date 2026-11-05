@@ -111,6 +111,13 @@
                             <span>Credits{{ auth()->user()->isSeat() ? ' (team)' : '' }}</span>
                             <span class="font-mono text-gold-400 font-semibold">{{ number_format(auth()->user()->billableUser()->credits_balance) }}</span>
                         </div>
+                        @unless (auth()->user()->isSeat())
+                        @php($sidebarWallet = auth()->user()->customerWallet)
+                        <a href="{{ route('wallet.index') }}" class="mt-1.5 flex items-center justify-between text-navy-100/70 hover:text-white">
+                            <span>Wallet</span>
+                            <span class="font-mono text-gold-400 font-semibold">{{ $sidebarWallet ? $sidebarWallet->formattedBalance() : \App\Models\CustomerWallet::format(0, config('customer_wallet.default_currency', 'USD')) }}</span>
+                        </a>
+                        @endunless
                     </div>
                     {{-- Mobile apps (agent 02): "Get the mobile app" card, hidden until a store link is set. --}}
                     @include('partials.dashboard.mobile-app-card')

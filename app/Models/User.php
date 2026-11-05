@@ -589,6 +589,21 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         return $this->hasMany(ApiWalletTransaction::class)->latest();
     }
 
+    /**
+     * The customer wallet (top up, then pay credit packs and renewals) —
+     * not the affiliate payout wallet or the API usage wallet. Created on
+     * first use by CustomerWalletManager::walletFor().
+     */
+    public function customerWallet(): HasOne
+    {
+        return $this->hasOne(CustomerWallet::class);
+    }
+
+    public function customerWalletTransactions(): HasMany
+    {
+        return $this->hasMany(CustomerWalletTransaction::class)->latest('id');
+    }
+
     public function hasPayoutMethodOnFile(): bool
     {
         return filled($this->payout_method) && filled($this->payout_details);

@@ -44,6 +44,21 @@ ScheduleMonitoring::track(
     'subscriptions:expire-lapsed',
 );
 
+// Wallet-first automatic renewals for everything AffilStack renews itself
+// (one-time gateways, admin-assigned months, wallet payments, converted
+// trials) — see SubscriptionRenewalService::chargeDueRenewals().
+ScheduleMonitoring::track(
+    Schedule::command('subscriptions:charge-renewals')->hourly()->withoutOverlapping(30),
+    'subscriptions:charge-renewals',
+);
+
+// Invite-only free trials: day-6 reminder, day-8 charge, unused invites
+// expire — see TrialInviteService::process().
+ScheduleMonitoring::track(
+    Schedule::command('trials:process')->hourly()->withoutOverlapping(30),
+    'trials:process',
+);
+
 // Self-service plan downgrade (audit item #2), non-Stripe half — see
 // ApplyPendingDowngrades. Stripe's own recurring billing applies its
 // scheduled downgrade at the next renewal webhook instead.
