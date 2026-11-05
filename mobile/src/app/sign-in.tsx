@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
-import { BrandMark } from '@/components/brand-mark';
+import { BrandLogo } from '@/components/brand-logo';
 import { Button } from '@/components/button';
 import { Text } from '@/components/text';
 import { Palette, Spacing } from '@/constants/theme';
@@ -43,7 +43,9 @@ export default function SignInScreen() {
       <View style={styles.body}>
         <AnnouncementBanner announcement={config.data?.announcement ?? null} />
         <View style={styles.hero}>
-          <BrandMark size={76} iconUrl={config.data?.brand.icon_url} name={config.data?.brand.name} onDark />
+          <View style={styles.logo}>
+            <BrandLogo width={170} variant="white" />
+          </View>
           <Text variant="title" style={styles.heroTitle} accessibilityRole="header">
             Your affiliate business, in your pocket
           </Text>
@@ -86,6 +88,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Palette.navy900 },
   body: { flex: 1, padding: Spacing.xl, gap: Spacing.xl, justifyContent: 'space-between', maxWidth: 520, width: '100%', alignSelf: 'center' },
   hero: { gap: Spacing.md, marginTop: Spacing.xl },
+  logo: { marginBottom: Spacing.lg },
   heroTitle: { color: '#ffffff', fontSize: 30, lineHeight: 36 },
   heroText: { color: '#c3c9da' },
   points: { gap: Spacing.md },
