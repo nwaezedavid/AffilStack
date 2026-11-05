@@ -30,7 +30,7 @@ describe('api()', () => {
 
   it('sends the bearer token', async () => {
     await saveTokens({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresAt: Date.now() + 600_000, deviceId: 7 });
-    global.fetch = jest.fn(async (url: string, init: RequestInit) => {
+    globalThis.fetch = jest.fn(async (url: string, init: RequestInit) => {
       calls.push({ url, init });
 
       return json(200, { ok: true });
@@ -43,7 +43,7 @@ describe('api()', () => {
 
   it('refreshes an expired token once, even for simultaneous requests', async () => {
     await saveTokens({ accessToken: 'old', refreshToken: 'refresh-old', expiresAt: Date.now() - 1000, deviceId: 7 });
-    global.fetch = jest.fn(async (url: string, init: RequestInit) => {
+    globalThis.fetch = jest.fn(async (url: string, init: RequestInit) => {
       calls.push({ url, init });
 
       if (url.endsWith('/api/oauth/token')) {
@@ -63,7 +63,7 @@ describe('api()', () => {
 
   it('signs out when the refresh token is rejected', async () => {
     await saveTokens({ accessToken: 'old', refreshToken: 'revoked', expiresAt: Date.now() - 1000, deviceId: 7 });
-    global.fetch = jest.fn(async () => json(400, { error: 'invalid_grant' })) as unknown as typeof fetch;
+    globalThis.fetch = jest.fn(async () => json(400, { error: 'invalid_grant' })) as unknown as typeof fetch;
 
     await expect(api('/v1/mobile/home')).rejects.toBeInstanceOf(SignedOutError);
     expect(await loadTokens()).toBeNull();
@@ -71,16 +71,16 @@ describe('api()', () => {
 
   it('turns validation errors into an ApiError with field messages', async () => {
     await saveTokens({ accessToken: 'access', refreshToken: 'refresh', expiresAt: Date.now() + 600_000, deviceId: 7 });
-    global.fetch = jest.fn(async () => json(422, { message: 'Invalid.', errors: { password: ['That password is not correct.'] } })) as unknown as typeof fetch;
+    globalThis.fetch = jest.fn(async () => json(422, { message: 'Invalid.', errors: { password: ['That password is not correct.'] } })) as unknown as typeof fetch;
 
-    const error = await api('/v1/mobile/account', { method: 'DELETE', body: { password: 'x' } }).catch((exception) => exception);
+    const error = (await api('/v1/mobile/account', { method: 'DELETE', body: { password: 'x' } }).catch((exception: unknown) => exception)) as ApiError;
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error.errors.password[0]).toBe('That password is not correct.');
   });
 
   it('calls /mobile/config without a token', async () => {
-    global.fetch = jest.fn(async (url: string, init: RequestInit) => {
+    globalThis.fetch = jest.fn(async (url: string, init: RequestInit) => {
       calls.push({ url, init });
 
       return json(200, { versions: {} });
