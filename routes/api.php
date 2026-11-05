@@ -9,6 +9,11 @@ use App\Http\Controllers\Api\V1\Admin\AdminApiController;
 use App\Http\Controllers\Api\V1\CrmContactsController;
 use App\Http\Controllers\Api\V1\GenerationsController;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\Mobile\AccountController as MobileAccountController;
+use App\Http\Controllers\Api\V1\Mobile\ConfigController as MobileConfigController;
+use App\Http\Controllers\Api\V1\Mobile\DevicesController as MobileDevicesController;
+use App\Http\Controllers\Api\V1\Mobile\HomeController as MobileHomeController;
+use App\Http\Controllers\Api\V1\Mobile\SessionController as MobileSessionController;
 use App\Http\Controllers\Api\V1\OffersController;
 use App\Http\Controllers\Api\V1\OpenApiSpecController;
 use App\Http\Controllers\Api\V1\ReferralsController;
@@ -58,6 +63,24 @@ Route::post('/oauth/token', [OAuthTokenController::class, 'token'])->middleware(
 Route::post('/oauth/revoke', [OAuthTokenController::class, 'revoke'])->middleware('throttle:60,1,oauth.revoke')->name('api.oauth.revoke');
 
 Route::get('/v1/openapi.yaml', [OpenApiSpecController::class, 'show'])->name('api.v1.openapi');
+
+// The official AffilStack phone apps. /config is public (the app reads
+// it before anyone signs in: forced-update version, banner, sign-in
+// URLs). Everything else needs the app's own token (mobile-token) — a
+// developer API token or connected app can't sign devices out or delete
+// the account. The app also uses the ordinary /v1/* endpoints above with
+// the same token; those calls are never billed to the API wallet.
+Route::get('/v1/mobile/config', [MobileConfigController::class, 'show'])->middleware('throttle:60,1,mobile.config')->name('api.v1.mobile.config');
+
+Route::prefix('v1/mobile')->middleware(['api-token-auth', 'mobile-token', 'throttle:mobile'])->group(function () {
+    Route::get('/home', [MobileHomeController::class, 'show'])->name('api.v1.mobile.home');
+    Route::get('/devices', [MobileDevicesController::class, 'index'])->name('api.v1.mobile.devices.index');
+    Route::put('/devices/current', [MobileDevicesController::class, 'updateCurrent'])->name('api.v1.mobile.devices.current');
+    Route::delete('/devices/{device}', [MobileDevicesController::class, 'destroy'])->name('api.v1.mobile.devices.destroy');
+    Route::post('/logout', [MobileSessionController::class, 'logout'])->name('api.v1.mobile.logout');
+    Route::post('/logout-everywhere', [MobileSessionController::class, 'logoutEverywhere'])->name('api.v1.mobile.logout-everywhere');
+    Route::delete('/account', [MobileAccountController::class, 'destroy'])->middleware('throttle:5,1,mobile.account.destroy')->name('api.v1.mobile.account.destroy');
+});
 
 // The general-purpose API (task #6) — one bearer token (dashboard: "API
 // Access", or the browser extension's own token — either works) scoped to

@@ -27,7 +27,9 @@ class LogApiRequest
         /** @var ApiToken|null $token */
         $token = $request->attributes->get('apiToken');
 
-        if ($token) {
+        // Phone app traffic isn't developer API usage, so it stays out of
+        // the customer's API request log.
+        if ($token && ! $token->isMobileToken()) {
             ApiRequestLog::create([
                 'api_token_id' => $token->id,
                 'user_id' => $token->user_id,

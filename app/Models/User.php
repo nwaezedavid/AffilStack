@@ -54,6 +54,20 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, InteractsWithAppAuthentication, InteractsWithAppAuthenticationRecovery, LogsActivity, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
+    /**
+     * A new password signs every phone app out (whoever knew the old
+     * password may have signed in there). Website sessions and developer
+     * API tokens are left as they were.
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (User $user): void {
+            if ($user->wasChanged('password')) {
+                MobileDevice::revokeAllFor($user);
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [

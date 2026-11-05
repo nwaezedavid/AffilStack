@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Notifications\EmailAddressChanged;
+use App\Services\Account\AccountDeactivator;
 use App\Services\Media\AvatarProcessor;
-use App\Services\Payments\StripeGateway;
 use App\Support\Countries;
 use App\Support\Lifecycle\LifecycleAudience;
 use Illuminate\Http\RedirectResponse;
@@ -312,36 +312,15 @@ class ProfileController extends Controller
      * command (see PurgeDeletedAccounts) hard-deletes it 30 days later
      * unless an admin restores it first from the Users resource.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, AccountDeactivator $deactivator): RedirectResponse
     {
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);
 
-        $user = $request->user();
-
-        // Stop everything that keeps running without a browser session:
-        // Stripe would otherwise keep charging a deactivated account every
-        // month, bearer tokens would keep working until the 30-day purge,
-        // and team seats would keep using the owner's plan.
-        $subscription = $user->activeSubscription;
-
-        if ($subscription) {
-            if ($subscription->gateway === 'stripe' && $subscription->gateway_subscription_id) {
-                try {
-                    app(StripeGateway::class)->cancelSubscription($subscription->gateway_subscription_id);
-                } catch (\Throwable $e) {
-                    report($e);
-                }
-            }
-
-            $subscription->update(['status' => 'canceled', 'canceled_at' => now()]);
-        }
-
-        $user->apiTokens()->delete();
-        $user->seats()->update(['is_suspended' => true]);
-
-        $user->delete();
+        // Subscription, tokens, signed-in phones and team seats are all
+        // stopped before the soft delete — see AccountDeactivator.
+        $deactivator->deactivate($request->user());
 
         Auth::guard('web')->logout();
         $request->session()->invalidate();

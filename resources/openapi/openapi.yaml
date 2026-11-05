@@ -60,6 +60,17 @@ tags:
   - name: CRM Contacts
   - name: Referrals
   - name: Zapier
+  - name: Mobile app
+    description: |
+      For the official AffilStack Android and iOS apps only. The app signs
+      in with OAuth 2.0 authorization code + PKCE (S256): it opens
+      `/mobile/authorize` on app.affilstack.com with the mobile
+      `client_id`, then swaps the code at `POST /api/oauth/token` (no client
+      secret; send `code_verifier`, and optionally `device_name`,
+      `platform` and `app_version`). Refresh tokens rotate on every use;
+      reusing an old one signs the device out. Changing the account
+      password signs every phone out. The app's token also works on the
+      `/v1/*` endpoints above and is never billed to the API wallet.
 
 paths:
   /v1/me:
@@ -404,6 +415,143 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /v1/mobile/config:
+    get:
+      operationId: getMobileConfig
+      tags: [Mobile app]
+      summary: App start-up settings (public)
+      description: Minimum supported version per platform (older apps must update), latest version, announcement banner, store links and sign-in URLs. No token needed.
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileConfig'
+
+  /v1/mobile/home:
+    get:
+      operationId: getMobileHome
+      tags: [Mobile app]
+      summary: Everything the app's Home screen shows
+      responses:
+        '200':
+          description: Account and plan, credits, wallet, progress counter and pending agent approvals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileHome'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Not the AffilStack app's token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /v1/mobile/devices:
+    get:
+      operationId: listMobileDevices
+      tags: [Mobile app]
+      summary: Phones signed in to this account
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/MobileDevice' }
+
+  /v1/mobile/devices/current:
+    put:
+      operationId: updateCurrentMobileDevice
+      tags: [Mobile app]
+      summary: Update what this phone reports about itself (including its push token)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 120, nullable: true }
+                platform: { type: string, enum: [ios, android, web, unknown] }
+                app_version: { type: string, maxLength: 32, nullable: true }
+                os_version: { type: string, maxLength: 32, nullable: true }
+                locale: { type: string, maxLength: 12, nullable: true }
+                push_provider: { type: string, enum: [expo, fcm, apns], nullable: true }
+                push_token: { type: string, maxLength: 255, nullable: true }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/MobileDevice' }
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /v1/mobile/devices/{device}:
+    delete:
+      operationId: signOutMobileDevice
+      tags: [Mobile app]
+      summary: Sign one of this account's phones out
+      parameters:
+        - name: device
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Signed out
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/mobile/logout:
+    post:
+      operationId: mobileLogout
+      tags: [Mobile app]
+      summary: Sign this phone out
+      responses:
+        '200':
+          description: Signed out
+
+  /v1/mobile/logout-everywhere:
+    post:
+      operationId: mobileLogoutEverywhere
+      tags: [Mobile app]
+      summary: Sign every phone on this account out
+      responses:
+        '200':
+          description: Signed out
+
+  /v1/mobile/account:
+    delete:
+      operationId: deleteAccountFromMobile
+      tags: [Mobile app]
+      summary: Delete (deactivate) the account
+      description: Same as deleting the account on the website — restorable by support for 30 days. Send `password`, or for an account without one, sign in within the last 15 minutes and send `confirm` = `DELETE`.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password: { type: string }
+                confirm: { type: string, enum: [DELETE] }
+      responses:
+        '200':
+          description: Account deactivated
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -599,3 +747,103 @@ components:
         events_by_status:
           type: object
           description: "Count of referral events keyed by status, e.g. pending: 2, approved: 5"
+
+    MobileConfig:
+      type: object
+      properties:
+        brand:
+          type: object
+          properties:
+            name: { type: string }
+            icon_url: { type: string, format: uri, nullable: true }
+        versions:
+          type: object
+          description: Per platform (ios, android) — the app must update when its version is below `minimum`.
+          additionalProperties:
+            type: object
+            properties:
+              minimum: { type: string, example: "1.0.0" }
+              latest: { type: string, nullable: true }
+        store_urls:
+          type: object
+          properties:
+            ios: { type: string, format: uri, nullable: true }
+            android: { type: string, format: uri, nullable: true }
+        announcement:
+          type: object
+          nullable: true
+          properties:
+            message: { type: string }
+            level: { type: string, enum: [info, warning, critical] }
+            url: { type: string, format: uri, nullable: true }
+        auth:
+          type: object
+          properties:
+            client_id: { type: string }
+            authorize_url: { type: string, format: uri }
+            token_url: { type: string, format: uri }
+            revoke_url: { type: string, format: uri }
+        links:
+          type: object
+          additionalProperties: { type: string, format: uri }
+        features:
+          type: object
+          properties:
+            in_app_purchases: { type: boolean }
+
+    MobileAccount:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string, format: email }
+        avatar_url: { type: string, format: uri, nullable: true }
+        initials: { type: string }
+        locale: { type: string, nullable: true }
+        is_seat: { type: boolean }
+        seat_role: { type: string, nullable: true }
+        on_shared_team_plan: { type: boolean }
+        two_factor_enabled: { type: boolean }
+        credits_balance: { type: integer }
+        plan:
+          type: object
+          nullable: true
+          properties:
+            name: { type: string, nullable: true }
+            slug: { type: string, nullable: true }
+            status: { type: string }
+            is_trial: { type: boolean }
+            trial_ends_at: { type: string, format: date-time, nullable: true }
+            renews_at: { type: string, format: date-time, nullable: true }
+            ends_at: { type: string, format: date-time, nullable: true }
+
+    MobileHome:
+      type: object
+      properties:
+        account: { $ref: '#/components/schemas/MobileAccount' }
+        wallet:
+          type: object
+          properties:
+            balance_minor: { type: integer }
+            currency: { type: string }
+            formatted: { type: string }
+        progress:
+          type: object
+          description: The dashboard's "What AffilStack has done for you" counter (tiles with key, raw, note).
+        agents:
+          type: object
+          properties:
+            pending_approvals: { type: integer }
+
+    MobileDevice:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string, nullable: true }
+        platform: { type: string, enum: [ios, android, web, unknown] }
+        app_version: { type: string, nullable: true }
+        os_version: { type: string, nullable: true }
+        has_push: { type: boolean }
+        is_current: { type: boolean }
+        signed_in_at: { type: string, format: date-time, nullable: true }
+        last_seen_at: { type: string, format: date-time, nullable: true }

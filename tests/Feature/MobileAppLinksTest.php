@@ -169,4 +169,44 @@ class MobileAppLinksTest extends TestCase
             ->call('save')
             ->assertHasFormErrors(['mobile_app_play_url', 'mobile_app_store_url']);
     }
+
+    public function test_admin_sets_the_minimum_app_version_and_the_in_app_banner(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(MobileAppSettings::class)
+            ->fillForm([
+                'mobile_app_min_version_ios' => '1.4.0',
+                'mobile_app_min_version_android' => '1.3.2',
+                'mobile_app_latest_version' => '1.5.0',
+                'mobile_app_announcement_enabled' => true,
+                'mobile_app_announcement_message' => 'New video styles are here.',
+                'mobile_app_announcement_level' => 'info',
+                'mobile_app_announcement_url' => 'https://affilstack.com/blog',
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->getJson('/api/v1/mobile/config')
+            ->assertOk()
+            ->assertJsonPath('versions.ios.minimum', '1.4.0')
+            ->assertJsonPath('versions.android.minimum', '1.3.2')
+            ->assertJsonPath('versions.android.latest', '1.5.0')
+            ->assertJsonPath('announcement.message', 'New video styles are here.')
+            ->assertJsonPath('announcement.url', 'https://affilstack.com/blog');
+    }
+
+    public function test_admin_cannot_save_a_version_that_is_not_a_version_number(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        Livewire::actingAs($admin)
+            ->test(MobileAppSettings::class)
+            ->fillForm(['mobile_app_min_version_ios' => 'latest'])
+            ->call('save')
+            ->assertHasFormErrors(['mobile_app_min_version_ios']);
+    }
 }

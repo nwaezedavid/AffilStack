@@ -9,6 +9,7 @@ use App\Support\MobileApps;
 use App\Support\SiteDomains;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -61,6 +62,13 @@ class MobileAppSettings extends Page
             'mobile_app_pitch' => SiteSetting::get('mobile_app_pitch'),
             'mobile_app_screenshot' => SiteSetting::get('mobile_app_screenshot_path'),
             'mobile_app_screenshot_alt' => SiteSetting::get('mobile_app_screenshot_alt'),
+            'mobile_app_min_version_ios' => SiteSetting::get('mobile_app_min_version_ios'),
+            'mobile_app_min_version_android' => SiteSetting::get('mobile_app_min_version_android'),
+            'mobile_app_latest_version' => SiteSetting::get('mobile_app_latest_version'),
+            'mobile_app_announcement_enabled' => SiteSetting::flag('mobile_app_announcement_enabled', false),
+            'mobile_app_announcement_message' => SiteSetting::get('mobile_app_announcement_message'),
+            'mobile_app_announcement_level' => SiteSetting::get('mobile_app_announcement_level', 'info'),
+            'mobile_app_announcement_url' => SiteSetting::get('mobile_app_announcement_url'),
         ]);
     }
 
@@ -123,6 +131,54 @@ class MobileAppSettings extends Page
                             ->maxLength(150)
                             ->helperText('What the screenshot shows, for screen readers and Google Images.'),
                     ]),
+
+                Section::make('App versions')
+                    ->description('Controls what the installed apps do when they open. Leave empty until the apps are live.')
+                    ->columns(3)
+                    ->components([
+                        TextInput::make('mobile_app_min_version_ios')
+                            ->label('Minimum iPhone version')
+                            ->placeholder('1.0.0')
+                            ->regex('/^\d{1,3}(\.\d{1,3}){0,2}$/')
+                            ->validationMessages(['regex' => 'Use a version number like 1.2.0'])
+                            ->helperText('iPhones on an older version must update before they can continue.'),
+                        TextInput::make('mobile_app_min_version_android')
+                            ->label('Minimum Android version')
+                            ->placeholder('1.0.0')
+                            ->regex('/^\d{1,3}(\.\d{1,3}){0,2}$/')
+                            ->validationMessages(['regex' => 'Use a version number like 1.2.0'])
+                            ->helperText('Android phones on an older version must update before they can continue.'),
+                        TextInput::make('mobile_app_latest_version')
+                            ->label('Latest released version')
+                            ->placeholder('1.0.0')
+                            ->regex('/^\d{1,3}(\.\d{1,3}){0,2}$/')
+                            ->validationMessages(['regex' => 'Use a version number like 1.2.0'])
+                            ->helperText('Older apps get a gentle "update available" note (not forced).'),
+                    ]),
+
+                Section::make('Announcement banner in the app')
+                    ->columns(2)
+                    ->components([
+                        Toggle::make('mobile_app_announcement_enabled')
+                            ->label('Show the banner')
+                            ->columnSpanFull(),
+                        Textarea::make('mobile_app_announcement_message')
+                            ->label('Message')
+                            ->rows(2)
+                            ->maxLength(200)
+                            ->placeholder('Scheduled maintenance tonight from 11pm to midnight (WAT).')
+                            ->columnSpanFull(),
+                        Select::make('mobile_app_announcement_level')
+                            ->label('Style')
+                            ->options(['info' => 'Information (blue)', 'warning' => 'Warning (amber)', 'critical' => 'Urgent (red)'])
+                            ->default('info'),
+                        TextInput::make('mobile_app_announcement_url')
+                            ->label('Link (optional)')
+                            ->url()
+                            ->regex('#^https://#i')
+                            ->validationMessages(['regex' => 'Use a full https:// link'])
+                            ->placeholder('https://affilstack.com/status'),
+                    ]),
             ]);
     }
 
@@ -137,6 +193,13 @@ class MobileAppSettings extends Page
         SiteSetting::set('mobile_app_pitch', $data['mobile_app_pitch'] ?? null);
         SiteSetting::set('mobile_app_screenshot_path', $data['mobile_app_screenshot'] ?? null);
         SiteSetting::set('mobile_app_screenshot_alt', $data['mobile_app_screenshot_alt'] ?? null);
+        SiteSetting::set('mobile_app_min_version_ios', $data['mobile_app_min_version_ios'] ?? null);
+        SiteSetting::set('mobile_app_min_version_android', $data['mobile_app_min_version_android'] ?? null);
+        SiteSetting::set('mobile_app_latest_version', $data['mobile_app_latest_version'] ?? null);
+        SiteSetting::setFlag('mobile_app_announcement_enabled', (bool) ($data['mobile_app_announcement_enabled'] ?? false));
+        SiteSetting::set('mobile_app_announcement_message', $data['mobile_app_announcement_message'] ?? null);
+        SiteSetting::set('mobile_app_announcement_level', $data['mobile_app_announcement_level'] ?? 'info');
+        SiteSetting::set('mobile_app_announcement_url', $data['mobile_app_announcement_url'] ?? null);
 
         Notification::make()
             ->title('Mobile app settings saved')

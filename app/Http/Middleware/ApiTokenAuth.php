@@ -72,6 +72,26 @@ class ApiTokenAuth
             }
         }
 
+        // The official phone app's token: only while its device is still
+        // signed in, and only for accounts allowed to use the app at all.
+        if ($token->isMobileToken()) {
+            $device = $token->mobileDevice;
+
+            if (! $device || ! $device->isActive()) {
+                return response()->json(['message' => 'Invalid or revoked token.'], 401);
+            }
+
+            if ($user->isAffiliateOnly()) {
+                return response()->json(['message' => 'Partner accounts use the Partner Portal.'], 403);
+            }
+
+            if (! $device->last_seen_at || $device->last_seen_at->lt(now()->subMinutes(5))) {
+                $device->forceFill(['last_seen_at' => now()])->save();
+            }
+
+            $request->attributes->set('mobileDevice', $device);
+        }
+
         $token->update(['last_used_at' => now()]);
 
         $request->setUserResolver(fn () => $user);
