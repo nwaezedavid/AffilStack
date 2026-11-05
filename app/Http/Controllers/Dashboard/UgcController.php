@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Generation;
 use App\Models\Offer;
 use App\Services\Credits\InsufficientCreditsException;
+use App\Services\Modules\QuickVideoService;
 use App\Services\Modules\UgcService;
 use App\Services\Modules\UgcVideoService;
+use App\Services\Video\VideoStyles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -73,6 +76,46 @@ class UgcController extends Controller
         ];
 
         return $this->run($offer, 'content', $service, $context);
+    }
+
+    /**
+     * One-click video: a style, and optionally the customer's own script,
+     * presenter or product photo — everything else is decided for them.
+     */
+    public function quick(Request $request, Offer $offer, QuickVideoService $service): RedirectResponse
+    {
+        abort_unless($offer->isAccessibleBy(auth()->user()), 403);
+
+        if (! auth()->user()->canUseChannel('ugc')) {
+            return back()->with('error', 'Videos aren\'t included in your current plan — upgrade to unlock them.');
+        }
+
+        if (auth()->user()->isSeat()) {
+            return back()->with('error', 'Ask your account owner to create videos — team seats can write and edit scripts.');
+        }
+
+        $validated = $request->validate([
+            'style' => ['required', 'string', Rule::in(array_keys(VideoStyles::STYLES))],
+            'script' => ['nullable', 'string', 'min:20', 'max:'.self::MAX_VIDEO_SCRIPT_CHARACTERS],
+            'avatar_id' => ['nullable', 'string', 'max:100'],
+            'voice_id' => ['nullable', 'string', 'max:100'],
+            'product_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192', 'dimensions:min_width=300,min_height=300'],
+        ]);
+
+        try {
+            $service->queue(auth()->user(), $offer, $validated['style'], [
+                'script' => $validated['script'] ?? null,
+                'avatar_id' => $validated['avatar_id'] ?? null,
+                'voice_id' => $validated['voice_id'] ?? null,
+                'image' => $request->file('product_image'),
+            ]);
+        } catch (InsufficientCreditsException $e) {
+            return back()->withInput()->with('error', 'Not enough credits to create this video. Upgrade your plan or buy a credit top-up.');
+        } catch (RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('offers.feature', [$offer, 'ugc'])->with('success', 'Your video is being created — it usually takes 2 to 10 minutes. We\'ll notify you when it\'s ready.');
     }
 
     public function video(Request $request, Offer $offer, UgcVideoService $service): RedirectResponse

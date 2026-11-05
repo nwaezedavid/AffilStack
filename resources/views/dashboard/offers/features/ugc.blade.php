@@ -19,6 +19,17 @@
     $stepDone = [1 => (bool) $latestAngles, 2 => (bool) $selectedScript, 3 => (bool) $selectedScript, 4 => $scriptVideo && $scriptVideo->status === 'completed'];
 @endphp
 
+@include('dashboard.offers.features._ugc-quick')
+
+<details class="group" data-ugc-studio @if (request('script') || $errors->any() && ! $errors->has('style') && ! $errors->has('product_image')) open @endif>
+    <summary class="mb-4 flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl border border-line bg-white px-5 py-4 [&::-webkit-details-marker]:hidden">
+        <span>
+            <span class="block font-display font-semibold text-navy-900">Step-by-step studio</span>
+            <span class="block text-sm text-ink-600">Prefer full control? Choose the angle, presenter and every word yourself.</span>
+        </span>
+        <x-heroicon-m-chevron-down class="h-5 w-5 shrink-0 text-ink-400 transition group-open:rotate-180" />
+    </summary>
+
 <form id="ugc-script-form" method="POST" action="{{ route('offers.ugc.content', $offer) }}" hidden>
     @csrf
     @if ($latestAngles)
@@ -251,6 +262,7 @@
         @endif
     </li>
 </ol>
+</details>
 
 @push('scripts')
     <script>

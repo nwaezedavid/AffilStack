@@ -67,6 +67,7 @@ use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\GoogleSiteAnalyticsController;
 use App\Http\Controllers\HelpController;
+use App\Http\Controllers\HiggsfieldWebhookController;
 use App\Http\Controllers\LifecycleEmailPreferenceController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\LocaleController;
@@ -203,6 +204,7 @@ Route::post('/webhooks/flutterwave', [FlutterwaveWebhookController::class, 'hand
 Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->middleware('throttle:120,1,webhooks.stripe')->name('webhooks.stripe');
 Route::post('/webhooks/paystack', [PaystackWebhookController::class, 'handle'])->middleware('throttle:120,1,webhooks.paystack')->name('webhooks.paystack');
 Route::post('/webhooks/paypal', [PayPalWebhookController::class, 'handle'])->middleware('throttle:120,1,webhooks.paypal')->name('webhooks.paypal');
+Route::post('/webhooks/higgsfield', [HiggsfieldWebhookController::class, 'handle'])->middleware('throttle:240,1,webhooks.higgsfield')->name('webhooks.higgsfield');
 
 // The only door into a CUSTOMER account: pick a plan, pay, get created. No
 // open registration exists anywhere in this app — see RegistrationController.
@@ -345,6 +347,7 @@ SiteDomains::app(function () {
         Route::post('/offers/{offer}/ugc/angles', [UgcController::class, 'angles'])->name('offers.ugc.angles');
         Route::post('/offers/{offer}/ugc/content', [UgcController::class, 'content'])->name('offers.ugc.content');
         Route::post('/offers/{offer}/ugc/video', [UgcController::class, 'video'])->name('offers.ugc.video');
+        Route::post('/offers/{offer}/ugc/quick', [UgcController::class, 'quick'])->middleware('throttle:10,1,offers.ugc.quick')->name('offers.ugc.quick');
 
         Route::post('/offers/{offer}/x/thread', [XController::class, 'thread'])->name('offers.x.thread');
 

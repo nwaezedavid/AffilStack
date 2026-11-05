@@ -50,6 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/stripe',
             'webhooks/paystack',
             'webhooks/paypal',
+            'webhooks/higgsfield',
             'internal/analytics/view',
             'internal/analytics/duration',
         ]);
