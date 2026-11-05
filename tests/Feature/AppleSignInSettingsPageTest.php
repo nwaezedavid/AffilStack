@@ -63,7 +63,7 @@ class AppleSignInSettingsPageTest extends TestCase
     public function test_the_private_key_is_never_shown_and_blank_keeps_it(): void
     {
         $pem = $this->pem();
-        AppleOauthSetting::current()->update(['credentials' => ['services_id' => 'com.affilstack.signin', 'team_id' => 'TEAMID1234', 'key_id' => 'KEYID12345', 'private_key' => $pem]]);
+        AppleOauthSetting::current()->update(['credentials' => ['services_id' => 'com.affilstack.signin', 'team_id' => 'TEAMID1234', 'key_id' => 'KEYID12345', 'private_key' => trim($pem)]]);
 
         Livewire::actingAs($this->admin)
             ->test(AppleSignInSettings::class)
