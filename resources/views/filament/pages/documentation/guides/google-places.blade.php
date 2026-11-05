@@ -35,13 +35,12 @@
 </x-docs.section>
 
 <x-docs.section id="paste" title="Where to paste in AffilStack" icon="heroicon-o-clipboard">
-    <p>The key lives in the server <code>.env</code> file:</p>
-    @include('filament.pages.documentation.guides._env', ['lines' => ['GOOGLE_PLACES_API_KEY=AIza-your-key']])
+    <p>Admin → <x-docs.ui>Site</x-docs.ui> → <x-docs.ui>API keys &amp; links</x-docs.ui> → paste the key into <strong>Google Places API key</strong> → <x-docs.ui>Save changes</x-docs.ui>. Then press <x-docs.ui>Test Google Places</x-docs.ui>: it runs one real search and tells you how many businesses it found. The key is stored encrypted, and you never need to edit the server files.</p>
 </x-docs.section>
 
 <x-docs.section id="confirm" title="How to confirm it works" icon="heroicon-o-check-badge">
     <ul>
-        <li>The checklist card shows "Set up" once the key is in .env.</li>
+        <li><x-docs.ui>Test Google Places</x-docs.ui> says "Google Places works", and the checklist card shows "Set up".</li>
         <li>From a customer account open <strong>Local Leads</strong> and search e.g. "dentists in Lagos" — results appear. Import one; its phone and website fill in.</li>
         <li>Cloud Console → <x-docs.ui>APIs &amp; Services</x-docs.ui> → Places API (New) → <x-docs.ui>Metrics</x-docs.ui> shows the calls.</li>
     </ul>
@@ -49,7 +48,7 @@
 
 <x-docs.section id="troubleshooting" title="Troubleshooting" icon="heroicon-o-wrench-screwdriver">
     <x-docs.trouble title="&quot;Google Maps isn't configured yet&quot;">
-        <p><code>GOOGLE_PLACES_API_KEY</code> is missing from .env, or the config cache wasn't cleared after adding it.</p>
+        <p>No key is saved yet. Paste it in Site → API keys &amp; links.</p>
     </x-docs.trouble>
     <x-docs.trouble title="403 PERMISSION_DENIED — &quot;Places API (New) has not been used in project … or it is disabled&quot;">
         <p>Enable <strong>Places API (New)</strong> in the same project the key belongs to (not the legacy Places API).</p>

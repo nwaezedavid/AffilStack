@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\AiEngineSetting;
+use App\Models\ApiKeySetting;
 use App\Models\ApiToken;
 use App\Models\PlatformMailSetting;
 use App\Models\User;
@@ -52,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Admin → Site → Platform Email overrides the .env MAIL_* values.
         PlatformMailSetting::applyToConfig();
+        ApiKeySetting::applyToConfig();
 
         // The customer app on its own subdomain (APP_DOMAIN): tell the public
         // website a visitor is signed in, and let passkeys created on the

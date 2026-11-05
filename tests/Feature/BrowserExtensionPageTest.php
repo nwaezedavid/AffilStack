@@ -78,11 +78,11 @@ class BrowserExtensionPageTest extends TestCase
             ->assertSee('Research a product to get your keywords');
     }
 
-    public function test_the_package_is_v12_with_store_friendly_permissions_only(): void
+    public function test_the_package_is_v13_with_store_friendly_permissions_only(): void
     {
         $manifest = json_decode((string) file_get_contents(resource_path('browser-extension/manifest.json')), true);
 
-        $this->assertSame('1.2.0', $manifest['version']);
+        $this->assertSame('1.3.0', $manifest['version']);
         $this->assertSame(config('extension.version'), $manifest['version']);
         $this->assertSame(['activeTab', 'scripting', 'storage'], $manifest['permissions']);
         $this->assertArrayNotHasKey('host_permissions', $manifest);

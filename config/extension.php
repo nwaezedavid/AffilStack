@@ -22,7 +22,7 @@ return [
 
     // Version of resources/browser-extension/manifest.json — shown on the
     // dashboard page so people know which build they're installing.
-    'version' => '1.2.0',
+    'version' => '1.3.0',
 
     // Most businesses one "Add to CRM" click can send from a Maps results list.
     'max_contacts_per_request' => (int) env('EXTENSION_MAX_CONTACTS_PER_REQUEST', 50),

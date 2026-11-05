@@ -23,7 +23,7 @@
             <p>In <x-docs.ext href="https://developer.zapier.com/">developer.zapier.com</x-docs.ext> → your AffilStack integration → <x-docs.ui>Sharing</x-docs.ui> (Manage → Sharing) → copy the <strong>public invite link</strong>. Anyone who opens it can use the integration while it stays private.</p>
         </x-docs.step>
         <x-docs.step title="Show the link in customers' dashboards">
-            @include('filament.pages.documentation.guides._env', ['lines' => ['AFFILSTACK_ZAPIER_INVITE_URL=https://zapier.com/developer/public-invite/…']])
+            <p>Admin → <x-docs.ui>Site</x-docs.ui> → <x-docs.ui>API keys &amp; links</x-docs.ui> → paste it into <strong>Zapier invite link</strong> → <x-docs.ui>Save changes</x-docs.ui>.</p>
         </x-docs.step>
         <x-docs.step title="(Later) list it in Zapier's App Directory">
             <p>Once real customers use it, you can submit it for public listing from the same developer dashboard (Zapier reviews it and asks for help docs and an icon).</p>

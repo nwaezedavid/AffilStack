@@ -66,7 +66,7 @@ class LeadSourceSettings extends Page
                 Section::make('Google Maps')
                     ->description(filled(config('services.google_places.api_key'))
                         ? 'Connected. Finds local businesses and reads the contact emails on their websites.'
-                        : 'Not connected: add GOOGLE_PLACES_API_KEY to the server settings (see Integration guides).'),
+                        : 'Not connected: add the Google Places API key in Site → API keys & links.'),
                 Section::make('Apollo')
                     ->description($this->statusLine('Finds decision-makers by job title, with business emails. Each email found uses one Apollo credit.', $settings->apollo_test_status, $settings->apollo_test_message))
                     ->components([

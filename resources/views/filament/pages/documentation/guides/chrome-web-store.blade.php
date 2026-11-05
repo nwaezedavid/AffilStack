@@ -41,8 +41,7 @@
             <p><x-docs.ui>Submit for review</x-docs.ui> → confirm. Leave automatic publishing on (or defer it and click Publish within 30 days of approval).</p>
         </x-docs.step>
         <x-docs.step title="Point AffilStack at the store listing">
-            <p>Once published, copy the listing address (<code>https://chromewebstore.google.com/detail/…</code>) and add it to .env so the Browser Extension page shows "Add to Chrome" instead of the zip:</p>
-            @include('filament.pages.documentation.guides._env', ['lines' => ['CHROME_EXTENSION_STORE_URL=https://chromewebstore.google.com/detail/your-extension-id']])
+            <p>Once published, copy the listing address (<code>https://chromewebstore.google.com/detail/…</code>) and paste it in Admin → <x-docs.ui>Site</x-docs.ui> → <x-docs.ui>API keys &amp; links</x-docs.ui> → <strong>Extension store link</strong> → <x-docs.ui>Save changes</x-docs.ui>. The Browser Extension page then shows "Add to Chrome" instead of the zip.</p>
         </x-docs.step>
     </x-docs.steps>
 </x-docs.section>
