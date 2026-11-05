@@ -20,8 +20,8 @@ const POINTS: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [
 
 /**
  * Welcome + sign-in. "Sign in" opens app.affilstack.com in the phone's
- * secure browser, where email + password (with two-factor) and Google work
- * exactly as on the website (Sign in with Apple joins them there later).
+ * secure browser, where email + password (with two-factor), Google and
+ * Sign in with Apple work exactly as on the website.
  */
 export default function SignInScreen() {
   const { signIn } = useAuth();
@@ -69,7 +69,7 @@ export default function SignInScreen() {
           ) : null}
           <Button label="Sign in to AffilStack" icon="log-in-outline" variant="gold" loading={busy} onPress={start} accessibilityHint="Opens the secure AffilStack sign-in page" />
           <Text variant="caption" style={styles.small}>
-            Email and password or Google — the same account you use on the website.
+            Email and password, Google or Apple — the same account you use on the website.
           </Text>
           {config.data?.links.forgot_password ? (
             <Pressable accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(config.data.links.forgot_password)} style={styles.forgot}>

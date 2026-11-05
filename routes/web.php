@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AnalyticsExportController;
 use App\Http\Controllers\AffiliateBannerController;
 use App\Http\Controllers\AnalyticsBeaconController;
 use App\Http\Controllers\Api\WordPress\ConnectorController as WordPressConnectorController;
+use App\Http\Controllers\AppleAuthController;
 use App\Http\Controllers\BannerEmbedController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BlogNewsletterConfirmController;
@@ -285,6 +286,13 @@ SiteDomains::app(function () {
 SiteDomains::app(function () {
     Route::get('/auth/google', [GoogleAuthController::class, 'redirectForLogin'])->name('google.redirect');
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+
+    // "Continue with Apple" — see AppleAuthController for why Apple's POST
+    // runs without the session (it must not replace the visitor's cookie)
+    // and hands over to the same-site finish step.
+    Route::get('/auth/apple', [AppleAuthController::class, 'redirect'])->middleware('throttle:30,1,apple.redirect')->name('apple.redirect');
+    Route::get('/auth/apple/finish', [AppleAuthController::class, 'finish'])->middleware('throttle:30,1,apple.finish')->name('apple.finish');
+    Route::withoutMiddleware('web')->post('/auth/apple/callback', [AppleAuthController::class, 'callback'])->middleware('throttle:30,1,apple.callback')->name('apple.callback');
 });
 
 // Tony (the Creative Agent) preview — lets an admin see exactly what a

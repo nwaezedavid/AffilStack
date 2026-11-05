@@ -4,6 +4,7 @@ namespace App\Services\Account;
 
 use App\Models\MobileDevice;
 use App\Models\User;
+use App\Services\Auth\AppleSignInService;
 use App\Services\Payments\StripeGateway;
 
 /**
@@ -11,11 +12,12 @@ use App\Services\Payments\StripeGateway;
  * app (Apple requires in-app deletion). The account is soft-deleted and
  * purged after 30 days, as before; this stops everything that would keep
  * running without a browser: the subscription (so Stripe stops charging),
- * API and app tokens, signed-in phones, and the owner's team seats.
+ * API and app tokens, signed-in phones, a Sign in with Apple link, and the
+ * owner's team seats.
  */
 class AccountDeactivator
 {
-    public function __construct(protected StripeGateway $stripe) {}
+    public function __construct(protected StripeGateway $stripe, protected AppleSignInService $apple) {}
 
     public function deactivate(User $user): void
     {
@@ -31,6 +33,13 @@ class AccountDeactivator
             }
 
             $subscription->update(['status' => 'canceled', 'canceled_at' => now()]);
+        }
+
+        // Apple requires apps that offer Sign in with Apple to unlink the
+        // Apple ID when the account is deleted.
+        if ($user->apple_refresh_token) {
+            $this->apple->revoke($user->apple_refresh_token);
+            $user->forceFill(['apple_refresh_token' => null])->save();
         }
 
         MobileDevice::revokeAllFor($user);

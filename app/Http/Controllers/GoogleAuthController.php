@@ -7,13 +7,12 @@ use App\Models\PendingSignup;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\Auth\GoogleOAuthService;
+use App\Services\Auth\SocialSignIn;
 use App\Services\Payments\CheckoutCountryResolver;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Referrals\ReferralService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -90,7 +89,8 @@ class GoogleAuthController extends Controller
         Request $request,
         GoogleOAuthService $google,
         PaymentGatewayManager $gateways,
-        ReferralService $referrals
+        ReferralService $referrals,
+        SocialSignIn $socialSignIn
     ): RedirectResponse {
         $state = $request->session()->pull(self::SESSION_STATE_KEY);
         $intent = $request->session()->pull(self::SESSION_INTENT_KEY, ['type' => 'login']);
@@ -122,59 +122,17 @@ class GoogleAuthController extends Controller
         }
 
         if ($user) {
-            $message = 'Signed in with Google.';
+            // First Google sign-in for an account created with a password:
+            // Google has now proven ownership of the email, so the old
+            // password, 2FA setup, other sessions, API tokens and passkeys
+            // are retired (see SocialSignIn::link()).
+            $retired = $socialSignIn->link($user, 'google_id', $profile['sub']);
 
-            if (! $user->google_id) {
-                // First Google sign-in for an account created with a
-                // password. Signup never proves ownership of the email
-                // (anyone can pay for a plan under someone else's address),
-                // so whoever set that password may not be this Google
-                // account's owner. Google has now proven ownership — retire
-                // the old password and sign out every other session, so a
-                // pre-registered account can't be shared with an intruder.
-                // Two-factor sign-in set up before ownership was proven is
-                // retired too, or a pre-registered account's 2FA would lock
-                // the real owner out at the next step.
-                $user->forceFill([
-                    'google_id' => $profile['sub'],
-                    'password' => Hash::make(Str::random(64)),
-                    'remember_token' => Str::random(60),
-                    'two_factor_secret' => null,
-                    'two_factor_recovery_codes' => null,
-                    'two_factor_confirmed_at' => null,
-                ])->save();
+            $message = $retired
+                ? 'Signed in with Google. For your security your previous password was retired — keep using Google, or use "Forgot password" to set a new one.'
+                : 'Signed in with Google.';
 
-                if (config('session.driver') === 'database') {
-                    DB::table(config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
-                }
-
-                // Whoever registered with this email before Google proved
-                // ownership may also hold API tokens or passkeys — retire
-                // those too so a pre-registered account can't stay shared.
-                $user->apiTokens()->delete();
-
-                if (method_exists($user, 'passkeys')) {
-                    $user->passkeys()->delete();
-                }
-
-                $message = 'Signed in with Google. For your security your previous password was retired — keep using Google, or use "Forgot password" to set a new one.';
-            }
-
-            // Google proves who the person is, not the second factor: an
-            // account with two-factor sign-in still has to pass the challenge.
-            if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
-                $request->session()->regenerate();
-                $request->session()->put(['login.id' => $user->getKey(), 'login.remember' => false]);
-
-                return redirect()->route('two-factor.login')->with('success', $message);
-            }
-
-            Auth::login($user);
-            $request->session()->regenerate();
-
-            // Back to where sign-in was asked for (e.g. the phone app's
-            // sign-in page), or the dashboard as before.
-            return redirect()->intended(route('dashboard'))->with('success', $message);
+            return $socialSignIn->complete($request, $user, $message);
         }
 
         if (($intent['type'] ?? null) !== 'signup') {
