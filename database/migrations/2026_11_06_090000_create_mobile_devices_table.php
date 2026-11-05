@@ -25,7 +25,11 @@ return new class extends Migration
             $table->string('os_version', 32)->nullable();
             $table->string('locale', 12)->nullable();
             $table->string('push_provider', 16)->nullable(); // expo|fcm|apns
-            $table->string('push_token', 255)->nullable()->index();
+            // Encrypted at rest (anyone holding a push token can address
+            // the phone); the SHA-256 lets a token that moves to another
+            // account be found and detached.
+            $table->text('push_token')->nullable();
+            $table->char('push_token_hash', 64)->nullable()->index();
             $table->char('refresh_token_hash', 64)->nullable()->unique();
             $table->char('previous_refresh_token_hash', 64)->nullable()->index();
             $table->timestamp('refresh_expires_at')->nullable();

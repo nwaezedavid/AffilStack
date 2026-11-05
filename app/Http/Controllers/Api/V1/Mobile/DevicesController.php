@@ -43,11 +43,7 @@ class DevicesController extends Controller
         // (someone else signed out and you signed in), the old row must
         // stop receiving this account's notifications.
         if (! empty($validated['push_token'])) {
-            MobileDevice::query()->where('push_token', $validated['push_token'])->whereKeyNot($device->id)->update(['push_token' => null]);
-        }
-
-        if (array_key_exists('push_token', $validated) && empty($validated['push_token'])) {
-            $validated['push_provider'] = null;
+            MobileDevice::releasePushToken($validated['push_token'], except: $device);
         }
 
         $device->forceFill($validated)->save();

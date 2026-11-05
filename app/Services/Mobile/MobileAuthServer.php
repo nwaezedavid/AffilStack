@@ -215,7 +215,7 @@ class MobileAuthServer
 
         // Claim the token atomically so two simultaneous refreshes can't
         // both succeed.
-        if (MobileDevice::whereKey($device->id)->where('refresh_token_hash', $hash)->update(['refresh_token_hash' => null, 'previous_refresh_token_hash' => $hash]) !== 1) {
+        if (MobileDevice::whereKey($device->id)->where('refresh_token_hash', $hash)->update(['refresh_token_hash' => null, 'previous_refresh_token_hash' => hash('sha256', $plain)]) !== 1) {
             return $invalid;
         }
 

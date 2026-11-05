@@ -419,6 +419,7 @@ paths:
     get:
       operationId: getMobileConfig
       tags: [Mobile app]
+      x-first-party: true
       summary: App start-up settings (public)
       description: Minimum supported version per platform (older apps must update), latest version, announcement banner, store links and sign-in URLs. No token needed.
       security: []
@@ -434,6 +435,7 @@ paths:
     get:
       operationId: getMobileHome
       tags: [Mobile app]
+      x-first-party: true
       summary: Everything the app's Home screen shows
       responses:
         '200':
@@ -454,6 +456,7 @@ paths:
     get:
       operationId: listMobileDevices
       tags: [Mobile app]
+      x-first-party: true
       summary: Phones signed in to this account
       responses:
         '200':
@@ -471,6 +474,7 @@ paths:
     put:
       operationId: updateCurrentMobileDevice
       tags: [Mobile app]
+      x-first-party: true
       summary: Update what this phone reports about itself (including its push token)
       requestBody:
         required: true
@@ -502,6 +506,7 @@ paths:
     delete:
       operationId: signOutMobileDevice
       tags: [Mobile app]
+      x-first-party: true
       summary: Sign one of this account's phones out
       parameters:
         - name: device
@@ -518,6 +523,7 @@ paths:
     post:
       operationId: mobileLogout
       tags: [Mobile app]
+      x-first-party: true
       summary: Sign this phone out
       responses:
         '200':
@@ -527,6 +533,7 @@ paths:
     post:
       operationId: mobileLogoutEverywhere
       tags: [Mobile app]
+      x-first-party: true
       summary: Sign every phone on this account out
       responses:
         '200':
@@ -536,6 +543,7 @@ paths:
     delete:
       operationId: deleteAccountFromMobile
       tags: [Mobile app]
+      x-first-party: true
       summary: Delete (deactivate) the account
       description: Same as deleting the account on the website — restorable by support for 30 days. Send `password`, or for an account without one, sign in within the last 15 minutes and send `confirm` = `DELETE`.
       requestBody:

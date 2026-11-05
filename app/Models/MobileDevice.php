@@ -19,8 +19,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * reported about itself. Signing a device out deletes its access tokens
  * straight away. See App\Services\Mobile\MobileAuthServer.
  */
-#[Fillable(['user_id', 'name', 'platform', 'app_version', 'os_version', 'locale', 'push_provider', 'push_token', 'refresh_token_hash', 'previous_refresh_token_hash', 'refresh_expires_at', 'authenticated_at', 'last_seen_at', 'revoked_at'])]
-#[Hidden(['refresh_token_hash', 'previous_refresh_token_hash', 'push_token'])]
+#[Fillable(['user_id', 'name', 'platform', 'app_version', 'os_version', 'locale', 'push_provider', 'push_token', 'push_token_hash', 'refresh_token_hash', 'previous_refresh_token_hash', 'refresh_expires_at', 'authenticated_at', 'last_seen_at', 'revoked_at'])]
+#[Hidden(['refresh_token_hash', 'previous_refresh_token_hash', 'push_token', 'push_token_hash'])]
 class MobileDevice extends Model
 {
     /** @use HasFactory<MobileDeviceFactory> */
@@ -31,11 +31,45 @@ class MobileDevice extends Model
     protected function casts(): array
     {
         return [
+            'push_token' => 'encrypted',
             'refresh_expires_at' => 'datetime',
             'authenticated_at' => 'datetime',
             'last_seen_at' => 'datetime',
             'revoked_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Keeps push_token_hash in step with the (encrypted) push token, so a
+     * token can be looked up without decrypting every row.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (MobileDevice $device): void {
+            if (! $device->isDirty('push_token')) {
+                return;
+            }
+
+            if ($device->push_token === null || $device->push_token === '') {
+                $device->forceFill(['push_token' => null, 'push_token_hash' => null, 'push_provider' => null]);
+
+                return;
+            }
+
+            $device->forceFill(['push_token_hash' => hash('sha256', $device->push_token)]);
+        });
+    }
+
+    /**
+     * Detaches $pushToken from every device except $except (the phone it
+     * now belongs to), so notifications for a previous account stop.
+     */
+    public static function releasePushToken(string $pushToken, ?MobileDevice $except = null): void
+    {
+        static::query()
+            ->where('push_token_hash', hash('sha256', $pushToken))
+            ->when($except, fn (Builder $query) => $query->whereKeyNot($except->id))
+            ->update(['push_token' => null, 'push_token_hash' => null, 'push_provider' => null]);
     }
 
     public function user(): BelongsTo

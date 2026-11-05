@@ -71,6 +71,13 @@ class OpenApiReference
                     continue;
                 }
 
+                // Endpoints only the official AffilStack phone app can call
+                // (x-first-party) are documented in the spec but kept off
+                // the customer's API reference: a developer token gets 403.
+                if (! empty($operation['x-first-party'])) {
+                    continue;
+                }
+
                 $endpoints[] = $this->buildEndpoint((string) $specPath, strtoupper($method), $operation);
             }
         }
