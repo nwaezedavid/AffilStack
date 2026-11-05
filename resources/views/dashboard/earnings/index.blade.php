@@ -10,7 +10,7 @@
     @endphp
 
     <div class="mb-5 flex flex-wrap items-start justify-between gap-4">
-        <p class="max-w-2xl text-sm text-ink-600">Commissions from your connected affiliate networks arrive here automatically every day. Each sale is traced back to the product, channel and piece of content that made it, through the code every <span class="font-mono">/go/</span> link passes to the network. You can still add entries by hand or import a CSV.</p>
+        <p class="max-w-2xl text-sm text-ink-600">Commissions from your connected affiliate networks arrive here automatically every day. Each sale is traced back to the product, channel and piece of content that made it, through the code every <span class="font-mono">/go/</span> link passes to the network. You can still add entries by hand or import a CSV. Each network pays your commissions directly; AffilStack tracks them so you can see how every link performs.</p>
         <form method="POST" action="{{ route('earnings.currency') }}" class="flex items-center gap-2 text-xs">
             @csrf
             @method('PATCH')

@@ -62,6 +62,8 @@ SiteDomains::affiliate(function () {
 
         Route::get('/account', [AccountController::class, 'show'])->name('partner.account');
         Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('partner.account.profile');
+        Route::post('/account/photo', [AccountController::class, 'updatePhoto'])->middleware('throttle:20,1,partner.account.photo')->name('partner.account.photo');
+        Route::delete('/account/photo', [AccountController::class, 'destroyPhoto'])->name('partner.account.photo.destroy');
         Route::put('/account/password', [AccountController::class, 'updatePassword'])->middleware('throttle:10,1,partner.account.password')->name('partner.account.password');
         Route::post('/account/two-factor', [AccountController::class, 'enableTwoFactor'])->middleware('throttle:10,1,partner.account.2fa')->name('partner.two-factor.enable');
         Route::post('/account/two-factor/confirm', [AccountController::class, 'confirmTwoFactor'])->middleware('throttle:10,1,partner.account.2fa')->name('partner.two-factor.confirm');

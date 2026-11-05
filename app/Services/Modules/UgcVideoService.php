@@ -108,7 +108,8 @@ class UgcVideoService
     public function generate(Generation $generation): void
     {
         $user = $generation->user;
-        $cost = (int) config('credits.costs.ugc_video');
+        // One-click videos carry their style's own price (QuickVideoService).
+        $cost = (int) ($generation->input['credit_cost'] ?? config('credits.costs.ugc_video'));
 
         if (! $this->credits->hasEnough($user, $cost)) {
             $generation->update(['status' => 'failed', 'error_message' => 'Insufficient credits at processing time.']);

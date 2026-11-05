@@ -2,7 +2,7 @@
      Expects $research (ResearchPresenter). --}}
 @php($linkedin = $research->linkedinKeywords())
 @if ($linkedin['people'] !== [] || $linkedin['companies'] !== [])
-    <div data-tour="linkedin-keywords" class="@container rounded-3xl border border-line bg-white p-5 sm:p-6">
+    <div id="linkedin-keywords" data-tour="linkedin-keywords" class="@container rounded-3xl border border-line bg-white p-5 sm:p-6">
         <div class="flex items-start gap-3">
             <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-line">
                 <x-ui.brand-icon name="linkedin" class="h-5 w-5" />

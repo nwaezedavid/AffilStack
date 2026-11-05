@@ -86,15 +86,27 @@ class SecurityScanServiceTest extends TestCase
 
     public function test_it_does_not_flag_debug_mode_when_disabled_or_outside_production(): void
     {
-        // secure_cookie=true keeps the *other* production-only check quiet
+        // session.secure=true keeps the *other* production-only check quiet
         // so this test isolates the debug-mode check specifically.
-        config(['app.env' => 'production', 'app.debug' => false, 'session.secure_cookie' => true]);
+        config(['app.env' => 'production', 'app.debug' => false, 'session.secure' => true]);
         app(SecurityScanService::class)->scan();
         $this->assertDatabaseCount('security_findings', 0);
 
         config(['app.env' => 'local', 'app.debug' => true]);
         app(SecurityScanService::class)->scan();
         $this->assertDatabaseCount('security_findings', 0);
+    }
+
+    public function test_secure_session_cookies_are_read_from_the_real_config_key(): void
+    {
+        config(['app.env' => 'production', 'app.debug' => false, 'session.secure' => false]);
+        app(SecurityScanService::class)->scan();
+        $this->assertDatabaseHas('security_findings', ['title' => 'Session cookies are not marked secure in production']);
+
+        SecurityFinding::query()->delete();
+        config(['session.secure' => true]);
+        app(SecurityScanService::class)->scan();
+        $this->assertDatabaseMissing('security_findings', ['title' => 'Session cookies are not marked secure in production']);
     }
 
     public function test_it_flags_admins_missing_two_factor_authentication_with_no_automatic_fix(): void
@@ -113,7 +125,7 @@ class SecurityScanServiceTest extends TestCase
 
     public function test_a_still_open_finding_is_deduped_across_repeated_scans_without_a_second_ai_call(): void
     {
-        config(['app.env' => 'production', 'app.debug' => true, 'session.secure_cookie' => true]);
+        config(['app.env' => 'production', 'app.debug' => true, 'session.secure' => true]);
         $ai = $this->app->make(AIProvider::class);
 
         app(SecurityScanService::class)->scan();
@@ -125,7 +137,7 @@ class SecurityScanServiceTest extends TestCase
 
     public function test_a_dismissed_findings_fingerprint_can_reopen_on_a_later_scan(): void
     {
-        config(['app.env' => 'production', 'app.debug' => true, 'session.secure_cookie' => true]);
+        config(['app.env' => 'production', 'app.debug' => true, 'session.secure' => true]);
 
         app(SecurityScanService::class)->scan();
         SecurityFinding::first()->update(['status' => SecurityFinding::STATUS_DISMISSED]);

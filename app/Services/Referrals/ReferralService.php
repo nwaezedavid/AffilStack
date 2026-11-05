@@ -147,8 +147,24 @@ class ReferralService
      * case. The commission itself is recorded as "pending" — an admin
      * approves and marks it paid from the Filament referral resource.
      */
+    /**
+     * Only plan payments (first payment, plan changes and monthly/yearly
+     * renewals) earn commission; credit top-ups, API wallet top-ups and
+     * add-ons never do.
+     */
+    public const COMMISSIONABLE_TYPES = ['signup', 'subscription', 'renewal'];
+
     public function recordCommission(Subscription $subscription, PaymentTransaction $transaction): void
     {
+        if (! in_array($transaction->type, self::COMMISSIONABLE_TYPES, true)) {
+            return;
+        }
+
+        // Each plan payment earns commission once (webhooks can be redelivered).
+        if (ReferralEvent::where('payment_transaction_id', $transaction->id)->exists()) {
+            return;
+        }
+
         $referral = Referral::where('referred_user_id', $transaction->user_id)->first();
 
         if (! $referral) {

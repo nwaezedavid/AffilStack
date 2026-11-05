@@ -33,7 +33,8 @@ class EmailConnectionController extends Controller
     {
         $user = auth()->user();
         $connection = $user->emailConnection;
-        $gmailAvailable = app(GmailOAuthService::class)->isAvailable();
+        $gmailAvailable = app(GmailOAuthService::class)->isAvailable()
+            && GoogleOauthSetting::current()->sensitiveConnectionsOpenTo($user);
 
         return view('dashboard.email-connection.index', [
             'connection' => $connection,
@@ -52,7 +53,7 @@ class EmailConnectionController extends Controller
 
     public function redirectToGoogle(Request $request, GmailOAuthService $gmail): RedirectResponse
     {
-        if (! $gmail->isAvailable()) {
+        if (! $gmail->isAvailable() || ! GoogleOauthSetting::current()->sensitiveConnectionsOpenTo($request->user())) {
             return back()->with('error', 'Gmail connection is not available right now.');
         }
 

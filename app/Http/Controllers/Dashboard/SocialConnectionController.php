@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\GoogleOauthSetting;
 use App\Models\SocialConnection;
 use App\Services\Social\SocialConnectionVerifier;
 use App\Services\Social\SocialOAuthProvider;
@@ -43,13 +44,27 @@ class SocialConnectionController extends Controller
         return $this->registry->get($provider);
     }
 
+    /**
+     * YouTube uses Google's sensitive scopes, so while the admin limits them
+     * to review test accounts, nobody else sees "Connect YouTube".
+     */
+    protected function canConnect(SocialOAuthProvider $provider): bool
+    {
+        if (! $provider->isAvailable()) {
+            return false;
+        }
+
+        return $provider->key() !== 'youtube'
+            || GoogleOauthSetting::current()->sensitiveConnectionsOpenTo(auth()->user());
+    }
+
     public function index(): View
     {
         $connections = auth()->user()->socialConnections()->get()->keyBy('provider');
         $providers = collect($this->registry->all())->map(fn (SocialOAuthProvider $p) => [
             ...$this->registry->meta($p->key()),
             'key' => $p->key(),
-            'available' => $p->isAvailable(),
+            'available' => $this->canConnect($p),
             'approved' => $p instanceof SocialPublishProvider ? $p->isApprovedForPublishing() : null,
             'publishes' => $p instanceof SocialPublishProvider,
         ]);
@@ -72,7 +87,7 @@ class SocialConnectionController extends Controller
             abort(404);
         }
 
-        if (! $service->isAvailable()) {
+        if (! $this->canConnect($service)) {
             return back()->with('error', $this->registry->meta($provider)['label'].' connections are not available right now.');
         }
 

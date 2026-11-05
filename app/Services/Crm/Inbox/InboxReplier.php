@@ -191,6 +191,8 @@ class InboxReplier
         }
 
         $reply->contact->replies()->whereNull('read_at')->update(['read_at' => now()]);
+        // Whatever Reply Copilot had drafted or queued for this thread is now answered.
+        $reply->contact->replies()->whereIn('copilot_status', ['drafted', 'auto_queued'])->update(['copilot_status' => 'sent', 'copilot_send_at' => null]);
 
         return $send;
     }

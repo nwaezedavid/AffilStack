@@ -9,6 +9,7 @@ use App\Notifications\SubscriptionExpired;
 use App\Notifications\SubscriptionPaymentFailed;
 use App\Notifications\SubscriptionRenewalReminder;
 use App\Services\Credits\CreditManager;
+use App\Services\Referrals\ReferralService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -45,6 +46,7 @@ class SubscriptionRenewalService
         protected CreditManager $credits,
         protected PlanChangeService $planChanges,
         protected StripeGateway $stripe,
+        protected ReferralService $referrals,
     ) {}
 
     /**
@@ -92,7 +94,7 @@ class SubscriptionRenewalService
             'renewal_reminder_sent_at' => null,
         ]);
 
-        PaymentTransaction::create([
+        $transaction = PaymentTransaction::create([
             'user_id' => $subscription->user_id,
             'subscription_id' => $subscription->id,
             'type' => 'renewal',
@@ -106,6 +108,10 @@ class SubscriptionRenewalService
             'raw_payload' => $event['raw'] ?? [],
             'processed_at' => now(),
         ]);
+
+        // Recurring commission: Stripe renews on its own, so the referrer's
+        // share of each monthly/yearly renewal is recorded here.
+        $this->referrals->recordCommission($subscription, $transaction);
 
         // A scheduled downgrade (audit item #2) swaps the plan and grants
         // its own credits — never both that AND the old plan's renewal

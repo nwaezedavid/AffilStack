@@ -25,6 +25,14 @@ return [
     // from console.anthropic.com (pay as you go), not a Claude.ai
     // subscription: Anthropic doesn't allow subscription logins to power
     // third-party apps.
+    // Google Gemini as a text engine (an API key from aistudio.google.com).
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'model' => env('GEMINI_TEXT_MODEL', 'gemini-3.8-flash'),
+        'timeout' => env('GEMINI_TIMEOUT', 120),
+    ],
+
     'anthropic' => [
         'api_key' => env('ANTHROPIC_API_KEY'),
         'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),

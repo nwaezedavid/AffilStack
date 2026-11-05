@@ -9,8 +9,9 @@
 </x-docs.section>
 
 <x-docs.section id="steps" title="Step-by-step" icon="heroicon-o-list-bullet">
-    <h3>A. Put the mailbox details into .env</h3>
-    <p>Hostinger Email settings: outgoing server <code>smtp.hostinger.com</code>, port <code>465</code> with SSL (or <code>587</code> with STARTTLS). Username is the full email address.</p>
+    <h3>A. Enter the mailbox details</h3>
+    <p><strong>Easiest:</strong> <x-docs.admin-link route="filament.admin.pages.platform-email-settings">Site → Platform Email</x-docs.admin-link> → fill in the server, mailbox address and mailbox password → <x-docs.ui>Send test email</x-docs.ui> → when it arrives, switch on <x-docs.ui>Use these settings instead of the server .env</x-docs.ui> → <x-docs.ui>Save changes</x-docs.ui>. Whenever you change the mailbox password in hPanel, update it there too.</p>
+    <p>Or put them in the server .env. Hostinger Email settings: outgoing server <code>smtp.hostinger.com</code>, port <code>465</code> with SSL (or <code>587</code> with STARTTLS). Username is the full email address.</p>
     @include('filament.pages.documentation.guides._env', ['lines' => [
         'MAIL_MAILER=smtp',
         'MAIL_SCHEME=smtps',

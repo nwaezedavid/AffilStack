@@ -56,6 +56,9 @@ class PlansSeeder extends Seeder
             [
                 'name' => 'Starter',
                 'slug' => 'starter',
+                'monthly_lead_allowance' => 100,
+                'wordpress_sites_limit' => 1,
+                'network_connections_limit' => 1,
                 'description' => 'For beginners testing their first offer.',
                 'price_monthly_cents' => 1900,
                 'credits_per_month' => 200,
@@ -69,6 +72,9 @@ class PlansSeeder extends Seeder
             [
                 'name' => 'Growth',
                 'slug' => 'growth',
+                'monthly_lead_allowance' => 500,
+                'wordpress_sites_limit' => 3,
+                'network_connections_limit' => 3,
                 'description' => 'For affiliates running multiple offers across every channel.',
                 'price_monthly_cents' => 5900,
                 'credits_per_month' => 700,
@@ -82,6 +88,9 @@ class PlansSeeder extends Seeder
             [
                 'name' => 'Pro',
                 'slug' => 'pro',
+                'monthly_lead_allowance' => 1000,
+                'wordpress_sites_limit' => 10,
+                'network_connections_limit' => -1,
                 'description' => 'For full-time affiliates and small teams.',
                 'price_monthly_cents' => 14900,
                 'credits_per_month' => 2200,
@@ -95,6 +104,9 @@ class PlansSeeder extends Seeder
             [
                 'name' => 'Business',
                 'slug' => 'business',
+                'monthly_lead_allowance' => 5000,
+                'wordpress_sites_limit' => 10,
+                'network_connections_limit' => -1,
                 'description' => 'For an in-house team collaborating on one brand — every seat shares the whole offer list.',
                 'price_monthly_cents' => 24900,
                 'credits_per_month' => 4000,
@@ -109,6 +121,9 @@ class PlansSeeder extends Seeder
             [
                 'name' => 'Agency',
                 'slug' => 'agency',
+                'monthly_lead_allowance' => 10000,
+                'wordpress_sites_limit' => -1,
+                'network_connections_limit' => -1,
                 'description' => 'For agencies managing client affiliate accounts.',
                 'price_monthly_cents' => 39900,
                 'credits_per_month' => 7000,

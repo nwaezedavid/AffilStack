@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\CrmList;
 use App\Models\Offer;
+use App\Services\Modules\QuickVideoService;
 use App\Services\Social\InstagramPublishingService;
 use App\Services\Social\TikTokPublishingService;
 use App\Services\Social\YouTubePublishingService;
@@ -13,6 +14,7 @@ use App\Support\OfferFeatures;
 use App\Support\ResearchPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -61,6 +63,8 @@ class OfferFeatureController extends Controller
             'ugcVideoReady' => false,
             'ugcAvatars' => [],
             'ugcVoices' => [],
+            'quickStyles' => [],
+            'productImageUrl' => null,
             'socialConnections' => collect(),
             'publishProviders' => [],
             'localizable' => collect(),
@@ -76,6 +80,9 @@ class OfferFeatureController extends Controller
             $data['ugcVideoReady'] = $heygen->isReady();
             $data['ugcAvatars'] = $heygen->avatars();
             $data['ugcVoices'] = $heygen->voices();
+            $data['quickStyles'] = app(QuickVideoService::class)->availableStyles();
+            $imagePath = $offer->research_data['product_image_path'] ?? null;
+            $data['productImageUrl'] = is_string($imagePath) && Storage::disk('public')->exists($imagePath) ? Storage::disk('public')->url($imagePath) : null;
             $data['socialConnections'] = $user->socialConnections()->get()->keyBy('provider');
             $data['publishProviders'] = $this->publishProviders();
         }

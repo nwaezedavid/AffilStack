@@ -98,7 +98,7 @@ class ExtensionBrandingTest extends TestCase
 
         $this->assertArrayHasKey('manifest.json', $entries);
         $this->assertArrayNotHasKey('README.md', $entries);
-        $this->assertStringContainsString("'https://affilstack.com/api'", $entries['config.js']);
+        $this->assertStringContainsString("'https://app.affilstack.com/api'", $entries['config.js']);
         $this->assertArrayNotHasKey('store/listing.md', $entries);
     }
 }

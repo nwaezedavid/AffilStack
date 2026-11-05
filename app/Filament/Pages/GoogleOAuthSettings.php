@@ -58,6 +58,8 @@ class GoogleOAuthSettings extends Page
             'youtube_publishing_enabled' => $settings->youtube_publishing_enabled,
             'youtube_approval_status' => $settings->youtube_approval_status,
             'youtube_approval_notes' => $settings->youtube_approval_notes,
+            'limit_to_review_testers' => $settings->limit_to_review_testers,
+            'review_testers' => $settings->review_testers,
             'client_id' => $settings->credential('client_id'),
             // Never the real secret — see WritesMaskedCredentials.
             'client_secret' => null,
@@ -139,6 +141,16 @@ class GoogleOAuthSettings extends Page
                             ->rows(2)
                             ->columnSpanFull(),
                     ]),
+                Section::make('While Google reviews Gmail and YouTube')
+                    ->description('Google asks that unverified permissions are not shown to real customers during its review. With this on, only the accounts listed below (and admins) see "Connect Gmail" and "Connect YouTube"; everyone else keeps SMTP sending and manual posting. Listed accounts can also publish to YouTube for real, so the reviewer and your demo video can see the upload arrive. Turn it off once Google approves.')
+                    ->components([
+                        Toggle::make('limit_to_review_testers')
+                            ->label('Only test accounts can connect Gmail and YouTube'),
+                        Textarea::make('review_testers')
+                            ->label('Test accounts')
+                            ->helperText('AffilStack account email addresses, one per line — for example the reviewer account you give Google and your own customer test account.')
+                            ->rows(3),
+                    ]),
             ]);
     }
 
@@ -192,6 +204,8 @@ class GoogleOAuthSettings extends Page
             'youtube_publishing_enabled' => (bool) ($data['youtube_publishing_enabled'] ?? false),
             'youtube_approval_status' => $data['youtube_approval_status'] ?? 'not_submitted',
             'youtube_approval_notes' => $data['youtube_approval_notes'] ?? null,
+            'limit_to_review_testers' => (bool) ($data['limit_to_review_testers'] ?? false),
+            'review_testers' => $data['review_testers'] ?? null,
             'credentials' => $this->mergeMaskedCredentials($settings->credentials ?? [], [
                 'client_id' => $data['client_id'] ?? null,
                 'client_secret' => $data['client_secret'] ?? null,

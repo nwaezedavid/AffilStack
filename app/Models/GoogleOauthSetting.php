@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Model;
  * app's own test users — independently of each other and of when
  * "Continue with Google" already works.
  */
-#[Fillable(['is_enabled', 'gmail_sending_enabled', 'gmail_reading_enabled', 'youtube_publishing_enabled', 'youtube_approval_status', 'youtube_approval_notes', 'credentials'])]
+#[Fillable(['is_enabled', 'gmail_sending_enabled', 'gmail_reading_enabled', 'youtube_publishing_enabled', 'youtube_approval_status', 'youtube_approval_notes', 'limit_to_review_testers', 'review_testers', 'credentials'])]
 class GoogleOauthSetting extends Model
 {
     protected function casts(): array
@@ -32,6 +32,7 @@ class GoogleOauthSetting extends Model
             'gmail_sending_enabled' => 'boolean',
             'gmail_reading_enabled' => 'boolean',
             'youtube_publishing_enabled' => 'boolean',
+            'limit_to_review_testers' => 'boolean',
             'credentials' => 'encrypted:array',
         ];
     }
@@ -86,5 +87,47 @@ class GoogleOauthSetting extends Model
     public function isYoutubeApprovedForPublishing(): bool
     {
         return $this->youtube_approval_status === 'approved';
+    }
+
+    /**
+     * The test accounts listed for Google's review (one email per line or
+     * comma-separated), lower-cased.
+     *
+     * @return array<int, string>
+     */
+    public function reviewTesterEmails(): array
+    {
+        return collect(preg_split('/[\s,;]+/', (string) $this->review_testers))
+            ->map(fn (string $email): string => strtolower(trim($email)))
+            ->filter(fn (string $email): bool => str_contains($email, '@'))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * A listed review test account, or an admin (who records the demo).
+     * Testers can also publish to YouTube for real before the Audit +
+     * Quota Extension status is Approved.
+     */
+    public function isReviewTester(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return in_array(strtolower((string) $user->email), $this->reviewTesterEmails(), true)
+            || $user->hasAnyRole(['admin', 'super-admin']);
+    }
+
+    /**
+     * Whether this user may start a Gmail or YouTube connection. While
+     * "limit to review testers" is on, everyone else keeps SMTP and manual
+     * posting, so customers never see Google's unverified-app screen or use
+     * up the 100-user cap.
+     */
+    public function sensitiveConnectionsOpenTo(?User $user): bool
+    {
+        return ! $this->limit_to_review_testers || $this->isReviewTester($user);
     }
 }

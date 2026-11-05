@@ -16,6 +16,7 @@ use App\Services\Blog\BlogKit;
 use App\Services\Blog\WordPressPublisher;
 use App\Support\OutboundUrlGuard;
 use Database\Seeders\RolesSeeder;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -189,6 +190,33 @@ class BlogIntegrationTest extends TestCase
         }
 
         $this->assertStringContainsString('WordPress refused the login', (string) $post->fresh()->last_error);
+    }
+
+    public function test_switched_off_application_passwords_are_explained(): void
+    {
+        $this->connectWordPress();
+        Http::fake(['*' => Http::response(['code' => 'rest_not_logged_in', 'message' => 'You are not currently logged in.'], 401)]);
+
+        try {
+            app(WordPressPublisher::class)->test();
+            $this->fail('Expected the test to fail.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('application passwords are switched off', $e->getMessage());
+        }
+    }
+
+    public function test_the_blog_page_creates_the_newsletter_list_in_the_admins_crm(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole(['admin', 'super-admin']);
+
+        Livewire::actingAs($admin)
+            ->test(BlogSettings::class)
+            ->callAction(TestAction::make('createOption')->schemaComponent('blog_newsletter_list_id'), ['name' => 'Blog subscribers'])
+            ->assertHasNoActionErrors();
+
+        $list = CrmList::where('user_id', $admin->id)->where('name', 'Blog subscribers')->first();
+        $this->assertNotNull($list);
     }
 
     public function test_the_blog_settings_page_saves_and_encrypts_the_wordpress_login(): void

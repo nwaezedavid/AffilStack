@@ -6,7 +6,7 @@
     $heroImageAlt = trim((string) \App\Models\SiteSetting::get('hero_image_alt', '')) ?: HomepageContent::plain(HomepageContent::text('hero_headline'));
     $primaryUrl = HomepageContent::url('home_hero_primary_url', route('registration.pricing'));
     $secondaryUrl = HomepageContent::url('home_hero_secondary_url', '#how-it-works');
-    $worksWith = ['googlemaps' => 'Google Maps', 'linkedin' => 'LinkedIn', 'gmail' => 'Gmail', 'youtube' => 'YouTube', 'tiktok' => 'TikTok', 'x' => 'X', 'pinterest' => 'Pinterest', 'wordpress' => 'WordPress'];
+    $worksWith = ['googlemaps' => 'Google Maps', 'linkedin' => 'LinkedIn', 'gmail' => 'Gmail', 'youtube' => 'YouTube', 'tiktok' => 'TikTok', 'x' => 'X', 'pinterest' => 'Pinterest', 'wordpress' => 'WordPress', 'zapier' => 'Zapier', 'make' => 'Make'];
 @endphp
 
 <section id="hero" class="relative isolate overflow-hidden bg-navy-950 text-white" aria-labelledby="hero-heading">

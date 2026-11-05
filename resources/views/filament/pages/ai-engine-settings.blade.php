@@ -6,6 +6,7 @@
             <x-filament::button type="submit">Save changes</x-filament::button>
             <x-filament::button color="gray" wire:click="testAnthropic" type="button">Test Claude</x-filament::button>
             <x-filament::button color="gray" wire:click="testOpenAi" type="button">Test OpenAI</x-filament::button>
+            <x-filament::button color="gray" wire:click="testGemini" type="button">Test Gemini</x-filament::button>
         </div>
     </form>
 </x-filament-panels::page>

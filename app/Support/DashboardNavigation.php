@@ -51,6 +51,7 @@ class DashboardNavigation
                 ['name' => 'dashboard', 'match' => 'dashboard', 'label' => 'Get Started', 'icon' => 'rocket-launch'],
                 ['name' => 'offers.index', 'match' => 'offers.*', 'label' => 'My Products', 'icon' => 'magnifying-glass-circle'],
                 ['name' => 'intelligence-centre.index', 'match' => 'intelligence-centre.*', 'label' => 'Intelligence Centre', 'icon' => 'light-bulb'],
+                ['name' => 'agents.index', 'match' => 'agents.*', 'label' => 'AI Agents', 'icon' => 'cpu-chip'],
             ]],
             ['label' => 'Find & close buyers', 'items' => [
                 ['name' => 'crm.index', 'match' => 'crm.*', 'label' => 'CRM & Campaigns', 'icon' => 'users'],

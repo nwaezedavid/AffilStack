@@ -1,7 +1,5 @@
 <?php
     $siteName = \App\Support\Brand::name();
-    $whiteLogo = \App\Support\Brand::whiteLogoUrl();
-    $logo = \App\Support\Brand::logoUrl();
     $partnerPercent = \App\Support\ReferralProgram::formatPercent(\App\Support\ReferralProgram::partnerPercent());
 ?>
 <!DOCTYPE html>
@@ -20,16 +18,12 @@
             <div class="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-emerald-400/10 blur-3xl" aria-hidden="true"></div>
             <div class="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-gold-400/10 blur-3xl" aria-hidden="true"></div>
             <a href="{{ route('affiliate.landing') }}" class="relative inline-flex items-center gap-3">
-                @if ($whiteLogo)
-                    <img src="{{ $whiteLogo }}" alt="{{ $siteName }}" class="h-8 w-auto">
-                @else
-                    <span class="font-display text-xl font-semibold">{{ $siteName }}</span>
-                @endif
+                <span class="inline-flex items-center gap-2.5 font-display text-xl font-semibold"><x-ui.brand-mark variant="dark" :label="$siteName" /></span>
                 <span class="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-mono uppercase tracking-[0.16em] text-emerald-100 ring-1 ring-white/15">Partners</span>
             </a>
             <div class="relative max-w-md">
                 <p class="text-[11px] font-mono uppercase tracking-[0.2em] text-gold-300">Partner Portal</p>
-                <p class="mt-3 font-display text-4xl font-semibold leading-tight text-balance">Earn {{ $partnerPercent }} on every payment you refer.</p>
+                <p class="mt-3 font-display text-4xl font-semibold leading-tight text-balance">Earn {{ $partnerPercent }} on every subscription you refer.</p>
                 <p class="mt-4 text-emerald-100/80">First payment and every renewal after it, tracked to you for {{ \App\Support\ReferralProgram::cookieDays() }} days. Paid to your Nigerian bank, PayPal or USDT wallet.</p>
                 <dl class="mt-8 grid grid-cols-3 gap-3 text-sm">
                     <div class="rounded-xl bg-white/5 p-3 ring-1 ring-white/10"><dt class="text-emerald-100/60 text-xs">Live stats</dt><dd class="mt-1 font-semibold">Clicks to cash</dd></div>
@@ -43,11 +37,7 @@
         <main class="flex items-center justify-center px-4 py-10 sm:px-8">
             <div class="w-full max-w-md">
                 <a href="{{ route('affiliate.landing') }}" class="mb-8 inline-flex items-center gap-2 lg:hidden">
-                    @if ($logo)
-                        <img src="{{ $logo }}" alt="{{ $siteName }}" class="h-8 w-auto">
-                    @else
-                        <span class="font-display text-xl font-semibold text-navy-900">{{ $siteName }}</span>
-                    @endif
+                    <span class="inline-flex items-center gap-2.5 font-display text-xl font-semibold text-navy-900"><x-ui.brand-mark :label="$siteName" /></span>
                     <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-mono uppercase tracking-[0.16em] text-emerald-700">Partners</span>
                 </a>
 

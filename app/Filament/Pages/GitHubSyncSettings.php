@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Jobs\RunGitHubSync;
 use App\Models\GitHubSyncRun;
 use App\Models\GitHubSyncSetting;
 use App\Services\GitHub\GitHubSyncService;
@@ -196,26 +197,21 @@ class GitHubSyncSettings extends Page
             ->send();
     }
 
-    public function syncNow(GitHubSyncService $service): void
+    /**
+     * Runs in the background worker rather than this request, so the
+     * website never needs proc_open (see RunGitHubSync). The result shows on
+     * this page once it finishes.
+     */
+    public function syncNow(): void
     {
         $this->persist($this->form->getState());
-        $settings = GitHubSyncSetting::current();
 
-        $run = $service->sync($settings, GitHubSyncRun::TRIGGER_MANUAL);
+        RunGitHubSync::dispatch(GitHubSyncRun::TRIGGER_MANUAL);
 
         Notification::make()
-            ->title(match ($run->status) {
-                GitHubSyncRun::STATUS_SUCCESS => 'Sync complete',
-                GitHubSyncRun::STATUS_BLOCKED => 'Sync refused',
-                default => 'Sync failed',
-            })
-            ->body($run->message)
-            ->status(match ($run->status) {
-                GitHubSyncRun::STATUS_SUCCESS => 'success',
-                GitHubSyncRun::STATUS_BLOCKED => 'warning',
-                default => 'danger',
-            })
-            ->persistent()
+            ->title('Sync started')
+            ->body('It runs in the background and usually takes under a minute. Refresh this page to see the result.')
+            ->info()
             ->send();
     }
 
@@ -261,7 +257,7 @@ class GitHubSyncSettings extends Page
                 ->icon(Heroicon::OutlinedArrowPath)
                 ->requiresConfirmation()
                 ->modalDescription('This commits and pushes any pending changes in this application\'s own working copy to the connected GitHub repository right now.')
-                ->action(fn (GitHubSyncService $service) => $this->syncNow($service)),
+                ->action(fn () => $this->syncNow()),
             Action::make('explain')
                 ->label('Explain with AI')
                 ->color('gray')

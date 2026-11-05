@@ -186,6 +186,30 @@ ScheduleMonitoring::track(
     'crm:verify-email-connections',
 );
 
+// ── Customer AI agents ─────────────────────────────────────────────────
+// Reply Copilot runs every minute (inbox check + drafts + due autopilot
+// sends, within a ~50s budget); the others run nightly or weekly. Each is
+// switched per customer on the AI Agents page and gated by the plan.
+ScheduleMonitoring::track(
+    Schedule::command('agents:reply-copilot')->everyMinute()->withoutOverlapping(5),
+    'agents:reply-copilot',
+);
+
+foreach ([
+    'lead_hunter' => fn ($event) => $event->dailyAt('02:10'),
+    'commission_watchdog' => fn ($event) => $event->dailyAt('03:20'),
+    'content_autopilot' => fn ($event) => $event->weeklyOn(1, '04:30'),
+    'offer_scout' => fn ($event) => $event->weeklyOn(3, '05:40'),
+    'weekly_briefing' => fn ($event) => $event->weeklyOn(1, '07:15'),
+    'churn_saver' => fn ($event) => $event->dailyAt('10:05'),
+    'upgrade_nudge' => fn ($event) => $event->dailyAt('11:25'),
+] as $agent => $when) {
+    ScheduleMonitoring::track(
+        $when(Schedule::command("agents:run {$agent}"))->withoutOverlapping(60),
+        "agents:run {$agent}",
+    );
+}
+
 // ── Lifecycle emails & activity (agent 03) ──────────────────────────────
 // Birthday, festive-season and re-engagement emails — see
 // LifecycleEmailDispatcher. Hourly because each user gets theirs at the

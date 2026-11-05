@@ -37,7 +37,7 @@ class SitePagesSeeder extends Seeder
             [
                 'slug' => 'about',
                 'title' => 'About us',
-                'meta_description' => 'Learn what AffilStack is, who it is built for, and how it helps affiliate marketers research offers, create content, and get paid faster.',
+                'meta_description' => 'Learn what AffilStack is, who it is built for, and how it helps affiliate marketers research offers, create content, and track every sale.',
                 'is_published' => true,
                 'content' => <<<'HTML'
                     <p>AffilStack exists to remove the busywork from affiliate marketing so you can spend your time on the two things that actually move the needle: finding good offers and putting them in front of the right people.</p>

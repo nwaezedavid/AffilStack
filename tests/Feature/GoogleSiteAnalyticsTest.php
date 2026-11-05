@@ -55,7 +55,7 @@ class GoogleSiteAnalyticsTest extends TestCase
         $this->assertTrue(app(GoogleSiteAnalyticsService::class)->isAvailable());
     }
 
-    public function test_authorization_url_requests_offline_access_and_all_three_scopes(): void
+    public function test_authorization_url_requests_offline_access_and_every_scope(): void
     {
         $this->enableGoogleOauth();
 
@@ -65,7 +65,42 @@ class GoogleSiteAnalyticsTest extends TestCase
         $this->assertStringContainsString('prompt=consent', $url);
         $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/analytics.edit'), $url);
         $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/webmasters'), $url);
+        $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/siteverification.verify_only'), $url);
         $this->assertStringContainsString(urlencode('https://www.googleapis.com/auth/tagmanager.edit.containers'), $url);
+        // Never published by AffilStack, so never requested (least privilege).
+        $this->assertStringNotContainsString('tagmanager.publish', $url);
+    }
+
+    public function test_a_separate_google_project_is_used_when_set_and_survives_a_disconnect(): void
+    {
+        $this->enableGoogleOauth();
+        $service = app(GoogleSiteAnalyticsService::class);
+
+        $service->saveOwnClient('admin-tools.apps.googleusercontent.com', 'admin-secret');
+
+        $this->assertTrue($service->usesOwnClient());
+        $this->assertStringContainsString('client_id=admin-tools.apps.googleusercontent.com', $service->authorizationUrl('https://app.example/callback', 's'));
+
+        $service->disconnect();
+
+        $this->assertTrue($service->usesOwnClient());
+
+        $service->saveOwnClient(null, null);
+
+        $this->assertFalse($service->usesOwnClient());
+        $this->assertStringNotContainsString('admin-tools', $service->authorizationUrl('https://app.example/callback', 's'));
+    }
+
+    public function test_switching_projects_clears_the_old_tokens_but_keeps_the_setup(): void
+    {
+        $settings = $this->connectedSettings();
+        $settings->update(['credentials' => [...$settings->credentialsArray(), 'ga_measurement_id' => 'G-TEST123']]);
+
+        app(GoogleSiteAnalyticsService::class)->saveOwnClient('admin-tools.apps.googleusercontent.com', 'admin-secret');
+
+        $settings = GoogleSiteAnalyticsSetting::current();
+        $this->assertFalse($settings->isConnected());
+        $this->assertSame('G-TEST123', $settings->credential('ga_measurement_id'));
     }
 
     public function test_handle_callback_stores_tokens_and_the_connected_email(): void
@@ -160,6 +195,38 @@ class GoogleSiteAnalyticsTest extends TestCase
         $this->assertSame('verify-token-123', SiteSetting::get('seo_gsc_verification'));
     }
 
+    public function test_only_the_code_is_stored_when_google_returns_the_whole_meta_tag(): void
+    {
+        $this->connectedSettings();
+        Http::fake([
+            'www.googleapis.com/siteVerification/v1/token' => Http::response([
+                'method' => 'META',
+                'token' => '<meta name="google-site-verification" content="verify-token-123" />',
+            ]),
+            'www.googleapis.com/siteVerification/v1/webResource*' => Http::response(['id' => 'site-id']),
+            'searchconsole.googleapis.com/*' => Http::response(['ok' => true]),
+        ]);
+
+        $this->assertTrue(app(GoogleSiteAnalyticsService::class)->verifySearchConsole()['success']);
+        $this->assertSame('verify-token-123', SiteSetting::get('seo_gsc_verification'));
+    }
+
+    public function test_a_connection_missing_the_verification_scope_is_told_to_reconnect(): void
+    {
+        $this->connectedSettings();
+        Http::fake([
+            'www.googleapis.com/siteVerification/v1/token' => Http::response([
+                'error' => ['code' => 403, 'status' => 'PERMISSION_DENIED', 'details' => [['reason' => 'ACCESS_TOKEN_SCOPE_INSUFFICIENT']]],
+            ], 403),
+        ]);
+
+        $result = app(GoogleSiteAnalyticsService::class)->verifySearchConsole();
+
+        $this->assertFalse($result['success']);
+        $this->assertSame(GoogleSiteAnalyticsService::RECONNECT_MESSAGE, $result['message']);
+        $this->assertNull(SiteSetting::get('seo_gsc_verification'));
+    }
+
     public function test_verify_search_console_succeeds_end_to_end_and_submits_the_sitemap(): void
     {
         $this->connectedSettings();
@@ -175,6 +242,25 @@ class GoogleSiteAnalyticsTest extends TestCase
         $this->assertTrue(GoogleSiteAnalyticsSetting::current()->hasSearchConsole());
 
         Http::assertSent(fn ($request) => str_contains($request->url(), 'searchconsole.googleapis.com') && str_contains($request->url(), 'sitemaps'));
+        // Google rejects Laravel's default "[]" body on these PUTs.
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), 'searchconsole.googleapis.com') && $request->body() !== '{}');
+    }
+
+    public function test_a_refused_sitemap_still_counts_as_verified_and_says_so(): void
+    {
+        $this->connectedSettings();
+        Http::fake([
+            'www.googleapis.com/siteVerification/v1/token' => Http::response(['token' => 'verify-token-123']),
+            'www.googleapis.com/siteVerification/v1/webResource*' => Http::response(['id' => 'site-id']),
+            'searchconsole.googleapis.com/*/sitemaps/*' => Http::response(['error' => ['message' => 'Sitemap could not be read']], 400),
+            'searchconsole.googleapis.com/*' => Http::response([]),
+        ]);
+
+        $result = app(GoogleSiteAnalyticsService::class)->verifySearchConsole();
+
+        $this->assertTrue($result['success']);
+        $this->assertStringContainsString('Sitemap could not be read', $result['message']);
+        $this->assertTrue(GoogleSiteAnalyticsSetting::current()->hasSearchConsole());
     }
 
     public function test_set_up_tag_manager_creates_a_container_and_stores_the_public_id(): void

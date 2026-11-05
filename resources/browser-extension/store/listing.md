@@ -1,13 +1,13 @@
-# Chrome Web Store listing — AffilStack v1.2.0
+# Chrome Web Store listing — AffilStack v1.3.0
 
 Copy these into the Chrome Developer Dashboard (Store listing + Privacy
-practices tabs) when you upload the v1.2.0 zip. This folder (`store/`) is left
+practices tabs) when you upload the v1.3.0 zip. This folder (`store/`) is left
 out of the zip customers download from the dashboard.
 
-**v1.2.0 changes the name, description and what the extension does with page
-content, so Google will re-review it (usually 1–3 business days, sometimes
-longer). Upload the new zip, update every field below, then "Submit for
-review".**
+**v1.3.0 connects to app.affilstack.com, where the AffilStack dashboard now
+lives (v1.2.0 pointed at affilstack.com). Nothing else changes: same name,
+permissions and features. Google reviews every upload, usually within 1–3
+business days.**
 
 ## Store listing
 
@@ -51,7 +51,7 @@ The extension only reads the tab you're on, only when you click its icon, and
 only sends data to your own AffilStack account when you click Add, Generate,
 Suggest or Save. It never sends messages on your behalf.
 
-Requires an AffilStack account (affilstack.com).
+Requires an AffilStack account (sign up at affilstack.com).
 
 ## Privacy practices tab
 

@@ -5,7 +5,9 @@ namespace App\Support\Docs;
 use App\Filament\Pages\Documentation\IntegrationGuide;
 use App\Models\AiEngineSetting;
 use App\Models\GoogleOauthSetting;
+use App\Models\LeadSourceSetting;
 use App\Models\SiteSetting;
+use App\Models\VideoStudioSetting;
 use App\Services\Blog\BlogFeed;
 use App\Services\Settings\SettingsHealthChecker;
 use App\Support\MobileApps;
@@ -216,14 +218,32 @@ class IntegrationGuideRegistry
             'gmail_reading' => $this->gmailReadingStatus(),
             'youtube' => $this->youtubeStatus(),
             'places' => filled(config('services.google_places.api_key'))
-                ? $this->make('configured', 'GOOGLE_PLACES_API_KEY is set. Run a Local Leads search to confirm.')
-                : $this->make('not_set', 'Add GOOGLE_PLACES_API_KEY to the server .env file.'),
+                ? $this->make('configured', 'A Google Places key is set. Use "Test Google Places" on Site → API keys & links to confirm.')
+                : $this->make('not_set', 'Add the Google Places API key in Site → API keys & links.'),
+            'higgsfield' => (function () {
+                $studio = VideoStudioSetting::current();
+
+                return match (true) {
+                    $studio->higgsfieldReady() => $this->make('working', 'Verified — product video styles are available to customers.'),
+                    $studio->higgsfield_verification_status === 'failed' => $this->make('failing', (string) $studio->higgsfield_verification_message),
+                    filled($studio->higgsfieldKeyId()) => $this->make('configured', 'Key saved. Press "Verify Higgsfield" and switch it on.'),
+                    default => $this->make('not_set', 'Optional. Without it, customers get the HeyGen "Talking review" style only.'),
+                };
+            })(),
+            'lead_sources' => (function () {
+                $settings = LeadSourceSetting::current();
+                $on = array_keys(array_filter(['Apollo' => $settings->apolloReady(), 'Hunter' => $settings->hunterReady()]));
+
+                return $on === []
+                    ? $this->make('not_set', 'Optional. Lead finding works with Google Maps alone; add Apollo or Hunter for more leads with emails.')
+                    : $this->make('configured', implode(' and ', $on).' switched on. Use the Test buttons on the Lead sources page to confirm.');
+            })(),
             'chrome_store' => filled(config('extension.store_url'))
                 ? $this->make('working', 'Store link set — the Browser Extension page shows "Add to Chrome".')
-                : $this->make('not_set', 'Customers install from the zip until CHROME_EXTENSION_STORE_URL is set.'),
+                : $this->make('not_set', 'Customers install from the zip until the store link is saved in Site → API keys & links.'),
             'zapier' => filled(config('api_hub.zapier_invite_url'))
                 ? $this->make('working', 'Invite link set — shown on customers\' API Access page.')
-                : $this->make('not_set', 'Push the integration and set AFFILSTACK_ZAPIER_INVITE_URL.'),
+                : $this->make('not_set', 'Push the integration and save the invite link in Site → API keys & links.'),
             'mobile_apps' => $this->mobileAppsStatus(),
             'user_side' => $this->make('user', 'Nothing to set up here — each customer connects their own mailbox.'),
             default => $this->make('not_set', null),

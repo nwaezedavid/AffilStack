@@ -5,7 +5,9 @@ namespace App\Services\Analytics;
 use App\Models\GoogleOauthSetting;
 use App\Models\GoogleSiteAnalyticsSetting;
 use App\Models\SiteSetting;
+use App\Support\Seo\SiteVerificationCode;
 use App\Support\SiteDomains;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -56,8 +58,19 @@ class GoogleSiteAnalyticsService
     protected const SCOPE = 'openid email '.
         'https://www.googleapis.com/auth/analytics.edit '.
         'https://www.googleapis.com/auth/webmasters '.
-        'https://www.googleapis.com/auth/tagmanager.edit.containers '.
-        'https://www.googleapis.com/auth/tagmanager.publish';
+        // Search Console's "webmasters" scope doesn't cover the separate Site
+        // Verification API, which issues and checks the homepage meta tag.
+        'https://www.googleapis.com/auth/siteverification.verify_only '.
+        // Creating a container needs edit.containers only; AffilStack never
+        // publishes container versions, so tagmanager.publish isn't asked for
+        // (Google's least-privilege review rejects unused scopes).
+        'https://www.googleapis.com/auth/tagmanager.edit.containers';
+
+    /**
+     * Shown when a connection made before a scope was added to SCOPE is
+     * used for a step that needs the new scope.
+     */
+    public const RECONNECT_MESSAGE = 'Your Google connection is missing a permission AffilStack now needs. Click "Reconnect with Google" at the top of this page, tick every box on Google\'s screen, then try again.';
 
     protected GoogleOauthSetting $oauthSettings;
 
@@ -71,14 +84,48 @@ class GoogleSiteAnalyticsService
         return filled($this->clientId()) && filled($this->clientSecret());
     }
 
+    /**
+     * A separate Google Cloud project's client, when the admin set one on the
+     * Site Analytics page, keeps these owner-only scopes off the customer
+     * app's OAuth verification. Falls back to the Site > Google Login client.
+     */
     protected function clientId(): string
     {
-        return (string) $this->oauthSettings->credential('client_id');
+        return (string) (GoogleSiteAnalyticsSetting::current()->credential('own_client_id') ?: $this->oauthSettings->credential('client_id'));
     }
 
     protected function clientSecret(): string
     {
-        return (string) $this->oauthSettings->credential('client_secret');
+        return (string) (GoogleSiteAnalyticsSetting::current()->credential('own_client_secret') ?: $this->oauthSettings->credential('client_secret'));
+    }
+
+    public function usesOwnClient(): bool
+    {
+        return filled(GoogleSiteAnalyticsSetting::current()->credential('own_client_id'));
+    }
+
+    /**
+     * Saves (or, with blanks, removes) the separate project's client. Tokens
+     * from the old client stop working with a new one, so the connection is
+     * cleared; property, Search Console and container details are kept.
+     */
+    public function saveOwnClient(?string $clientId, ?string $clientSecret): void
+    {
+        $settings = GoogleSiteAnalyticsSetting::current();
+        $credentials = collect($settings->credentialsArray())
+            ->except(['own_client_id', 'own_client_secret', 'access_token', 'refresh_token', 'expires_at'])
+            ->all();
+
+        if (filled($clientId) && filled($clientSecret)) {
+            $credentials['own_client_id'] = trim((string) $clientId);
+            $credentials['own_client_secret'] = trim((string) $clientSecret);
+        }
+
+        $settings->update([
+            'credentials' => $credentials,
+            'connected_email' => null,
+            'connected_at' => null,
+        ]);
     }
 
     public function authorizationUrl(string $redirectUri, string $state): string
@@ -269,10 +316,13 @@ class GoogleSiteAnalyticsService
             'site' => ['type' => 'SITE', 'identifier' => $siteUrl],
         ]);
 
-        $verificationToken = $tokenResponse->json('token');
+        // Google returns the whole <meta> tag here; only its content value is stored.
+        $verificationToken = SiteVerificationCode::normalize($tokenResponse->json('token'));
 
         if ($tokenResponse->failed() || ! $verificationToken) {
-            return ['success' => false, 'message' => 'Could not get a verification token from Google: '.$tokenResponse->body()];
+            return ['success' => false, 'message' => self::isMissingScope($tokenResponse)
+                ? self::RECONNECT_MESSAGE
+                : 'Could not get a verification token from Google: '.$tokenResponse->body()];
         }
 
         // Renders immediately via the existing <meta name="google-site-
@@ -286,13 +336,19 @@ class GoogleSiteAnalyticsService
         ]);
 
         if ($insert->failed()) {
+            $reason = (string) ($insert->json('error.message') ?? '');
+
             return [
                 'success' => false,
-                'message' => "The verification tag is saved and live on your homepage, but Google couldn't confirm it yet — this usually means the site isn't publicly reachable at {$siteUrl} right now. Once it's deployed and live, click this again.",
+                'message' => "The verification tag is saved on your homepage, but Google couldn't confirm it yet. Wait a minute and click this again; if it still fails, check that {$siteUrl} opens publicly.".($reason !== '' ? " Google said: {$reason}" : ''),
             ];
         }
 
-        $addSite = Http::withToken($token)->put(self::SEARCH_CONSOLE_ENDPOINT.'/sites/'.rawurlencode($siteUrl));
+        // These Search Console calls take no request body. Laravel would send
+        // an empty JSON array ("[]"), which Google rejects with "Root element
+        // must be a message", so an empty JSON object is sent instead.
+        $addSite = Http::withToken($token)->withBody('{}', 'application/json')
+            ->put(self::SEARCH_CONSOLE_ENDPOINT.'/sites/'.rawurlencode($siteUrl));
 
         if ($addSite->failed() && $addSite->status() !== 409) {
             // 409 = already added, which is fine — anything else is a real failure.
@@ -300,13 +356,19 @@ class GoogleSiteAnalyticsService
         }
 
         $sitemapUrl = rtrim(SiteDomains::publicUrl(), '/').'/sitemap.xml';
-        Http::withToken($token)->put(
+        $sitemap = Http::withToken($token)->withBody('{}', 'application/json')->put(
             self::SEARCH_CONSOLE_ENDPOINT.'/sites/'.rawurlencode($siteUrl).'/sitemaps/'.rawurlencode($sitemapUrl)
         );
 
         $settings->update([
             'credentials' => [...$settings->credentialsArray(), 'gsc_site_url' => $siteUrl, 'gsc_verified_at' => now()->toIso8601String()],
         ]);
+
+        if ($sitemap->failed()) {
+            $reason = (string) ($sitemap->json('error.message') ?? $sitemap->body());
+
+            return ['success' => true, 'message' => "Search Console verified for {$siteUrl}, but Google didn't accept the sitemap yet ({$reason}). Use Re-submit sitemap later, or add {$sitemapUrl} under Sitemaps in Search Console."];
+        }
 
         return ['success' => true, 'message' => "Search Console verified for {$siteUrl} and the sitemap was submitted."];
     }
@@ -364,11 +426,23 @@ class GoogleSiteAnalyticsService
 
     public function disconnect(): void
     {
-        GoogleSiteAnalyticsSetting::current()->update([
+        $settings = GoogleSiteAnalyticsSetting::current();
+
+        $settings->update([
             'is_enabled' => false,
-            'credentials' => [],
+            // The separate project's client is configuration, not a connection.
+            'credentials' => collect($settings->credentialsArray())->only(['own_client_id', 'own_client_secret'])->all(),
             'connected_email' => null,
             'connected_at' => null,
         ]);
+    }
+
+    /**
+     * Google answers 403 ACCESS_TOKEN_SCOPE_INSUFFICIENT when the stored token
+     * was granted before a scope was added; only a reconnect fixes it.
+     */
+    protected static function isMissingScope(Response $response): bool
+    {
+        return $response->status() === 403 && str_contains($response->body(), 'ACCESS_TOKEN_SCOPE_INSUFFICIENT');
     }
 }

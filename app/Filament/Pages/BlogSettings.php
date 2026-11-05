@@ -149,7 +149,15 @@ class BlogSettings extends Page
                         ->label('Add confirmed subscribers to this CRM list')
                         ->options(fn (): array => $this->listOptions())
                         ->searchable()
-                        ->helperText('Lists in admin accounts\' CRMs. Create one in the app under CRM → Lists first.')
+                        ->helperText('Lists in admin accounts\' CRMs. Use "+" to create a new list right here; it goes into your own CRM, where you can see and export the subscribers.')
+                        ->createOptionForm([
+                            TextInput::make('name')->label('List name')->default('Blog subscribers')->required()->maxLength(100),
+                        ])
+                        ->createOptionUsing(fn (array $data): int => CrmList::create([
+                            'user_id' => auth()->id(),
+                            'name' => trim((string) $data['name']),
+                            'description' => 'Newsletter subscribers from the blog.',
+                        ])->id)
                         ->columnSpanFull(),
                     TextInput::make('blog_newsletter_heading')->label('Heading')->placeholder(BlogKit::DEFAULT_NEWSLETTER_HEADING)->maxLength(120)->columnSpanFull(),
                     Textarea::make('blog_newsletter_text')->label('Text')->placeholder(BlogKit::DEFAULT_NEWSLETTER_TEXT)->rows(2)->maxLength(300)->columnSpanFull(),

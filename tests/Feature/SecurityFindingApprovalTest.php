@@ -54,6 +54,54 @@ class SecurityFindingApprovalTest extends TestCase
         NotificationFacade::assertSentTimes(ScheduledMaintenanceNotice::class, 4);
     }
 
+    public function test_a_fix_can_run_now_without_telling_users(): void
+    {
+        NotificationFacade::fake();
+        $this->seed(RolesSeeder::class);
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole(['admin', 'super-admin']);
+        User::factory()->count(2)->create();
+
+        $finding = SecurityFinding::factory()->create([
+            'fix_action' => ['type' => 'env_set', 'params' => ['key' => 'APP_DEBUG', 'value' => 'false']],
+        ]);
+
+        Livewire::actingAs($superAdmin)
+            ->test(ListSecurityFindings::class)
+            ->callTableAction('approveAndSchedule', $finding, ['when' => 'now', 'notify_users' => false])
+            ->assertHasNoTableActionErrors();
+
+        $task = AgentTask::find($finding->fresh()->agent_task_id);
+        $this->assertNotNull($task);
+        $this->assertTrue($task->scheduled_at->lte(now()));
+        $this->assertFalse($task->payload['notify_users']);
+        NotificationFacade::assertNothingSent();
+    }
+
+    public function test_a_scheduled_fix_can_announce_the_maintenance(): void
+    {
+        NotificationFacade::fake();
+        $this->seed(RolesSeeder::class);
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole(['admin', 'super-admin']);
+
+        $finding = SecurityFinding::factory()->create([
+            'fix_action' => ['type' => 'env_set', 'params' => ['key' => 'APP_DEBUG', 'value' => 'false']],
+        ]);
+
+        Livewire::actingAs($superAdmin)
+            ->test(ListSecurityFindings::class)
+            ->callTableAction('approveAndSchedule', $finding, [
+                'when' => 'schedule',
+                'scheduled_at' => now()->addDay()->format('Y-m-d H:i:s'),
+                'scheduled_until' => now()->addDay()->addHour()->format('Y-m-d H:i:s'),
+                'notify_users' => true,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        NotificationFacade::assertSentTimes(ScheduledMaintenanceNotice::class, 1);
+    }
+
     public function test_a_regular_admin_cannot_approve_a_fix_even_with_the_service_called_directly(): void
     {
         $this->seed(RolesSeeder::class);

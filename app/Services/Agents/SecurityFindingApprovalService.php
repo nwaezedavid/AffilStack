@@ -20,11 +20,16 @@ class SecurityFindingApprovalService
 {
     public function __construct(protected SamAgentService $notifier) {}
 
+    /**
+     * Approves the fix to run at $scheduledAt. Users are told about the
+     * maintenance window only when $notifyUsers is on.
+     */
     public function approveAndSchedule(
         SecurityFinding $finding,
         User $approver,
         Carbon $scheduledAt,
         Carbon $scheduledUntil,
+        bool $notifyUsers = true,
     ): AgentTask {
         if (! $approver->isSuperAdmin()) {
             throw new AuthorizationException('Only the super-admin can approve an AI agent fix.');
@@ -43,7 +48,7 @@ class SecurityFindingApprovalService
             'type' => 'security_fix',
             'title' => $finding->title,
             'summary' => $finding->ai_summary,
-            'payload' => ['security_finding_id' => $finding->id],
+            'payload' => ['security_finding_id' => $finding->id, 'notify_users' => $notifyUsers],
             'risk_level' => $finding->severity,
             'status' => AgentTask::STATUS_SCHEDULED,
             'scheduled_at' => $scheduledAt,
@@ -54,8 +59,23 @@ class SecurityFindingApprovalService
 
         $finding->update(['status' => SecurityFinding::STATUS_SCHEDULED, 'agent_task_id' => $task->id]);
 
-        $this->notifier->notifyScheduled($task);
+        if ($notifyUsers) {
+            $this->notifier->notifyScheduled($task);
+        }
 
         return $task;
+    }
+
+    /**
+     * Approves the fix to run straight away: the every-minute agent cron
+     * (agents:execute-due-tasks) applies it within about a minute, with the
+     * same backups, health checks and automatic rollback as a scheduled fix.
+     * Running it from the cron rather than the admin's browser request keeps
+     * it clear of web time limits and of functions the host disables for
+     * websites (composer needs them).
+     */
+    public function approveAndRunNow(SecurityFinding $finding, User $approver, bool $notifyUsers = false): AgentTask
+    {
+        return $this->approveAndSchedule($finding, $approver, now(), now()->addMinutes(15), $notifyUsers);
     }
 }

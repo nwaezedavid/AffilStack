@@ -10,8 +10,9 @@
         <div>
             <p>
                 One Google connection auto-creates a GA4 property, verifies Search Console ownership, and creates a
-                Tag Manager container for this site — the same idea as Google Site Kit for WordPress. Reuses the
-                OAuth client id/secret from Site &gt; Google Login.
+                Tag Manager container for this site — the same idea as Google Site Kit for WordPress. Uses its own
+                Google Cloud project when you set one with "Use a separate Google project" (recommended), otherwise the
+                OAuth client from Site &gt; Google Login.
             </p>
         </div>
     </div>

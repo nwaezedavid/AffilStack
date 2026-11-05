@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Addon;
 use App\Models\FaqItem;
 use App\Models\FeaturePage;
 use App\Models\PageSeo;
@@ -71,6 +72,13 @@ class SeoController extends Controller
         // Agent 11: one URL per published feature page (Website → Features).
         foreach (FeaturePage::publishedList() as $featurePage) {
             $urls[] = ['loc' => $featurePage->url(), 'priority' => '0.7', 'lastmod' => $featurePage->updated_at?->toAtomString()];
+        }
+
+        // Feature 7: every add-on listed in the public marketplace.
+        if (PublicPages::isLive('marketplace.index')) {
+            foreach (Addon::query()->listed()->get(['slug', 'updated_at']) as $addon) {
+                $urls[] = ['loc' => route('marketplace.show', $addon), 'priority' => '0.5', 'lastmod' => $addon->updated_at?->toAtomString()];
+            }
         }
 
         if ($blogUrl = SiteSetting::get('seo_blog_url')) {

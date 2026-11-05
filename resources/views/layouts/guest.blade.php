@@ -1,6 +1,5 @@
 <?php
     $siteName = \App\Models\SiteSetting::get('site_name', 'AffilStack');
-    $logo = \App\Models\SiteSetting::get('logo_rectangular_path');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -15,12 +14,7 @@
     <div class="w-full max-w-md">
         <div class="text-center mb-8">
             <a href="{{ route('home') }}" class="inline-flex items-center gap-2 font-display font-semibold text-xl text-navy-900">
-                @if ($logo)
-                    <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($logo) }}" alt="{{ $siteName }}" class="h-8 w-auto">
-                @else
-                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-navy-900 text-gold-400 text-sm">{{ strtoupper(substr($siteName, 0, 2)) }}</span>
-                    {{ $siteName }}
-                @endif
+                <x-ui.brand-mark :label="$siteName" />
             </a>
         </div>
 

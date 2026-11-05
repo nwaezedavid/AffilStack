@@ -70,15 +70,17 @@ class WhiteLogoTest extends TestCase
         $this->assertStringNotContainsString('branding/white.webp', $header);
     }
 
-    public function test_without_a_white_logo_the_footer_keeps_its_monogram(): void
+    public function test_without_a_white_logo_the_footer_shows_the_colour_logo_on_a_white_chip(): void
     {
         SiteSetting::set('logo_rectangular_path', 'branding/colour.webp');
 
         $html = $this->get('/')->assertOk()->getContent();
         $footer = substr($html, strpos($html, 'id="site-footer-heading"'));
 
-        $this->assertStringNotContainsString('branding/colour.webp', $footer);
-        $this->assertStringContainsString('>AF</span>', $footer);
+        // The uploaded logo, never the two-letter monogram, on the dark footer.
+        $this->assertStringContainsString('rounded-lg bg-white', $footer);
+        $this->assertStringContainsString('branding/colour.webp', $footer);
+        $this->assertStringNotContainsString('>AF</span>', $footer);
     }
 
     public function test_the_dashboard_sidebar_prefers_the_white_logo(): void

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Models\Plan;
 use App\Models\User;
 use App\Services\Credits\CreditManager;
 use App\Support\Lifecycle\UserActivity;
@@ -12,6 +13,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\BadgeColumn;
@@ -118,6 +120,56 @@ class UsersTable
                         }
 
                         Notification::make()->title('Credit balance updated')->success()->send();
+                    }),
+                Action::make('giveFreePlan')
+                    ->label('Give a plan for free')
+                    ->icon('heroicon-o-gift')
+                    ->modalDescription('For review and test accounts (for example the account you give Google, Meta or TikTok reviewers). Starts the plan without payment, adds its monthly credits and marks the email as verified. It ends on its own after the months you pick; no renewal reminders are sent.')
+                    ->schema([
+                        Select::make('plan_id')
+                            ->label('Plan')
+                            ->options(fn (): array => Plan::query()->orderBy('price_monthly_cents')->pluck('name', 'id')->all())
+                            ->required(),
+                        TextInput::make('months')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(12)
+                            ->default(3)
+                            ->required(),
+                    ])
+                    ->action(function (User $record, array $data, CreditManager $credits): void {
+                        $plan = Plan::findOrFail($data['plan_id']);
+                        $current = $record->subscriptions()->whereIn('status', ['trialing', 'active'])->get();
+
+                        // Never touch a plan someone pays for — only replace an earlier free one.
+                        if ($current->contains(fn ($subscription): bool => $subscription->gateway !== 'manual')) {
+                            Notification::make()->title('This account already has a paid plan')->body('Free plans are for review and test accounts only.')->warning()->send();
+
+                            return;
+                        }
+
+                        $record->subscriptions()->whereIn('status', ['trialing', 'active'])->update(['status' => 'canceled', 'canceled_at' => now()]);
+
+                        $subscription = $record->subscriptions()->create([
+                            'plan_id' => $plan->id,
+                            'status' => 'active',
+                            'billing_cycle' => 'monthly',
+                            'gateway' => 'manual',
+                            'current_period_start' => now(),
+                            'current_period_end' => now()->addMonths((int) $data['months']),
+                            'cancel_at_period_end' => true,
+                            'last_credit_grant_at' => now(),
+                        ]);
+
+                        if ($plan->credits_per_month > 0) {
+                            $credits->grant($record, (int) $plan->credits_per_month, 'monthly_grant', $subscription);
+                        }
+
+                        if (! $record->email_verified_at) {
+                            $record->forceFill(['email_verified_at' => now()])->save();
+                        }
+
+                        Notification::make()->title("{$plan->name} is active for {$record->email} until {$subscription->current_period_end->format('M j, Y')}")->success()->send();
                     }),
                 Action::make('toggleSuspend')
                     ->label(fn (User $record) => $record->is_suspended ? 'Unsuspend' : 'Suspend')

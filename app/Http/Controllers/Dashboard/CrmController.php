@@ -202,9 +202,9 @@ class CrmController extends Controller
      */
     protected function csv(Collection $contacts, string $filename): \Illuminate\Http\Response
     {
-        $csv = "Name,Company,Title,Email,Phone,Website,Location,Status,Source,Lists\n";
+        $csv = "Name,Company,Title,Email,Phone,Website,Location,Status,Source,Lists,Tags,Lead score,Score reason,Email check\n";
         foreach ($contacts as $c) {
-            $csv .= collect([$c->name, $c->company, $c->title, $c->email, $c->phone, $c->website, $c->location, $c->status, $c->source, $c->lists->pluck('name')->implode('; ')])
+            $csv .= collect([$c->name, $c->company, $c->title, $c->email, $c->phone, $c->website, $c->location, $c->status, $c->source, $c->lists->pluck('name')->implode('; '), implode('; ', $c->tags ?? []), $c->lead_score, $c->raw_data['score_reason'] ?? '', $c->raw_data['email_status'] ?? ''])
                 ->map(fn ($v) => '"'.str_replace('"', '""', $this->neutralizeFormula((string) $v)).'"')
                 ->implode(',')."\n";
         }

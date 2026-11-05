@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'user_id', 'crm_contact_id', 'crm_email_send_id', 'crm_campaign_id', 'crm_campaign_recipient_id',
     'provider', 'external_id', 'message_id', 'in_reply_to', 'references', 'from_email', 'from_name',
     'subject', 'body_text', 'body_clean', 'matched_by', 'received_at', 'read_at',
+    'copilot_intent', 'copilot_summary', 'copilot_draft', 'copilot_confidence', 'copilot_status',
+    'copilot_send_at', 'copilot_processed_at',
 ])]
 class CrmReply extends Model
 {
@@ -23,6 +25,9 @@ class CrmReply extends Model
         return [
             'received_at' => 'datetime',
             'read_at' => 'datetime',
+            'copilot_send_at' => 'datetime',
+            'copilot_processed_at' => 'datetime',
+            'copilot_confidence' => 'integer',
         ];
     }
 

@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'ideal_customer_summary', 'where_to_find', 'recommended_channel',
     'recommended_angle', 'research_data', 'disclosure_country',
     'suggested_maps_niche', 'suggested_maps_location',
-    'network_program_id', 'network_link', 'use_network_link',
+    'network_program_id', 'network_link', 'use_network_link', 'find_leads',
 ])]
 class Offer extends Model
 {
@@ -34,6 +34,7 @@ class Offer extends Model
             'is_sandbox' => 'boolean',
             'research_data' => 'array',
             'use_network_link' => 'boolean',
+            'find_leads' => 'boolean',
         ];
     }
 

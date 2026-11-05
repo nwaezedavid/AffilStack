@@ -158,7 +158,7 @@ return [
             'cost' => 'Pay-as-you-go API credit. OpenAI and Anthropic both bill per token; images are billed per image.',
             'cost_source' => 'https://openai.com/api/pricing/',
             'time' => '15 minutes',
-            'admin' => ['route' => 'filament.admin.pages.ai-engine-settings', 'label' => 'AI Agents → AI Engine (OpenAI / Claude)', 'env' => ['OPENAI_API_KEY', 'OPENAI_TEXT_MODEL', 'OPENAI_IMAGE_MODEL']],
+            'admin' => ['route' => 'filament.admin.pages.ai-engine-settings', 'label' => 'AI Agents → AI Engine (OpenAI / Claude / Gemini)', 'env' => ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY']],
             'status' => ['resolver' => 'ai'],
             'docs' => [
                 ['OpenAI: API keys', 'https://platform.openai.com/api-keys'],
@@ -386,7 +386,7 @@ return [
             'cost' => 'Each search ≈ US$0.035 and each imported business ≈ US$0.02 after a free 1,000 of each per month.',
             'cost_source' => 'https://developers.google.com/maps/billing-and-pricing/pricing',
             'time' => '15 minutes (billing account needed)',
-            'admin' => ['env' => ['GOOGLE_PLACES_API_KEY']],
+            'admin' => ['route' => 'filament.admin.pages.api-key-settings', 'label' => 'Site → API keys & links'],
             'status' => ['resolver' => 'places'],
             'docs' => [
                 ['Places API (New) overview', 'https://developers.google.com/maps/documentation/places/web-service/op-overview'],
@@ -394,6 +394,27 @@ return [
                 ['API key best practices / restrictions', 'https://developers.google.com/maps/api-security-best-practices'],
             ],
             'volatile' => 'Google Maps Platform pricing was restructured in March 2025 and may change again.',
+        ],
+
+        'lead-sources' => [
+            'title' => 'Apollo & Hunter for B2B lead finding',
+            'short' => 'Lead sources',
+            'phase' => 'features',
+            'priority' => 'optional',
+            'icon' => 'heroicon-o-user-plus',
+            'brand' => null,
+            'enables' => 'B2B lead finding beyond Google Maps: decision-makers by job title with business emails (Apollo), and email finding + verification for any company website (Hunter).',
+            'cost' => 'Apollo: paid plans include monthly email credits (one per email found). Hunter: free tier of 25 searches/month, paid plans from about US$34/month.',
+            'cost_source' => 'https://www.apollo.io/pricing',
+            'time' => '10 minutes each',
+            'admin' => ['route' => 'filament.admin.pages.lead-source-settings', 'label' => 'Site → Lead sources'],
+            'status' => ['resolver' => 'lead_sources'],
+            'docs' => [
+                ['Apollo API: people search', 'https://docs.apollo.io/reference/people-api-search'],
+                ['Apollo API: people enrichment', 'https://docs.apollo.io/reference/people-enrichment'],
+                ['Hunter API', 'https://help.hunter.io/en/articles/1970956-hunter-api'],
+            ],
+            'volatile' => 'Provider prices and credit rules change often — check the pricing pages before setting your lead credit price.',
         ],
 
         'youtube' => [
@@ -498,6 +519,28 @@ return [
             'volatile' => 'HeyGen changes API plans and credit prices frequently.',
         ],
 
+        'higgsfield' => [
+            'title' => 'Higgsfield (one-click product videos)',
+            'short' => 'Higgsfield',
+            'phase' => 'features',
+            'priority' => 'optional',
+            'icon' => 'heroicon-o-sparkles',
+            'brand' => null,
+            'enables' => 'The "Product showcase" and "Problem → solution" one-click video styles: short vertical clips with the product itself on screen, with sound.',
+            'cost' => 'Pay-as-you-go API balance (minimum US$5 top-up), billed per second of video depending on the model and resolution. Only successful videos are charged. Use "Estimate Higgsfield cost" in the admin to see your price per video.',
+            'cost_source' => 'https://docs.higgsfield.ai/docs/concepts/billing-and-retention.md',
+            'time' => '10 minutes',
+            'admin' => ['route' => 'filament.admin.pages.ugc-video-settings', 'label' => 'Content → UGC Video Settings → Higgsfield'],
+            'status' => ['resolver' => 'higgsfield'],
+            'docs' => [
+                ['Higgsfield API quickstart', 'https://docs.higgsfield.ai/docs/quickstart.md'],
+                ['Authentication', 'https://docs.higgsfield.ai/docs/authentication.md'],
+                ['Webhooks', 'https://docs.higgsfield.ai/docs/how-to/webhooks.md'],
+                ['Seedance 2.5 reference-to-video', 'https://docs.higgsfield.ai/docs/models/seedance-2-5/reference-to-video.md'],
+            ],
+            'volatile' => 'Higgsfield adds and reprices models often — check the estimate before changing credit prices.',
+        ],
+
         'brain' => [
             'title' => 'Brain agent — Claude API + Meta Ads MCP',
             'short' => 'Brain agent',
@@ -529,7 +572,7 @@ return [
             'cost' => 'One-time US$5 developer registration fee.',
             'cost_source' => 'https://developer.chrome.com/docs/webstore/register',
             'time' => '45 minutes + Google review (usually 1–3 business days)',
-            'admin' => ['route' => 'extension.index', 'label' => 'Your dashboard → Browser Extension → "Chrome Web Store package"', 'env' => ['CHROME_EXTENSION_STORE_URL']],
+            'admin' => ['route' => 'filament.admin.pages.api-key-settings', 'label' => 'Site → API keys & links (store link); the package is on your dashboard → Browser Extension'],
             'status' => ['resolver' => 'chrome_store'],
             'docs' => [
                 ['Chrome Web Store: register', 'https://developer.chrome.com/docs/webstore/register'],
@@ -550,7 +593,7 @@ return [
             'cost' => 'Free to build and share privately; customers need their own Zapier plan for multi-step Zaps.',
             'cost_source' => 'https://zapier.com/pricing',
             'time' => '1 hour (needs a computer with Node.js — or a developer)',
-            'admin' => ['env' => ['AFFILSTACK_ZAPIER_INVITE_URL']],
+            'admin' => ['route' => 'filament.admin.pages.api-key-settings', 'label' => 'Site → API keys & links'],
             'status' => ['resolver' => 'zapier'],
             'docs' => [
                 ['Zapier Platform CLI', 'https://docs.zapier.com/platform/build-cli/overview'],

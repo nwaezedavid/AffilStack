@@ -1,8 +1,6 @@
 <?php
     $partner = auth()->user();
     $siteName = \App\Support\Brand::name();
-    $whiteLogo = \App\Support\Brand::whiteLogoUrl();
-    $whiteIcon = \App\Support\Brand::whiteIconUrl();
     $unreadNews = \App\Models\PartnerAnnouncement::query()->published()
         ->when($partner->partner_news_seen_at, fn ($q) => $q->where('published_at', '>', $partner->partner_news_seen_at))
         ->count();
@@ -39,13 +37,7 @@
         <aside class="w-64 shrink-0 bg-gradient-to-b from-emerald-950 to-emerald-900 text-white flex flex-col fixed inset-y-0 left-0 z-40 -translate-x-full transition-transform duration-200 ease-out peer-checked:translate-x-0 md:sticky md:top-0 md:h-screen md:translate-x-0">
             <div class="px-5 py-5 border-b border-emerald-800">
                 <a href="{{ route('partner.dashboard') }}" class="flex items-center gap-2.5 font-display font-semibold text-lg">
-                    @if ($whiteLogo)
-                        <img src="{{ $whiteLogo }}" alt="{{ $siteName }}" class="h-7 w-auto">
-                    @elseif ($whiteIcon)
-                        <img src="{{ $whiteIcon }}" alt="" class="h-8 w-8 object-contain" aria-hidden="true"> {{ $siteName }}
-                    @else
-                        {{ $siteName }}
-                    @endif
+                    <x-ui.brand-mark variant="dark" size="sm" :label="$siteName" />
                 </a>
                 <p class="mt-1.5 text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-100/60">Partner Portal</p>
             </div>
@@ -72,7 +64,7 @@
                     <span>Your commission</span>
                     <span class="font-mono text-gold-300 font-semibold">{{ $partnerPercent }}</span>
                 </div>
-                <p class="mt-1 text-[11px] text-emerald-100/50">On every payment, renewals included.</p>
+                <p class="mt-1 text-[11px] text-emerald-100/50">On every subscription payment, renewals included.</p>
             </div>
 
             <div class="px-3 py-4 border-t border-emerald-800 space-y-1">

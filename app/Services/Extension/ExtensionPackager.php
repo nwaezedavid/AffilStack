@@ -15,7 +15,7 @@ use ZipArchive;
  *   - the customer download (inside an "affilstack-extension/" folder,
  *     config.js pointed at this site's own API), and
  *   - the Chrome Web Store upload (manifest at the zip root, the store's
- *     default https://affilstack.com/api left as is).
+ *     default https://app.affilstack.com/api left as is).
  * Both replace the toolbar icons with the site's uploaded square logo
  * (Admin → SEO → Site icon) when one exists, so the extension carries
  * the AffilStack brand rather than the built-in monogram. The popup and

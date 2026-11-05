@@ -34,9 +34,12 @@
         ['icon' => 'pencil-square', 'title' => 'AI content engine', 'description' => 'Blog articles, LinkedIn posts, YouTube scripts, X threads and Pinterest pins, written from your product and ready to publish.'],
         ['icon' => 'video-camera', 'title' => 'UGC & TikTok video', 'description' => 'Turn a script into a human-avatar video your audience actually watches — no camera, actor or editing needed.'],
         ['icon' => 'chart-bar', 'title' => 'Link tracking & earnings', 'description' => 'Branded tracking links show every click, lead and commission, so you double down on what is paying.'],
+        ['icon' => 'arrows-right-left', 'title' => 'Affiliate network connections', 'description' => 'Connect Impact, PartnerStack, Awin, CJ, ClickBank or Digistore24 and import programs, tracked links and commissions.'],
+        ['icon' => 'globe-alt', 'title' => 'WordPress publishing', 'description' => 'Send every article to your WordPress site as a draft, with images, SEO fields and tracked links in place.'],
+        ['icon' => 'puzzle-piece', 'title' => 'Add-on marketplace', 'description' => 'Apps, template packs and automation recipes from independent developers, reviewed before they go live.'],
     ];
 
-    $metaDescriptionDefault = $siteName.' is the all-in-one AI platform for affiliate marketers: research any product, find buyers on Google Maps and LinkedIn, run AI email campaigns and content, and track every click and commission.';
+    $metaDescriptionDefault = $siteName.' is the all-in-one AI platform for affiliate marketers: research any product, find buyers on Google Maps and LinkedIn, run AI email campaigns and content, publish to WordPress, connect your affiliate networks and track every click and commission.';
 
     $jsonLd = [
         '@context' => 'https://schema.org',

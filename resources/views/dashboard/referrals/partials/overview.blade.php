@@ -25,7 +25,7 @@
     <div class="rounded-2xl bg-gradient-to-br {{ $user->isAffiliateOnly() ? 'from-emerald-950 via-emerald-900 to-teal-700' : 'from-navy-900 via-navy-800 to-brand-600' }} p-5 sm:p-6 text-white shadow-sm">
         <p class="text-[11px] font-mono uppercase tracking-[0.18em] text-gold-300">How you earn</p>
         <p class="mt-2 font-display text-4xl font-semibold">{{ $commissionPercent }}%</p>
-        <p class="text-sm text-white/80">of every payment, first and recurring, for as long as they stay subscribed.</p>
+        <p class="text-sm text-white/80">of every subscription payment, first and recurring, for as long as they stay subscribed. Credit top-ups don't count.</p>
         <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
             <div class="rounded-xl bg-white/10 p-3 ring-1 ring-white/15">
                 <dt class="text-white/70 text-xs">Cookie window</dt>
@@ -42,7 +42,7 @@
 <div class="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
     <x-ui.stat label="Link clicks" :value="number_format($stats['clicks'])" icon="cursor-arrow-rays" :hint="number_format($stats['clicks_30d']).' in the last 30 days'" />
     <x-ui.stat label="Sign-ups" :value="number_format($stats['signups'])" icon="user-plus" tone="violet" hint="People who joined via you" />
-    <x-ui.stat label="Paying customers" :value="number_format($stats['converted'])" icon="check-badge" tone="emerald" :hint="$stats['signups'] > 0 ? round($stats['converted'] / $stats['signups'] * 100).'% of sign-ups' : 'Earn on every payment'" />
+    <x-ui.stat label="Paying customers" :value="number_format($stats['converted'])" icon="check-badge" tone="emerald" :hint="$stats['signups'] > 0 ? round($stats['converted'] / $stats['signups'] * 100).'% of sign-ups' : 'Earn on every subscription payment'" />
     <x-ui.stat label="Commission earned" :value="'$'.number_format($earnedCents / 100, 2)" icon="banknotes" tone="gold" :hint="'$'.number_format($totals['paid_cents'] / 100, 2).' paid out so far'" />
 </div>
 

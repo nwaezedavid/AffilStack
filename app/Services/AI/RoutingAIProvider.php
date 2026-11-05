@@ -7,10 +7,10 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * The AIProvider every module receives. Sends text and JSON work to the
- * engine chosen in Admin → AI Agents → AI Engine (OpenAI or Claude) and,
- * when fallback is on and the other engine is configured, retries there if
- * the first one fails — so a provider outage doesn't stop customers'
- * generations. Images always go to OpenAI (Claude can't make images).
+ * engine chosen in Admin → AI Agents → AI Engine (OpenAI, Claude or
+ * Gemini) and, when fallback is on, moves on to the next configured engine
+ * in the chosen order whenever one fails — so a provider outage or an empty
+ * account doesn't stop customers' generations. Images always go to OpenAI.
  */
 class RoutingAIProvider implements AIProvider
 {
@@ -41,37 +41,41 @@ class RoutingAIProvider implements AIProvider
     public function textEngines(): array
     {
         $settings = AiEngineSetting::currentOrDefault();
-        $available = [];
+        $ordered = [];
 
-        if ($settings->hasOpenAi()) {
-            $available[AiEngineSetting::ENGINE_OPENAI] = $this->openai;
+        foreach ($settings->engineOrder() as $engine) {
+            if ($settings->hasEngine($engine)) {
+                $ordered[$engine] = $this->engine($engine, $settings);
+            }
         }
-
-        if ($settings->hasAnthropic()) {
-            $available[AiEngineSetting::ENGINE_ANTHROPIC] = static::anthropicFor($settings);
-        }
-
-        $primary = $settings->text_engine === AiEngineSetting::ENGINE_ANTHROPIC
-            ? AiEngineSetting::ENGINE_ANTHROPIC
-            : AiEngineSetting::ENGINE_OPENAI;
 
         // Nothing configured at all: keep the long-standing behaviour
         // (OpenAI, which then reports its own missing-key error).
-        if ($available === []) {
+        if ($ordered === []) {
             return [AiEngineSetting::ENGINE_OPENAI => $this->openai];
         }
 
-        $ordered = [];
+        // Fallback off: only the main engine (or, if it isn't set up, the first that is).
+        return $settings->fallback_enabled ? $ordered : array_slice($ordered, 0, 1, true);
+    }
 
-        if (isset($available[$primary])) {
-            $ordered[$primary] = $available[$primary];
-        }
+    protected function engine(string $engine, AiEngineSetting $settings): AIProvider
+    {
+        return match ($engine) {
+            AiEngineSetting::ENGINE_ANTHROPIC => static::anthropicFor($settings),
+            AiEngineSetting::ENGINE_GEMINI => static::geminiFor($settings),
+            default => $this->openai,
+        };
+    }
 
-        if ($ordered === [] || $settings->fallback_enabled) {
-            $ordered += $available;
-        }
-
-        return $ordered;
+    public static function geminiFor(AiEngineSetting $settings): GeminiProvider
+    {
+        return new GeminiProvider(
+            apiKey: $settings->geminiApiKey(),
+            model: $settings->geminiModel(),
+            baseUrl: (string) config('ai.gemini.base_url', 'https://generativelanguage.googleapis.com/v1beta'),
+            timeout: (int) config('ai.gemini.timeout', 120),
+        );
     }
 
     public static function anthropicFor(AiEngineSetting $settings): AnthropicProvider

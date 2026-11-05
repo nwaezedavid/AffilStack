@@ -10,6 +10,7 @@ use App\Services\Agents\SamAgentService;
 use App\Services\Agents\SecurityFixExecutor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Mockery;
 use RuntimeException;
@@ -25,9 +26,14 @@ class SecurityFixExecutorTest extends TestCase
 
     protected string $fakeEnvPath;
 
+    protected int $websiteStatus = 200;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The post-fix health check asks the live website for a 200.
+        Http::fake(fn () => Http::response('website', $this->websiteStatus));
 
         $this->fakeEnvPath = storage_path('framework/testing/fake-env-'.uniqid().'.env');
         File::ensureDirectoryExists(dirname($this->fakeEnvPath));
@@ -112,6 +118,43 @@ class SecurityFixExecutorTest extends TestCase
         $this->assertSame(AgentTask::STATUS_ROLLED_BACK, $task->fresh()->status);
         $this->assertStringContainsString('simulated post-fix breakage', $task->fresh()->result);
         Notification::assertNothingSent();
+    }
+
+    public function test_a_fix_approved_without_a_notice_tells_nobody(): void
+    {
+        Notification::fake();
+        User::factory()->count(2)->create();
+
+        $finding = SecurityFinding::factory()->create([
+            'fix_action' => ['type' => 'env_set', 'params' => ['key' => 'APP_DEBUG', 'value' => 'false']],
+        ]);
+        $task = $this->taskFor($finding);
+        $task->update(['payload' => ['security_finding_id' => $finding->id, 'notify_users' => false]]);
+
+        $this->executorWithFakeEnv()->execute($task->fresh());
+
+        $this->assertSame(AgentTask::STATUS_COMPLETED, $task->fresh()->status);
+        Notification::assertNothingSent();
+    }
+
+    public function test_a_fix_is_rolled_back_when_the_website_stops_answering(): void
+    {
+        Notification::fake();
+        $this->websiteStatus = 500;
+        $originalContents = File::get($this->fakeEnvPath);
+
+        $finding = SecurityFinding::factory()->create([
+            'fix_action' => ['type' => 'env_set', 'params' => ['key' => 'APP_DEBUG', 'value' => 'false']],
+        ]);
+        $task = $this->taskFor($finding);
+
+        $this->executorWithFakeEnv(function ($mock) {
+            $mock->shouldReceive('pause')->andReturnNull();
+        })->execute($task);
+
+        $this->assertSame($originalContents, File::get($this->fakeEnvPath));
+        $this->assertSame(AgentTask::STATUS_ROLLED_BACK, $task->fresh()->status);
+        $this->assertStringContainsString('stopped answering', $task->fresh()->result);
     }
 
     public function test_a_task_with_no_matching_finding_is_marked_failed_without_touching_any_file(): void

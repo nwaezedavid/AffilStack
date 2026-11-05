@@ -46,6 +46,26 @@
                    placeholder="https://your-tracking-link…"
                    class="w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
             <p class="mt-1 text-xs text-ink-400">We cloak and track it in everything AffilStack writes.</p>
+            @unless (auth()->user()->isSeat())
+                @php($leadsLeft = app(\App\Services\Leads\LeadAllowance::class)->freeRemaining(auth()->user()))
+                <label class="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5">
+                    <input type="hidden" name="find_leads" value="0">
+                    <input type="checkbox" name="find_leads" value="1" @checked(old('find_leads')) class="mt-0.5 h-4 w-4 rounded border-line text-emerald-600 focus:ring-emerald-500">
+                    <span class="text-xs leading-snug text-ink-700">
+                        <span class="block text-sm font-semibold text-navy-900">Also find B2B buyers (leads)</span>
+                        For programs that pay for qualified leads: AffilStack finds businesses and decision-makers who fit, checks their emails, scores and tags them, and saves them to your CRM, ready to export.
+                        <span class="mt-0.5 block text-emerald-700">
+                            @if ($leadsLeft === PHP_INT_MAX)
+                                Unlimited leads on your plan.
+                            @elseif ($leadsLeft > 0)
+                                {{ number_format($leadsLeft) }} free {{ \Illuminate\Support\Str::plural('lead', $leadsLeft) }} left this month, then {{ app(\App\Services\Leads\LeadAllowance::class)->costPerPaidLead() }} credits each.
+                            @else
+                                {{ app(\App\Services\Leads\LeadAllowance::class)->costPerPaidLead() }} credits per lead with a checked email.
+                            @endif
+                        </span>
+                    </span>
+                </label>
+            @endunless
         </div>
         <div>
             @include('dashboard.offers.partials.network-picker')

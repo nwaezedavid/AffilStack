@@ -10,11 +10,11 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Html;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Storage;
@@ -48,6 +48,11 @@ class FeatureDemoSettings extends Page
      */
     public ?array $data = [];
 
+    /**
+     * @var array<string, string>|null
+     */
+    protected ?array $uploadedVideos = null;
+
     public function mount(): void
     {
         $this->fillForm();
@@ -80,23 +85,7 @@ class FeatureDemoSettings extends Page
             ->description('Used on the homepage and feature pages wherever this screenshot appears.')
             ->compact()
             ->components([
-                Html::make(function (Get $get) use ($name, $key): HtmlString {
-                    $screenshot = e(asset('images/features/'.$name.'.webp'));
-                    $uploaded = $get("video_{$key}");
-                    $uploaded = is_array($uploaded) ? reset($uploaded) : $uploaded;
-                    $videoPath = FeatureMedia::isUploadPath($uploaded) && Storage::disk('public')->exists($uploaded)
-                        ? $uploaded
-                        : FeatureMedia::bundledVideoPath($name);
-
-                    $video = $videoPath
-                        ? '<video src="'.e(Storage::disk('public')->url($videoPath)).'" poster="'.$screenshot.'" muted loop playsinline controls preload="none" style="width:100%;border-radius:8px;border:1px solid rgba(0,0,0,.1)"></video>'
-                        : '<div style="display:flex;align-items:center;justify-content:center;aspect-ratio:16/10;border-radius:8px;border:1px dashed rgba(0,0,0,.2);font-size:12px;color:#6b7280;text-align:center;padding:8px">No animation installed yet</div>';
-
-                    return new HtmlString('<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-                        .'<figure style="margin:0"><img src="'.$screenshot.'" alt="" loading="lazy" style="width:100%;border-radius:8px;border:1px solid rgba(0,0,0,.1)"><figcaption style="font-size:11px;color:#6b7280;margin-top:4px">Screenshot</figcaption></figure>'
-                        .'<figure style="margin:0">'.$video.'<figcaption style="font-size:11px;color:#6b7280;margin-top:4px">Animation</figcaption></figure>'
-                        .'</div>');
-                }),
+                Html::make(fn (): HtmlString => $this->preview($name)),
                 ToggleButtons::make("choice_{$key}")
                     ->label('Show visitors')
                     ->options([FeatureMedia::SCREENSHOT => 'Screenshot', FeatureMedia::ANIMATION => 'Animation'])
@@ -104,31 +93,111 @@ class FeatureDemoSettings extends Page
                     ->default(FeatureMedia::SCREENSHOT)
                     ->inline()
                     ->required(),
-                FileUpload::make("video_{$key}")
-                    ->label('Your own video (optional)')
-                    ->helperText('MP4 or WebM, up to 12 MB, silent. Replaces the built-in animation for this screenshot. Remove it to go back to the built-in one.')
-                    ->disk('public')
-                    ->directory(FeatureMedia::DIRECTORY.'/uploads')
-                    ->acceptedFileTypes(['video/mp4', 'video/webm'])
-                    ->maxSize(12 * 1024)
-                    ->live(),
+                // The upload box lives in a modal, not on the page: 37 inline
+                // upload fields each fired their own request as the page
+                // opened, which ran past the host's database connection limit.
+                Actions::make([
+                    Action::make("upload_{$key}")
+                        ->label(fn (): string => $this->uploadedVideo($name) ? 'Replace my video' : 'Upload my own video')
+                        ->icon(Heroicon::OutlinedArrowUpTray)
+                        ->color('gray')
+                        ->size('sm')
+                        ->modalHeading('Your own video: '.FeatureMedia::label($name))
+                        ->modalDescription('Replaces the built-in animation for this screenshot.')
+                        ->modalSubmitActionLabel('Upload')
+                        ->schema([
+                            FileUpload::make('video')
+                                ->label('Video')
+                                ->helperText('MP4 or WebM, up to 12 MB, silent.')
+                                ->disk('public')
+                                ->directory(FeatureMedia::DIRECTORY.'/uploads')
+                                ->acceptedFileTypes(['video/mp4', 'video/webm'])
+                                ->maxSize(12 * 1024)
+                                ->required(),
+                        ])
+                        ->action(fn (array $data) => $this->storeVideo($name, $data['video'] ?? null)),
+                    Action::make("remove_{$key}")
+                        ->label('Remove my video')
+                        ->icon(Heroicon::OutlinedTrash)
+                        ->color('danger')
+                        ->link()
+                        ->size('sm')
+                        ->visible(fn (): bool => $this->uploadedVideo($name) !== null)
+                        ->requiresConfirmation()
+                        ->modalDescription('This screenshot goes back to its built-in animation.')
+                        ->action(fn () => $this->storeVideo($name, null)),
+                ])->key("actions_{$key}"),
             ]);
+    }
+
+    protected function preview(string $name): HtmlString
+    {
+        $screenshot = e(asset('images/features/'.$name.'.webp'));
+        $videoPath = $this->uploadedVideo($name) ?? FeatureMedia::bundledVideoPath($name);
+
+        $video = $videoPath
+            ? '<video src="'.e(Storage::disk('public')->url($videoPath)).'" poster="'.$screenshot.'" muted loop playsinline controls preload="none" style="width:100%;border-radius:8px;border:1px solid rgba(0,0,0,.1)"></video>'
+            : '<div style="display:flex;align-items:center;justify-content:center;aspect-ratio:16/10;border-radius:8px;border:1px dashed rgba(0,0,0,.2);font-size:12px;color:#6b7280;text-align:center;padding:8px">No animation installed yet</div>';
+
+        return new HtmlString('<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+            .'<figure style="margin:0"><img src="'.$screenshot.'" alt="" loading="lazy" style="width:100%;border-radius:8px;border:1px solid rgba(0,0,0,.1)"><figcaption style="font-size:11px;color:#6b7280;margin-top:4px">Screenshot</figcaption></figure>'
+            .'<figure style="margin:0">'.$video.'<figcaption style="font-size:11px;color:#6b7280;margin-top:4px">Animation</figcaption></figure>'
+            .'</div>');
+    }
+
+    /**
+     * The admin's own video for a screenshot, when one is saved and still on disk.
+     */
+    protected function uploadedVideo(string $name): ?string
+    {
+        $this->uploadedVideos ??= FeatureMedia::uploadedVideos();
+        $path = $this->uploadedVideos[$name] ?? null;
+
+        return FeatureMedia::isUploadPath($path) && Storage::disk('public')->exists($path) ? $path : null;
+    }
+
+    /**
+     * Saves (or, with null, removes) the admin's own video for one
+     * screenshot straight away, deleting the file it replaces.
+     */
+    protected function storeVideo(string $name, mixed $path): void
+    {
+        $path = is_array($path) ? reset($path) : $path;
+        $videos = FeatureMedia::uploadedVideos();
+        $previous = $videos[$name] ?? null;
+
+        if (is_string($path) && FeatureMedia::isUploadPath($path)) {
+            $videos[$name] = $path;
+        } else {
+            unset($videos[$name]);
+        }
+
+        FeatureMedia::save(FeatureMedia::choices(), $videos);
+        $this->uploadedVideos = null;
+
+        if (FeatureMedia::isUploadPath($previous) && $previous !== ($videos[$name] ?? null)) {
+            Storage::disk('public')->delete($previous);
+        }
+
+        Notification::make()
+            ->title(isset($videos[$name]) ? 'Video uploaded' : 'Video removed')
+            ->body(isset($videos[$name])
+                ? 'Visitors see it wherever this screenshot is set to "Animation".'
+                : 'This screenshot uses its built-in animation again.')
+            ->success()
+            ->send();
     }
 
     public function save(): void
     {
         $data = $this->form->getState();
         $choices = [];
-        $videos = [];
 
         foreach (FeatureMedia::names() as $name) {
-            $key = self::key($name);
-            $choices[$name] = (string) ($data["choice_{$key}"] ?? FeatureMedia::SCREENSHOT);
-            $video = $data["video_{$key}"] ?? null;
-            $videos[$name] = is_string($video) ? $video : null;
+            $choices[$name] = (string) ($data['choice_'.self::key($name)] ?? FeatureMedia::SCREENSHOT);
         }
 
-        FeatureMedia::save($choices, $videos);
+        FeatureMedia::save($choices, FeatureMedia::uploadedVideos());
 
         $missing = collect($choices)
             ->filter(fn (string $choice, string $name): bool => $choice === FeatureMedia::ANIMATION && FeatureMedia::videoPaths($name) === [])
@@ -190,13 +259,10 @@ class FeatureDemoSettings extends Page
     protected function fillForm(): void
     {
         $choices = FeatureMedia::choices();
-        $videos = FeatureMedia::uploadedVideos();
         $state = [];
 
         foreach (FeatureMedia::names() as $name) {
-            $key = self::key($name);
-            $state["choice_{$key}"] = ($choices[$name] ?? null) === FeatureMedia::ANIMATION ? FeatureMedia::ANIMATION : FeatureMedia::SCREENSHOT;
-            $state["video_{$key}"] = $videos[$name] ?? null;
+            $state['choice_'.self::key($name)] = ($choices[$name] ?? null) === FeatureMedia::ANIMATION ? FeatureMedia::ANIMATION : FeatureMedia::SCREENSHOT;
         }
 
         $this->form->fill($state);

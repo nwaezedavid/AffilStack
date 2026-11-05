@@ -6,8 +6,11 @@ use App\Filament\Concerns\ScopedToDepartment;
 use App\Models\GoogleSiteAnalyticsSetting;
 use App\Services\Analytics\GoogleSiteAnalyticsService;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Text;
 use Filament\Support\Icons\Heroicon;
 use RuntimeException;
 
@@ -120,6 +123,42 @@ class GoogleSiteAnalyticsSettings extends Page
         }
 
         Notification::make()->title($result['success'] ? 'Tag Manager set up' : 'Setup failed')->body($result['message'])->status($result['success'] ? 'success' : 'danger')->send();
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('ownClient')
+                ->label(fn (): string => app(GoogleSiteAnalyticsService::class)->usesOwnClient() ? 'Separate Google project: on' : 'Use a separate Google project')
+                ->icon(Heroicon::OutlinedKey)
+                ->color('gray')
+                ->modalHeading('Separate Google project for Site Analytics')
+                ->modalDescription('Recommended. Analytics, Search Console and Tag Manager permissions are only for you, so keep them in their own Google Cloud project and out of the customer app that Google verifies. Leave both fields empty to go back to the Site > Google Login client.')
+                ->modalSubmitActionLabel('Save and disconnect')
+                ->fillForm(fn (): array => [
+                    'client_id' => GoogleSiteAnalyticsSetting::current()->credential('own_client_id'),
+                ])
+                ->schema([
+                    Text::make('Authorized redirect URI to add to that project\'s OAuth client: '.route('google-site-analytics.callback')),
+                    TextInput::make('client_id')
+                        ->label('Client ID')
+                        ->helperText('Ends with .apps.googleusercontent.com'),
+                    TextInput::make('client_secret')
+                        ->label('Client secret')
+                        ->password()
+                        ->revealable()
+                        ->requiredWith('client_id'),
+                ])
+                ->action(function (array $data): void {
+                    app(GoogleSiteAnalyticsService::class)->saveOwnClient($data['client_id'] ?? null, $data['client_secret'] ?? null);
+
+                    Notification::make()
+                        ->title('Saved')
+                        ->body('Click "Connect with Google" to connect again with the new project. Your GA4, Search Console and Tag Manager details are kept.')
+                        ->success()
+                        ->send();
+                }),
+        ];
     }
 
     public function disconnect(): void

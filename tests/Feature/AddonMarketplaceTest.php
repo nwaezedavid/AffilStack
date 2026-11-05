@@ -47,6 +47,17 @@ class AddonMarketplaceTest extends TestCase
         $this->actingAs($customer)->get(route('marketplace.addon', $suspended))->assertNotFound();
     }
 
+    public function test_the_sitemap_lists_only_listed_add_ons(): void
+    {
+        $developer = $this->developer();
+        $live = $this->liveAddon($developer, 'app', ['name' => 'Rank Booster']);
+        $suspended = $this->liveAddon($developer, 'template_pack', ['name' => 'Banned Pack'], 'suspended');
+
+        $this->get(route('seo.sitemap'))->assertOk()
+            ->assertSee(route('marketplace.show', $live), false)
+            ->assertDontSee(route('marketplace.show', $suspended), false);
+    }
+
     public function test_the_marketplace_can_be_searched_and_filtered(): void
     {
         $developer = $this->developer();

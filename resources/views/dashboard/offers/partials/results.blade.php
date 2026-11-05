@@ -228,6 +228,8 @@
 
         @include('dashboard.offers.partials.prospects-panel')
 
+        @include('dashboard.offers.partials.lead-finder')
+
         @include('dashboard.offers.partials.feature-tiles')
     @endif
 </div>

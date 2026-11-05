@@ -59,6 +59,34 @@
                     <span class="text-xs text-ink-400">{{ number_format($balance) }} credits left</span>
                 </header>
 
+                @if ($copilot ?? null)
+                    <div class="flex flex-col gap-3 border-b border-line bg-emerald-50/70 px-5 py-4 sm:flex-row sm:items-start sm:justify-between" data-copilot>
+                        <div class="flex items-start gap-3">
+                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white"><x-heroicon-o-chat-bubble-left-right class="h-5 w-5" /></span>
+                            <div class="text-sm">
+                                <p class="font-semibold text-navy-900">
+                                    Reply Copilot
+                                    <span class="ml-1 inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">{{ \App\Services\Agents\Customer\ReplyCopilot::INTENTS[$copilot->copilot_intent] ?? 'Reply' }}</span>
+                                </p>
+                                @if ($copilot->copilot_summary)
+                                    <p class="mt-0.5 text-ink-700">{{ $copilot->copilot_summary }}</p>
+                                @endif
+                                <p class="mt-1 text-xs text-ink-600">
+                                    @if ($copilot->copilot_status === 'auto_queued')
+                                        Autopilot will send the reply below at {{ $copilot->copilot_send_at?->timezone(auth()->user()->timezone ?: config('app.timezone'))->format('g:i A') }}. Edit and send it yourself, or stop it.
+                                    @else
+                                        The best reply is drafted below. Check it, then press Send reply.
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                        <form method="POST" action="{{ route('crm.inbox.copilot.dismiss', $copilot) }}" class="shrink-0">
+                            @csrf
+                            <button class="rounded-full border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">{{ $copilot->copilot_status === 'auto_queued' ? 'Stop autopilot' : 'Dismiss draft' }}</button>
+                        </form>
+                    </div>
+                @endif
+
                 <form method="POST" action="{{ route('crm.inbox.draft', $latest) }}" class="border-b border-line bg-gradient-to-r from-violet-50 via-white to-brand-50 px-5 py-4">
                     @csrf
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
