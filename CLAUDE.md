@@ -156,3 +156,9 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Run `vendor/bin/phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 
 </laravel-boost-guidelines>
+
+# Project Workflow
+
+## Shipping Builds
+
+- After every build that passes its tests, commit the changes, push them, open a pull request into `affilstack-app`, and merge it once the tests pass.
