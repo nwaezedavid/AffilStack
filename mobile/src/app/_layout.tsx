@@ -46,6 +46,14 @@ function RootNavigator() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="devices" options={{ title: 'Signed-in devices' }} />
           <Stack.Screen name="delete-account" options={{ title: 'Delete account', presentation: 'modal' }} />
+          <Stack.Screen name="products/new" options={{ title: 'Add a product', presentation: 'modal' }} />
+          <Stack.Screen name="products/[id]" options={{ title: 'Product' }} />
+          <Stack.Screen name="content/[id]" options={{ title: 'Content' }} />
+          <Stack.Screen name="videos/[id]" options={{ title: 'Video' }} />
+          <Stack.Screen name="inbox/index" options={{ title: 'Inbox' }} />
+          <Stack.Screen name="inbox/[contactId]" options={{ title: 'Conversation' }} />
+          <Stack.Screen name="contacts/index" options={{ title: 'Contacts' }} />
+          <Stack.Screen name="contacts/[id]" options={{ title: 'Contact' }} />
         </Stack.Protected>
         <Stack.Protected guard={status === 'signed-out'}>
           <Stack.Screen name="sign-in" options={{ headerShown: false }} />

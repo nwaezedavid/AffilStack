@@ -76,3 +76,117 @@ export type TokenSet = {
   expiresAt: number;
   deviceId: number | null;
 };
+
+export type Paginated<T> = {
+  data: T[];
+  meta?: { current_page: number; last_page: number; total: number };
+};
+
+export type Offer = {
+  id: number;
+  product_name: string;
+  product_url: string;
+  affiliate_network: string | null;
+  status: string;
+  created_at: string | null;
+  generations_count?: number;
+  research?: {
+    ideal_customer: string | null;
+    where_to_find: string | null;
+    recommended_channel: string | null;
+    recommended_angle: string | null;
+  };
+};
+
+export type GenerationStatus = 'queued' | 'processing' | 'completed' | 'failed' | string;
+
+export type Generation = {
+  id: number;
+  offer_id: number | null;
+  offer_name: string | null;
+  module: string;
+  status: GenerationStatus;
+  title: string | null;
+  text: string | null;
+  plain_text: string | null;
+  video_url: string | null;
+  video_style: string | null;
+  credits_spent: number;
+  error: string | null;
+  created_at: string | null;
+};
+
+export type ContentType = { type: string; label: string; description: string; credits: number; available: boolean };
+
+export type OfferDetail = { offer: Offer; content: Generation[]; content_types: ContentType[] };
+
+export type VideoStyle = {
+  style: string;
+  label: string;
+  description: string;
+  credits: number;
+  duration_seconds: number;
+  uses_product_photo: boolean;
+  available: boolean;
+};
+
+export type AgentActivity = {
+  id: number;
+  agent: string;
+  agent_name: string;
+  action: string;
+  summary: string;
+  status: string;
+  needs_approval: boolean;
+  approve_label: string;
+  created_at: string | null;
+};
+
+export type AgentsOverview = {
+  included: boolean;
+  approvals: AgentActivity[];
+  activity: AgentActivity[];
+  week: Record<string, number>;
+};
+
+export type Conversation = {
+  contact_id: number;
+  contact_name: string | null;
+  contact_company: string | null;
+  subject: string | null;
+  snippet: string;
+  received_at: string | null;
+  unread_count: number;
+  has_suggestion: boolean;
+};
+
+export type ConversationDetail = {
+  contact: { id: number; name: string; email: string | null; company: string | null };
+  reply_id: number;
+  reply_subject: string;
+  messages: { direction: 'in' | 'out'; at: string | null; subject: string | null; body: string }[];
+  suggestion: { body: string; auto_send_at: string | null } | null;
+  draft_cost: number;
+  credits_balance: number;
+  email_connected: boolean;
+};
+
+export type ContactStatus = 'new' | 'contacted' | 'qualified' | 'customer' | 'unqualified';
+
+export type Contact = {
+  id: number;
+  name: string;
+  company: string | null;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  location: string | null;
+  status: ContactStatus;
+  tags: string[];
+  notes: string | null;
+  lead_score: number | null;
+  source: string | null;
+  lists?: { id: number; name: string }[];
+  created_at: string | null;
+};
