@@ -27,6 +27,17 @@ class MobileDeviceFactory extends Factory
         ];
     }
 
+    /**
+     * A phone that allowed notifications and sent its Expo push token.
+     */
+    public function withPush(?string $token = null): static
+    {
+        return $this->state(fn (): array => [
+            'push_provider' => 'expo',
+            'push_token' => $token ?? 'ExponentPushToken['.fake()->unique()->bothify('????????????????????').']',
+        ]);
+    }
+
     public function revoked(): static
     {
         return $this->state(fn (): array => ['revoked_at' => now()]);

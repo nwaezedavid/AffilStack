@@ -142,15 +142,37 @@ const contacts: Contact[] = [
   { id: 504, name: 'Grace Adeyemi', company: 'Peak Fitness', title: 'Owner', email: 'grace@peakfit.ng', phone: '+2348091112233', website: 'https://peakfit.ng', location: 'Ibadan, NG', status: 'new', tags: ['fitness'], notes: null, lead_score: 71, source: 'google_maps', created_at: ago(20) },
 ];
 
+const notificationPreferences = {
+  push_available: true,
+  this_device_registered: true,
+  categories: [
+    { key: 'content_ready', label: 'Content & videos ready', description: 'When an article, post, script, video or product research is finished.', enabled: true },
+    { key: 'agents', label: 'AI agents', description: 'When an agent needs your approval or finished something for you.', enabled: true },
+    { key: 'inbox_replies', label: 'Buyer replies', description: 'When a contact replies to one of your emails.', enabled: true },
+    { key: 'weekly_briefing', label: 'Weekly briefing', description: 'Your Monday summary of what AffilStack did.', enabled: false },
+    { key: 'support', label: 'Support replies', description: 'When our team answers one of your tickets.', enabled: true },
+    { key: 'account', label: 'Account alerts', description: 'Broken connections, paused campaigns and add-on payments.', enabled: true },
+    { key: 'payouts', label: 'Payouts', description: 'When a referral payout is sent to you.', enabled: true },
+  ],
+};
+
 const page = <T,>(data: T[]) => ({ data, meta: { current_page: 1, last_page: 1, total: data.length } });
 
-export async function demoResponse<T>(method: string, path: string, _body?: unknown): Promise<T> {
+export async function demoResponse<T>(method: string, path: string, body?: unknown): Promise<T> {
   await new Promise((resolve) => setTimeout(resolve, 250));
 
   if (path === '/v1/mobile/config') return config as T;
   if (path === '/v1/mobile/home') return home as T;
   if (path === '/v1/mobile/devices' && method === 'GET') return { data: devices } as T;
   if (path === '/v1/mobile/devices/current') return { data: devices[0] } as T;
+
+  if (path === '/v1/mobile/notifications/preferences') {
+    const changes = ((body as { categories?: Record<string, boolean> } | undefined)?.categories ?? {}) as Record<string, boolean>;
+    notificationPreferences.categories = notificationPreferences.categories.map((category) => (category.key in changes ? { ...category, enabled: changes[category.key] } : category));
+
+    return { data: notificationPreferences } as T;
+  }
+  if (path === '/v1/mobile/notifications/test') return { message: 'Test notification sent. It should arrive within a few seconds.' } as T;
 
   const route = path.split('?')[0];
   const id = Number(route.split('/')[4]);

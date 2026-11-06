@@ -78,6 +78,15 @@ class SecurityHeadersTest extends TestCase
         $this->assertTrue($this->isDotfileRequest('/.git/config'));
     }
 
+    public function test_only_the_two_phone_app_link_files_are_allowed_under_well_known(): void
+    {
+        $this->assertFalse($this->isDotfileRequest('/.well-known/apple-app-site-association'));
+        $this->assertFalse($this->isDotfileRequest('/.well-known/assetlinks.json'));
+        $this->assertTrue($this->isDotfileRequest('/.well-known/security.txt'));
+        $this->assertTrue($this->isDotfileRequest('/.well-known/assetlinks.json/.env'));
+        $this->assertTrue($this->isDotfileRequest('/.well-known'));
+    }
+
     private function isDotfileRequest(string $path): bool
     {
         $method = new ReflectionMethod(SecurityHeaders::class, 'isDotfileRequest');

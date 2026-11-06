@@ -71,6 +71,13 @@ export default function MoreScreen() {
 
       <Card>
         <Text variant="label" tone="faint" style={styles.section}>
+          SETTINGS
+        </Text>
+        <ListRow icon="notifications-outline" label="Notifications" detail="Choose what your phone tells you about" onPress={() => router.push('/notifications')} />
+      </Card>
+
+      <Card>
+        <Text variant="label" tone="faint" style={styles.section}>
           SECURITY
         </Text>
         {biometricAvailable ? (

@@ -16,7 +16,11 @@
       },
       "infoPlist": {
         "NSFaceIDUsageDescription": "Unlock AffilStack with Face ID."
-      }
+      },
+      "associatedDomains": [
+        "applinks:app.affilstack.com",
+        "webcredentials:app.affilstack.com"
+      ]
     },
     "android": {
       "package": "com.affilstack.app",
@@ -30,6 +34,53 @@
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "app.affilstack.com",
+              "path": "/dashboard"
+            },
+            {
+              "scheme": "https",
+              "host": "app.affilstack.com",
+              "path": "/offers"
+            },
+            {
+              "scheme": "https",
+              "host": "app.affilstack.com",
+              "pathPrefix": "/offers/"
+            },
+            {
+              "scheme": "https",
+              "host": "app.affilstack.com",
+              "path": "/agents"
+            },
+            {
+              "scheme": "https",
+              "host": "app.affilstack.com",
+              "path": "/crm"
+            },
+            {
+              "scheme": "https",
+              "host": "app.affilstack.com",
+              "path": "/crm/inbox"
+            },
+            {
+              "scheme": "https",
+              "host": "app.affilstack.com",
+              "pathPrefix": "/crm/inbox/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {
@@ -64,7 +115,31 @@
       "expo-font",
       "expo-web-browser",
       "expo-video",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#0b1e3d",
+          "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AffilStack uses your photos so you can pick a product picture for your videos.",
+          "cameraPermission": "AffilStack uses the camera so you can take a product picture for your videos.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "AffilStack needs access to your photos to save your videos.",
+          "savePhotosPermission": "AffilStack saves your finished videos to your photos.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

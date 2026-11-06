@@ -82,6 +82,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'notify_email_on_completion' => 'boolean',
             'last_active_at' => 'datetime',
             'agent_settings' => 'array',
+            'push_preferences' => 'array',
             'last_login_at' => 'datetime',
             'birth_date' => 'date',
             'payout_details' => 'encrypted:array',

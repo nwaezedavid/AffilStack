@@ -837,6 +837,104 @@
                 }
             }
         },
+        "/v1/mobile/notifications/preferences": {
+            "get": {
+                "operationId": "getMobileNotificationPreferences",
+                "tags": [
+                    "Mobile app"
+                ],
+                "x-first-party": true,
+                "summary": "Which kinds of phone notification this account receives",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/MobileNotificationPreferences"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "updateMobileNotificationPreferences",
+                "tags": [
+                    "Mobile app"
+                ],
+                "x-first-party": true,
+                "summary": "Switch kinds of phone notification on or off (for all of this account's phones)",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "categories"
+                                ],
+                                "properties": {
+                                    "categories": {
+                                        "type": "object",
+                                        "description": "Notification type => on/off. Types are content_ready, agents, inbox_replies, weekly_briefing, support, account, payouts.",
+                                        "additionalProperties": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/MobileNotificationPreferences"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationError"
+                    }
+                }
+            }
+        },
+        "/v1/mobile/notifications/test": {
+            "post": {
+                "operationId": "sendMobileTestNotification",
+                "tags": [
+                    "Mobile app"
+                ],
+                "x-first-party": true,
+                "summary": "Send a test notification to this phone",
+                "responses": {
+                    "200": {
+                        "description": "Sent"
+                    },
+                    "422": {
+                        "description": "This phone can't receive notifications yet (the message says why)"
+                    }
+                }
+            }
+        },
         "/v1/mobile/logout": {
             "post": {
                 "operationId": "mobileLogout",
@@ -2045,6 +2143,39 @@
                         "properties": {
                             "pending_approvals": {
                                 "type": "integer"
+                            }
+                        }
+                    }
+                }
+            },
+            "MobileNotificationPreferences": {
+                "type": "object",
+                "properties": {
+                    "push_available": {
+                        "type": "boolean",
+                        "description": "Whether AffilStack is sending phone notifications at all"
+                    },
+                    "this_device_registered": {
+                        "type": "boolean",
+                        "description": "Whether this phone has sent its push token"
+                    },
+                    "categories": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "key": {
+                                    "type": "string"
+                                },
+                                "label": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": "string"
+                                },
+                                "enabled": {
+                                    "type": "boolean"
+                                }
                             }
                         }
                     }

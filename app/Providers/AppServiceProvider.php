@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Listeners\SendMobilePushForNotification;
 use App\Models\AiEngineSetting;
 use App\Models\ApiKeySetting;
 use App\Models\ApiToken;
@@ -16,6 +17,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -71,6 +73,10 @@ class AppServiceProvider extends ServiceProvider
                 SignedInHint::clear();
             }
         });
+
+        // Phone app (phase 5): dashboard notifications also reach the
+        // customer's phones — see SendMobilePushForNotification.
+        Event::listen(NotificationSent::class, [SendMobilePushForNotification::class, 'handle']);
 
         if ($appUrl = SiteDomains::appUrl()) {
             // Signing out of the app lands on the public homepage.
