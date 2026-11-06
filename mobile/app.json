@@ -11,7 +11,6 @@
     "ios": {
       "bundleIdentifier": "com.affilstack.app",
       "supportsTablet": true,
-      "usesAppleSignIn": true,
       "buildNumber": "1",
       "config": {
         "usesNonExemptEncryption": false
@@ -22,7 +21,12 @@
       "associatedDomains": [
         "applinks:app.affilstack.com",
         "webcredentials:app.affilstack.com"
-      ]
+      ],
+      "entitlements": {
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
+      }
     },
     "android": {
       "package": "com.affilstack.app",
