@@ -11,8 +11,9 @@ use Illuminate\Http\JsonResponse;
  * GET /api/v1/mobile/config — what the app checks every time it opens,
  * before anyone signs in: whether this version must update, the banner
  * to show, store links and where sign-in happens. Public and secret-free.
- * In-app purchases are off: billing is managed on the website (owner's
- * decision for version 1).
+ * In-app purchases are off (owner's decision for version 1), and nothing
+ * here links to billing or pricing: App Store and Google Play rules don't
+ * allow the app to point to purchases made elsewhere.
  */
 class ConfigController extends Controller
 {
@@ -40,7 +41,6 @@ class ConfigController extends Controller
             ],
             'links' => [
                 'dashboard' => route('dashboard'),
-                'billing' => route('billing.index'),
                 'forgot_password' => route('password.request'),
                 'privacy' => route('privacy'),
                 'terms' => route('terms'),

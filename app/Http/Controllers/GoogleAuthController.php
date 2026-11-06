@@ -11,6 +11,7 @@ use App\Services\Auth\SocialSignIn;
 use App\Services\Payments\CheckoutCountryResolver;
 use App\Services\Payments\PaymentGatewayManager;
 use App\Services\Referrals\ReferralService;
+use App\Support\Mobile\AppSignIn;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -133,6 +134,12 @@ class GoogleAuthController extends Controller
                 : 'Signed in with Google.';
 
             return $socialSignIn->complete($request, $user, $message);
+        }
+
+        // Inside the phone app's sign-in: never the pricing page (AppSignIn).
+        if (AppSignIn::active()) {
+            return redirect()->route('login')
+                ->with('error', "No AffilStack account uses {$profile['email']}. Sign in with the email address of your AffilStack account.");
         }
 
         if (($intent['type'] ?? null) !== 'signup') {

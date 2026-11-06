@@ -452,6 +452,59 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
 
+  /v1/mobile/billing:
+    get:
+      operationId: getMobileBilling
+      tags: [Mobile app]
+      x-first-party: true
+      summary: Plan, credits and wallet with recent activity (view only — buying happens on the website)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      account: { $ref: '#/components/schemas/MobileAccount' }
+                      credits:
+                        type: object
+                        properties:
+                          balance: { type: integer }
+                          monthly_allowance: { type: integer, nullable: true }
+                      wallet:
+                        type: object
+                        properties:
+                          balance_minor: { type: integer }
+                          currency: { type: string }
+                          formatted: { type: string }
+                      shows_history: { type: boolean, description: 'False for team seats, who see balances only' }
+                      credit_activity:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: integer }
+                            label: { type: string }
+                            amount: { type: integer, description: 'Positive for credits added, negative for credits used' }
+                            balance_after: { type: integer }
+                            created_at: { type: string, format: date-time }
+                      wallet_activity:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: integer }
+                            label: { type: string }
+                            amount_minor: { type: integer }
+                            formatted: { type: string }
+                            created_at: { type: string, format: date-time }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /v1/mobile/devices:
     get:
       operationId: listMobileDevices
@@ -1178,8 +1231,8 @@ components:
     MobileNotificationPreferences:
       type: object
       properties:
-        push_available: { type: boolean, description: Whether AffilStack is sending phone notifications at all }
-        this_device_registered: { type: boolean, description: Whether this phone has sent its push token }
+        push_available: { type: boolean, description: 'Whether AffilStack is sending phone notifications at all' }
+        this_device_registered: { type: boolean, description: 'Whether this phone has sent its push token' }
         categories:
           type: array
           items:

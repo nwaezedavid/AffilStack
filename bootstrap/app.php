@@ -22,6 +22,7 @@ use App\Http\Middleware\RestrictAgencySeats;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\StripLocalePrefix;
 use App\Http\Middleware\TrackUserActivity;
+use App\Support\Mobile\AppSignIn;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -99,7 +100,19 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', LocalizeResponse::class);
 
         // The Partner Portal has its own sign-in page on the affiliate host.
-        $middleware->redirectGuestsTo(fn (Request $request) => $request->routeIs('partner.*') ? route('partner.login') : route('login'));
+        // A signed-out visitor from the phone app (/mobile/authorize) gets
+        // the sign-in pages without links to plans or sign-up — see AppSignIn.
+        $middleware->redirectGuestsTo(function (Request $request): string {
+            if ($request->routeIs('partner.*')) {
+                return route('partner.login');
+            }
+
+            if ($request->routeIs('mobile.authorize')) {
+                AppSignIn::start();
+            }
+
+            return route('login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

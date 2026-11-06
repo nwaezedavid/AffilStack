@@ -58,7 +58,14 @@
         </div>
     @endif
 
-    <p class="mt-6 text-center text-sm text-ink-600">
-        New to AffilStack? <a href="{{ route('registration.pricing') }}" class="text-brand-600 hover:text-brand-700 font-medium">See plans &amp; pricing</a>
-    </p>
+    {{-- Opened from the phone app: no links to plans (App Store / Google Play rules — see AppSignIn). --}}
+    @if (\App\Support\Mobile\AppSignIn::active())
+        <p class="mt-6 text-center text-sm text-ink-600">
+            Sign in with your AffilStack account to use the app.
+        </p>
+    @else
+        <p class="mt-6 text-center text-sm text-ink-600">
+            New to AffilStack? <a href="{{ route('registration.pricing') }}" class="text-brand-600 hover:text-brand-700 font-medium">See plans &amp; pricing</a>
+        </p>
+    @endif
 @endsection

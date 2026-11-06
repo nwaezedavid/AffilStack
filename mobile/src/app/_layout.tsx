@@ -49,6 +49,7 @@ function RootNavigator() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="devices" options={{ title: 'Signed-in devices' }} />
           <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
+          <Stack.Screen name="billing" options={{ title: 'Plan & credits' }} />
           <Stack.Screen name="delete-account" options={{ title: 'Delete account', presentation: 'modal' }} />
           <Stack.Screen name="products/new" options={{ title: 'Add a product', presentation: 'modal' }} />
           <Stack.Screen name="products/[id]" options={{ title: 'Product' }} />

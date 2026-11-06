@@ -3,6 +3,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { api } from '@/lib/api';
 import type {
   AgentsOverview,
+  BillingOverview,
   Contact,
   ContactStatus,
   Conversation,
@@ -172,4 +173,10 @@ export function useUpdateContact(id: number) {
       client.invalidateQueries({ queryKey: ['contacts'] });
     },
   });
+}
+
+// --- Plan & credits (view only) ------------------------------------------------
+
+export function useBilling() {
+  return useQuery({ queryKey: ['billing'], queryFn: () => api<{ data: BillingOverview }>('/v1/mobile/billing'), select: (response) => response.data });
 }

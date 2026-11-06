@@ -20,20 +20,31 @@ use RuntimeException;
  */
 class AgentsController extends Controller
 {
+    /**
+     * AffilStack's own revenue agents (upgrade suggestions, "keep your
+     * account" check-ins) are about buying, so they stay out of the app:
+     * Apple and Google don't allow it to point to purchases made elsewhere.
+     *
+     * @var array<int, string>
+     */
+    public const HIDDEN_AGENTS = ['upgrade_nudge', 'churn_saver'];
+
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
         SeatAccess::authorize($user, 'agents.index');
 
+        $activities = fn () => AgentActivity::query()->where('user_id', $user->id)->whereNotIn('agent', self::HIDDEN_AGENTS);
+
         return response()->json([
             'included' => AgentSettings::planIncludesAgents($user),
             'approvals' => MobileAgentActivityResource::collection(
-                AgentActivity::query()->where('user_id', $user->id)->where('status', AgentActivity::STATUS_NEEDS_APPROVAL)->latest()->get()
+                $activities()->where('status', AgentActivity::STATUS_NEEDS_APPROVAL)->latest()->get()
             ),
             'activity' => MobileAgentActivityResource::collection(
-                AgentActivity::query()->where('user_id', $user->id)->where('status', '!=', AgentActivity::STATUS_NEEDS_APPROVAL)->latest()->limit(40)->get()
+                $activities()->where('status', '!=', AgentActivity::STATUS_NEEDS_APPROVAL)->latest()->limit(40)->get()
             ),
-            'week' => AgentActivity::query()->where('user_id', $user->id)->where('created_at', '>=', now()->subWeek())
+            'week' => $activities()->where('created_at', '>=', now()->subWeek())
                 ->selectRaw('agent, count(*) as total')->groupBy('agent')->pluck('total', 'agent'),
         ]);
     }

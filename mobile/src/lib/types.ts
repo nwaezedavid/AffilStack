@@ -10,7 +10,7 @@ export type MobileConfig = {
   store_urls: { ios: string | null; android: string | null };
   announcement: { message: string; level: 'info' | 'warning' | 'critical'; url: string | null } | null;
   auth: { client_id: string; authorize_url: string; token_url: string; revoke_url: string };
-  links: Record<'dashboard' | 'billing' | 'forgot_password' | 'privacy' | 'terms', string>;
+  links: Record<'dashboard' | 'forgot_password' | 'privacy' | 'terms', string>;
   features: { in_app_purchases: boolean };
 };
 
@@ -202,4 +202,13 @@ export type NotificationPreferences = {
   push_available: boolean;
   this_device_registered: boolean;
   categories: NotificationCategory[];
+};
+
+export type BillingOverview = {
+  account: MobileAccount;
+  credits: { balance: number; monthly_allowance: number | null };
+  wallet: { balance_minor: number; currency: string; formatted: string };
+  shows_history: boolean;
+  credit_activity: { id: number; label: string; amount: number; balance_after: number; created_at: string | null }[];
+  wallet_activity: { id: number; label: string; amount_minor: number; formatted: string; created_at: string | null }[];
 };
