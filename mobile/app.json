@@ -2,6 +2,7 @@
   "expo": {
     "name": "AffilStack",
     "slug": "affilstack",
+    "owner": "nwaeze-david",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -20,7 +21,12 @@
       "associatedDomains": [
         "applinks:app.affilstack.com",
         "webcredentials:app.affilstack.com"
-      ]
+      ],
+      "entitlements": {
+        "com.apple.developer.applesignin": [
+          "Default"
+        ]
+      }
     },
     "android": {
       "package": "com.affilstack.app",
@@ -33,7 +39,11 @@
       },
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
       ],
       "intentFilters": [
         {
@@ -150,7 +160,13 @@
       "policy": "appVersion"
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "c58bd630-4c7b-43a3-a5eb-ad682a7b55ab"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c58bd630-4c7b-43a3-a5eb-ad682a7b55ab"
     }
   }
 }
