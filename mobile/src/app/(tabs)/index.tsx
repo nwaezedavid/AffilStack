@@ -82,38 +82,40 @@ export default function HomeScreen() {
 
       <AnnouncementBanner announcement={config.data?.announcement ?? null} />
 
-      <Card style={[styles.planCard, { backgroundColor: Palette.navy900, borderColor: Palette.navy800 }]}>
-        <View style={styles.planTop}>
-          <View style={{ flex: 1 }}>
-            <Text variant="label" style={{ color: Palette.gold300, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-              {account.plan?.name ? `${account.plan.name} plan` : 'Your plan'}
-            </Text>
-            <Text variant="subheading" style={{ color: '#ffffff', marginTop: 2 }}>
-              {planLine(account.plan)}
-            </Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Plan and credits" onPress={() => router.push('/billing')}>
+        <Card style={[styles.planCard, { backgroundColor: Palette.navy900, borderColor: Palette.navy800 }]}>
+          <View style={styles.planTop}>
+            <View style={{ flex: 1 }}>
+              <Text variant="label" style={{ color: Palette.gold300, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                {account.plan?.name ? `${account.plan.name} plan` : 'Your plan'}
+              </Text>
+              <Text variant="subheading" style={{ color: '#ffffff', marginTop: 2 }}>
+                {planLine(account.plan)}
+              </Text>
+            </View>
+            <Ionicons name="shield-checkmark" size={26} color={Palette.gold400} />
           </View>
-          <Ionicons name="shield-checkmark" size={26} color={Palette.gold400} />
-        </View>
-        <View style={styles.balances}>
-          <View style={styles.balance}>
-            <Text variant="caption" style={{ color: '#aab3cc' }}>
-              Credits
-            </Text>
-            <Text variant="heading" style={{ color: '#ffffff' }}>
-              {account.credits_balance.toLocaleString()}
-            </Text>
+          <View style={styles.balances}>
+            <View style={styles.balance}>
+              <Text variant="caption" style={{ color: '#aab3cc' }}>
+                Credits
+              </Text>
+              <Text variant="heading" style={{ color: '#ffffff' }}>
+                {account.credits_balance.toLocaleString()}
+              </Text>
+            </View>
+            <View style={[styles.divider, { backgroundColor: Palette.navy700 }]} />
+            <View style={styles.balance}>
+              <Text variant="caption" style={{ color: '#aab3cc' }}>
+                Wallet
+              </Text>
+              <Text variant="heading" style={{ color: '#ffffff' }}>
+                {wallet.formatted}
+              </Text>
+            </View>
           </View>
-          <View style={[styles.divider, { backgroundColor: Palette.navy700 }]} />
-          <View style={styles.balance}>
-            <Text variant="caption" style={{ color: '#aab3cc' }}>
-              Wallet
-            </Text>
-            <Text variant="heading" style={{ color: '#ffffff' }}>
-              {wallet.formatted}
-            </Text>
-          </View>
-        </View>
-      </Card>
+        </Card>
+      </Pressable>
 
       {agents.pending_approvals > 0 ? (
         <Pressable accessibilityRole="button" onPress={() => router.navigate('/(tabs)/agents')}>

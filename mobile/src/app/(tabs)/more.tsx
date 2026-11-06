@@ -14,8 +14,9 @@ import { confirm } from '@/lib/confirm';
 import { useAuth } from '@/providers/auth-provider';
 
 /**
- * Account, security and sign-out. Billing is shown as status only: plans,
- * credits and top-ups are managed on the website in version 1.
+ * Account, settings, security and sign-out. Plan & credits is view only:
+ * nothing in the app sells or links to buying (App Store / Google Play
+ * rules for apps whose purchases happen elsewhere).
  */
 export default function MoreScreen() {
   const theme = useTheme();
@@ -73,6 +74,7 @@ export default function MoreScreen() {
         <Text variant="label" tone="faint" style={styles.section}>
           SETTINGS
         </Text>
+        <ListRow icon="card-outline" label="Plan & credits" detail="Your plan, balances and recent activity" onPress={() => router.push('/billing')} />
         <ListRow icon="notifications-outline" label="Notifications" detail="Choose what your phone tells you about" onPress={() => router.push('/notifications')} />
       </Card>
 

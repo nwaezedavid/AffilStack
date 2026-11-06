@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Services\Mobile\MobileAuthServer;
+use App\Support\Mobile\AppSignIn;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -60,6 +61,7 @@ class MobileAuthorizeController extends Controller
         }
 
         $code = $this->server->issueCode($request->user(), $params['redirect_uri'], $params['code_challenge']);
+        AppSignIn::finish();
 
         return $this->backToApp($params, ['code' => $code]);
     }
@@ -72,6 +74,8 @@ class MobileAuthorizeController extends Controller
         if (isset($result['error'])) {
             return view('mobile.authorize-error', ['message' => $result['error']]);
         }
+
+        AppSignIn::finish();
 
         return $this->backToApp($params, ['error' => 'access_denied']);
     }

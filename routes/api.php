@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\GenerationsController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\Mobile\AccountController as MobileAccountController;
 use App\Http\Controllers\Api\V1\Mobile\AgentsController as MobileAgentsController;
+use App\Http\Controllers\Api\V1\Mobile\BillingController as MobileBillingController;
 use App\Http\Controllers\Api\V1\Mobile\ConfigController as MobileConfigController;
 use App\Http\Controllers\Api\V1\Mobile\ContactsController as MobileContactsController;
 use App\Http\Controllers\Api\V1\Mobile\DevicesController as MobileDevicesController;
@@ -81,6 +82,7 @@ Route::get('/v1/mobile/config', [MobileConfigController::class, 'show'])->middle
 
 Route::prefix('v1/mobile')->middleware(['api-token-auth', 'mobile-token', 'throttle:mobile'])->group(function () {
     Route::get('/home', [MobileHomeController::class, 'show'])->name('api.v1.mobile.home');
+    Route::get('/billing', [MobileBillingController::class, 'show'])->name('api.v1.mobile.billing');
     Route::get('/devices', [MobileDevicesController::class, 'index'])->name('api.v1.mobile.devices.index');
     Route::put('/devices/current', [MobileDevicesController::class, 'updateCurrent'])->name('api.v1.mobile.devices.current');
     Route::delete('/devices/{device}', [MobileDevicesController::class, 'destroy'])->name('api.v1.mobile.devices.destroy');

@@ -18,7 +18,6 @@ const config: MobileConfig = {
   },
   links: {
     dashboard: 'https://app.affilstack.com/dashboard',
-    billing: 'https://app.affilstack.com/billing',
     forgot_password: 'https://app.affilstack.com/forgot-password',
     privacy: 'https://affilstack.com/privacy',
     terms: 'https://affilstack.com/terms',
@@ -171,6 +170,27 @@ export async function demoResponse<T>(method: string, path: string, body?: unkno
     notificationPreferences.categories = notificationPreferences.categories.map((category) => (category.key in changes ? { ...category, enabled: changes[category.key] } : category));
 
     return { data: notificationPreferences } as T;
+  }
+  if (path === '/v1/mobile/billing') {
+    return {
+      data: {
+        account: home.account,
+        credits: { balance: home.account.credits_balance, monthly_allowance: 2000 },
+        wallet: home.wallet,
+        shows_history: true,
+        credit_activity: [
+          { id: 9, label: 'One-click video', amount: -110, balance_after: home.account.credits_balance, created_at: ago(0.5) },
+          { id: 8, label: 'Blog article', amount: -15, balance_after: home.account.credits_balance + 110, created_at: ago(5) },
+          { id: 7, label: 'Reply drafted with AI', amount: -3, balance_after: home.account.credits_balance + 125, created_at: ago(9) },
+          { id: 6, label: 'Product research', amount: -20, balance_after: home.account.credits_balance + 128, created_at: ago(30) },
+          { id: 5, label: 'Monthly plan credits', amount: 2000, balance_after: home.account.credits_balance + 148, created_at: ago(200) },
+        ],
+        wallet_activity: [
+          { id: 3, label: 'Plan renewal', amount_minor: -1500000, formatted: '-₦15,000.00', created_at: ago(200) },
+          { id: 2, label: 'Card check (kept as balance)', amount_minor: 10000, formatted: '₦100.00', created_at: ago(900) },
+        ],
+      },
+    } as T;
   }
   if (path === '/v1/mobile/notifications/test') return { message: 'Test notification sent. It should arrive within a few seconds.' } as T;
 

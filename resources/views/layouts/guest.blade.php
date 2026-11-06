@@ -13,9 +13,16 @@
 <body class="bg-surface-muted text-ink-900 antialiased min-h-screen flex items-center justify-center px-4 py-10">
     <div class="w-full max-w-md">
         <div class="text-center mb-8">
-            <a href="{{ route('home') }}" class="inline-flex items-center gap-2 font-display font-semibold text-xl text-navy-900">
-                <x-ui.brand-mark :label="$siteName" />
-            </a>
+            {{-- Inside the phone app's sign-in the logo doesn't lead to the website (see AppSignIn). --}}
+            @if (\App\Support\Mobile\AppSignIn::active())
+                <span class="inline-flex items-center gap-2 font-display font-semibold text-xl text-navy-900">
+                    <x-ui.brand-mark :label="$siteName" />
+                </span>
+            @else
+                <a href="{{ route('home') }}" class="inline-flex items-center gap-2 font-display font-semibold text-xl text-navy-900">
+                    <x-ui.brand-mark :label="$siteName" />
+                </a>
+            @endif
         </div>
 
         <div class="bg-surface border border-line rounded-xl shadow-sm p-8">
