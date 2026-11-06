@@ -16,6 +16,9 @@ use Throwable;
  * "database" channel so no existing notification class had to change, and
  * it never throws: a phone problem must not break the notification, the
  * job or the request that sent it.
+ *
+ * Registered by Laravel's listener discovery (like RecordUserLogin) — do
+ * not also add an Event::listen() for it, or every push is sent twice.
  */
 class SendMobilePushForNotification
 {
