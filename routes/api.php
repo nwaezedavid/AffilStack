@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\Mobile\DevicesController as MobileDevicesControl
 use App\Http\Controllers\Api\V1\Mobile\GenerationsController as MobileGenerationsController;
 use App\Http\Controllers\Api\V1\Mobile\HomeController as MobileHomeController;
 use App\Http\Controllers\Api\V1\Mobile\InboxController as MobileInboxController;
+use App\Http\Controllers\Api\V1\Mobile\NotificationsController as MobileNotificationsController;
 use App\Http\Controllers\Api\V1\Mobile\OffersController as MobileOffersController;
 use App\Http\Controllers\Api\V1\Mobile\SessionController as MobileSessionController;
 use App\Http\Controllers\Api\V1\Mobile\VideosController as MobileVideosController;
@@ -83,6 +84,9 @@ Route::prefix('v1/mobile')->middleware(['api-token-auth', 'mobile-token', 'throt
     Route::get('/devices', [MobileDevicesController::class, 'index'])->name('api.v1.mobile.devices.index');
     Route::put('/devices/current', [MobileDevicesController::class, 'updateCurrent'])->name('api.v1.mobile.devices.current');
     Route::delete('/devices/{device}', [MobileDevicesController::class, 'destroy'])->name('api.v1.mobile.devices.destroy');
+    Route::get('/notifications/preferences', [MobileNotificationsController::class, 'show'])->name('api.v1.mobile.notifications.preferences');
+    Route::put('/notifications/preferences', [MobileNotificationsController::class, 'update'])->name('api.v1.mobile.notifications.preferences.update');
+    Route::post('/notifications/test', [MobileNotificationsController::class, 'test'])->middleware('throttle:5,1,mobile.notifications.test')->name('api.v1.mobile.notifications.test');
     Route::post('/logout', [MobileSessionController::class, 'logout'])->name('api.v1.mobile.logout');
     Route::post('/logout-everywhere', [MobileSessionController::class, 'logoutEverywhere'])->name('api.v1.mobile.logout-everywhere');
     Route::delete('/account', [MobileAccountController::class, 'destroy'])->middleware('throttle:5,1,mobile.account.destroy')->name('api.v1.mobile.account.destroy');

@@ -42,4 +42,22 @@ return [
     // Fallback minimum versions when admin hasn't set one.
     'default_min_version' => '1.0.0',
 
+    // The store identities of the two apps (must match mobile/app.json).
+    'ios_bundle_id' => 'com.affilstack.app',
+    'android_package' => 'com.affilstack.app',
+
+    // Web pages that open in the app when it is installed (iPhone
+    // Universal Links / Android App Links). Only pages the app has its own
+    // screen for — the app's +native-intent maps each one, and
+    // mobile/app.json lists the same paths for Android.
+    'app_links' => [
+        '/dashboard',
+        '/offers',
+        '/offers/*',
+        '/agents',
+        '/crm',
+        '/crm/inbox',
+        '/crm/inbox/*',
+    ],
+
 ];

@@ -5,6 +5,7 @@ use App\Http\Controllers\AffiliateBannerController;
 use App\Http\Controllers\AnalyticsBeaconController;
 use App\Http\Controllers\Api\WordPress\ConnectorController as WordPressConnectorController;
 use App\Http\Controllers\AppleAuthController;
+use App\Http\Controllers\AppLinksController;
 use App\Http\Controllers\BannerEmbedController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\BlogNewsletterConfirmController;
@@ -93,6 +94,7 @@ use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\TrialInviteController;
 use App\Http\Controllers\TutorialController;
 use App\Http\Middleware\EnsurePanelLoginCompleted;
+use App\Http\Middleware\LocalizeResponse;
 use App\Http\Middleware\RejectCrossSiteBeacon;
 use App\Support\SiteDomains;
 use Filament\Facades\Filament;
@@ -639,6 +641,33 @@ SiteDomains::marketing(function () {
     // skips the admin panel/API/webhook paths inside the controller itself.
     Route::fallback([RedirectFallbackController::class, 'handle'])->middleware('throttle:120,1,fallback');
 });
+
+// --- Phone app phase 5: app links ------------------------------------------
+// /.well-known/apple-app-site-association and /.well-known/assetlinks.json,
+// which let iPhones and Android phones open AffilStack links in the app (see
+// AppLinksController). On every host, with no session or cookies: Apple and
+// Google fetch them through their own caches and refuse redirects.
+Route::get('/.well-known/apple-app-site-association', [AppLinksController::class, 'apple'])
+    ->withoutMiddleware([
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+        AddQueuedCookiesToResponse::class,
+        EncryptCookies::class,
+        LocalizeResponse::class,
+    ])
+    ->name('app-links.apple');
+Route::get('/.well-known/assetlinks.json', [AppLinksController::class, 'android'])
+    ->withoutMiddleware([
+        StartSession::class,
+        ShareErrorsFromSession::class,
+        PreventRequestForgery::class,
+        AddQueuedCookiesToResponse::class,
+        EncryptCookies::class,
+        LocalizeResponse::class,
+    ])
+    ->name('app-links.android');
+// --- end phone app links ----------------------------------------------------
 
 // --- Agent 01: favicon set for browsers and search engines -----------------
 // Stable root URLs (/favicon.ico, /favicon-48x48.png, /apple-touch-icon.png,

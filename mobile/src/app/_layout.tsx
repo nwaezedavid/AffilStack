@@ -9,6 +9,7 @@ import { Platform } from 'react-native';
 import { LockScreen } from '@/components/lock-screen';
 import { UpdateRequired } from '@/components/update-required';
 import { useAppConfig } from '@/hooks/use-api';
+import { usePushNotifications } from '@/hooks/use-push';
 import { useTheme } from '@/hooks/use-theme';
 import { APP_VERSION } from '@/lib/config';
 import { isBelowMinimum } from '@/lib/version';
@@ -23,6 +24,8 @@ function RootNavigator() {
   const config = useAppConfig();
   const platform = Platform.OS === 'ios' ? 'ios' : 'android';
   const minimum = config.data?.versions[platform]?.minimum;
+
+  usePushNotifications(status === 'signed-in');
 
   useEffect(() => {
     if (status !== 'loading') SplashScreen.hideAsync();
@@ -45,6 +48,7 @@ function RootNavigator() {
         <Stack.Protected guard={status === 'signed-in'}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="devices" options={{ title: 'Signed-in devices' }} />
+          <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
           <Stack.Screen name="delete-account" options={{ title: 'Delete account', presentation: 'modal' }} />
           <Stack.Screen name="products/new" options={{ title: 'Add a product', presentation: 'modal' }} />
           <Stack.Screen name="products/[id]" options={{ title: 'Product' }} />

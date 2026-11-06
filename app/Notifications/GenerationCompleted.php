@@ -73,7 +73,7 @@ class GenerationCompleted extends Notification
         ];
     }
 
-    protected function moduleLabel(): string
+    public function moduleLabel(): string
     {
         return match ($this->module) {
             'research' => 'offer research',

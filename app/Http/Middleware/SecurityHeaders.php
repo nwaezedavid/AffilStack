@@ -48,6 +48,14 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class SecurityHeaders
 {
+    /**
+     * @var array<int, string>
+     */
+    private const PUBLIC_WELL_KNOWN = [
+        '.well-known/apple-app-site-association',
+        '.well-known/assetlinks.json',
+    ];
+
     public function handle(Request $request, Closure $next): Response
     {
         if ($this->isDotfileRequest($request)) {
@@ -125,6 +133,12 @@ class SecurityHeaders
 
     private function isDotfileRequest(Request $request): bool
     {
+        // The phone apps' two app-link files (AppLinksController) are the
+        // only dot-paths ever served — matched exactly, nothing beneath.
+        if (in_array($request->path(), self::PUBLIC_WELL_KNOWN, true)) {
+            return false;
+        }
+
         foreach (explode('/', $request->path()) as $segment) {
             if ($segment !== '' && str_starts_with($segment, '.')) {
                 return true;

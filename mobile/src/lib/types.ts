@@ -190,3 +190,16 @@ export type Contact = {
   lists?: { id: number; name: string }[];
   created_at: string | null;
 };
+
+export type NotificationCategory = {
+  key: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+};
+
+export type NotificationPreferences = {
+  push_available: boolean;
+  this_device_registered: boolean;
+  categories: NotificationCategory[];
+};
