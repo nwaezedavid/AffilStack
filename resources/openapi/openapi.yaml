@@ -481,7 +481,7 @@ paths:
                           balance_minor: { type: integer }
                           currency: { type: string }
                           formatted: { type: string }
-                      shows_history: { type: boolean, description: False for team seats, who see balances only }
+                      shows_history: { type: boolean, description: 'False for team seats, who see balances only' }
                       credit_activity:
                         type: array
                         items:
@@ -489,7 +489,7 @@ paths:
                           properties:
                             id: { type: integer }
                             label: { type: string }
-                            amount: { type: integer, description: Positive for credits added, negative for credits used }
+                            amount: { type: integer, description: 'Positive for credits added, negative for credits used' }
                             balance_after: { type: integer }
                             created_at: { type: string, format: date-time }
                       wallet_activity:
@@ -1231,8 +1231,8 @@ components:
     MobileNotificationPreferences:
       type: object
       properties:
-        push_available: { type: boolean, description: Whether AffilStack is sending phone notifications at all }
-        this_device_registered: { type: boolean, description: Whether this phone has sent its push token }
+        push_available: { type: boolean, description: 'Whether AffilStack is sending phone notifications at all' }
+        this_device_registered: { type: boolean, description: 'Whether this phone has sent its push token' }
         categories:
           type: array
           items:

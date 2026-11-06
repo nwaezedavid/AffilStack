@@ -744,8 +744,7 @@
                                                 },
                                                 "shows_history": {
                                                     "type": "boolean",
-                                                    "description": "False for team seats",
-                                                    "who see balances only": null
+                                                    "description": "False for team seats, who see balances only"
                                                 },
                                                 "credit_activity": {
                                                     "type": "array",
@@ -760,8 +759,7 @@
                                                             },
                                                             "amount": {
                                                                 "type": "integer",
-                                                                "description": "Positive for credits added",
-                                                                "negative for credits used": null
+                                                                "description": "Positive for credits added, negative for credits used"
                                                             },
                                                             "balance_after": {
                                                                 "type": "integer"
