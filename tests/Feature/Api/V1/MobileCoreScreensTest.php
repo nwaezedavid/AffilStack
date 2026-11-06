@@ -43,7 +43,7 @@ class MobileCoreScreensTest extends TestCase
      */
     protected function customer(array $channels = ['research', 'blog', 'linkedin'], array $attributes = []): User
     {
-        $user = User::factory()->create(['credits_balance' => 1000] + $attributes);
+        $user = User::factory()->create($attributes + ['credits_balance' => 1000]);
         $user->assignRole('user');
         Subscription::factory()->create(['user_id' => $user->id, 'plan_id' => Plan::factory()->create(['channels' => $channels])->id]);
 

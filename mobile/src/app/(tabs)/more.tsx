@@ -63,6 +63,14 @@ export default function MoreScreen() {
 
       <Card>
         <Text variant="label" tone="faint" style={styles.section}>
+          FIND & CLOSE BUYERS
+        </Text>
+        <ListRow icon="mail-unread-outline" label="Inbox & replies" detail="Answer contacts who wrote back" onPress={() => router.push('/inbox')} />
+        <ListRow icon="people-outline" label="Contacts" detail="Search, tag and call your leads" onPress={() => router.push('/contacts')} />
+      </Card>
+
+      <Card>
+        <Text variant="label" tone="faint" style={styles.section}>
           SECURITY
         </Text>
         {biometricAvailable ? (

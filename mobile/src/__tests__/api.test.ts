@@ -89,4 +89,20 @@ describe('api()', () => {
     await api('/v1/mobile/config', { auth: false });
     expect((calls[0].init.headers as Record<string, string>).Authorization).toBeUndefined();
   });
+
+  it('sends photo uploads as multipart, leaving the boundary to fetch', async () => {
+    await saveTokens({ accessToken: 'access', refreshToken: 'refresh', expiresAt: Date.now() + 600_000, deviceId: 7 });
+    globalThis.fetch = jest.fn(async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+
+      return json(201, { data: { id: 1 } });
+    }) as unknown as typeof fetch;
+
+    const form = new FormData();
+    form.append('style', 'testimonial');
+
+    await api('/v1/mobile/offers/3/videos', { method: 'POST', body: form });
+    expect(calls[0].init.body).toBe(form);
+    expect((calls[0].init.headers as Record<string, string>)['Content-Type']).toBeUndefined();
+  });
 });

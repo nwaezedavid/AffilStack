@@ -72,15 +72,18 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     return demoResponse<T>(method, path, body);
   }
 
+  // FormData (photo uploads) goes as multipart; everything else as JSON.
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+
   const send = async (tokens: TokenSet | null): Promise<Response> =>
     fetch(`${API_URL}/api${path}`, {
       method,
       headers: {
         Accept: 'application/json',
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(body !== undefined && !isForm ? { 'Content-Type': 'application/json' } : {}),
         ...(tokens ? { Authorization: `Bearer ${tokens.accessToken}` } : {}),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
     });
 
   let tokens = auth ? await validTokens() : null;
