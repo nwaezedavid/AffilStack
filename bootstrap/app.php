@@ -16,6 +16,7 @@ use App\Http\Middleware\LogApiRequest;
 use App\Http\Middleware\MarkLocalizedUrl;
 use App\Http\Middleware\MeterApiUsage;
 use App\Http\Middleware\RecordPhpRuntime;
+use App\Http\Middleware\RedirectWwwToCanonicalHost;
 use App\Http\Middleware\RejectExecutableUploads;
 use App\Http\Middleware\RestrictAffiliateOnlyAccounts;
 use App\Http\Middleware\RestrictAgencySeats;
@@ -73,6 +74,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // comes off the address before routing (see StripLocalePrefix), and
         // every web page is shown in the visitor's language (LocalizeResponse).
         $middleware->prepend(StripLocalePrefix::class);
+
+        // www.affilstack.com has no routes of its own: send it to the
+        // canonical address before anything else runs.
+        $middleware->prepend(RedirectWwwToCanonicalHost::class);
 
         $middleware->alias([
             'restrict-agency-seats' => RestrictAgencySeats::class,
